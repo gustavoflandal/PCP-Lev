@@ -1,0 +1,32 @@
+# Dependências
+node_modules/
+vendor/
+
+# Build
+dist/
+build/
+*.exe
+/backend/bin/
+
+# Ambiente
+.env
+.env.local
+*.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# Cobertura de testes
+coverage/
+*.out
+
+# IDE / SO
+.idea/
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+Thumbs.db
+
+# Dados do Postgres (volume local)
+.docker-data/
