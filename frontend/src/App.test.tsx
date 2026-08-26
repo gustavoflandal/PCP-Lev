@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { api } from '@/servicos/api';
@@ -17,9 +18,18 @@ describe('App', () => {
   beforeEach(() => {
     sessionStorage.clear();
     useAutenticacao.getState().sair();
-    api.defaults.adapter = async (config) =>
+    api.defaults.adapter = async (config) => {
+      const corpo = config.url?.includes('/auth/login')
+        ? {
+            access_token: 'token-abc',
+            token_type: 'Bearer',
+            expires_in: 28800,
+            usuario: { id: 1, username: 'admin', nome: 'Gustavo Landal', perfil: 'GESTOR' },
+          }
+        : { sucesso: true, dados: { status: 'ok', ambiente: 'test' } };
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ({ status: 200, data: { sucesso: true, dados: { status: 'ok', ambiente: 'test' } }, headers: {}, config }) as any;
+      return { status: 200, data: corpo, headers: {}, config } as any;
+    };
   });
   afterEach(() => {
     api.defaults.adapter = undefined;
@@ -49,5 +59,39 @@ describe('App', () => {
     renderizarEm('/rota-que-nao-existe');
 
     expect(screen.getByRole('button', { name: 'Entrar' })).toBeInTheDocument();
+  });
+
+  it('apos entrar, leva o usuario para a tela inicial', async () => {
+    renderizarEm('/login');
+
+    await userEvent.type(screen.getByLabelText('Usuário'), 'admin');
+    await userEvent.type(screen.getByLabelText('Senha'), 'Admin@123');
+    await userEvent.click(screen.getByRole('button', { name: 'Entrar' }));
+
+    expect(await screen.findByRole('heading', { name: 'Início' })).toBeInTheDocument();
+  });
+
+  it('com sessao aberta, a tela de login redireciona para a inicial', () => {
+    useAutenticacao.getState().entrar({
+      access_token: 'token-abc',
+      token_type: 'Bearer',
+      expires_in: 28800,
+      usuario: { id: 1, username: 'admin', nome: 'Gustavo Landal', perfil: 'GESTOR' },
+    });
+
+    renderizarEm('/login');
+
+    expect(screen.getByRole('heading', { name: 'Início' })).toBeInTheDocument();
+  });
+
+  it('leva o usuario de volta a rota que ele tentou abrir antes do login', async () => {
+    renderizarEm('/');
+    expect(screen.getByRole('button', { name: 'Entrar' })).toBeInTheDocument();
+
+    await userEvent.type(screen.getByLabelText('Usuário'), 'admin');
+    await userEvent.type(screen.getByLabelText('Senha'), 'Admin@123');
+    await userEvent.click(screen.getByRole('button', { name: 'Entrar' }));
+
+    expect(await screen.findByRole('heading', { name: 'Início' })).toBeInTheDocument();
   });
 });

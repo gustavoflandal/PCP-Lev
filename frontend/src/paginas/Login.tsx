@@ -2,6 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { Botao } from '@/componentes/ui/Botao';
 import { Campo } from '@/componentes/ui/Campo';
@@ -26,8 +27,14 @@ const AVISO_POR_MOTIVO: Record<Exclude<MotivoSaida, null>, string> = {
 
 export function Login() {
   const entrar = useAutenticacao((estado) => estado.entrar);
+  const autenticado = useAutenticacao((estado) => estado.autenticado);
   const motivoSaida = useAutenticacao((estado) => estado.motivoSaida);
   const [senhaVisivel, setSenhaVisivel] = useState(false);
+
+  const navegar = useNavigate();
+  const local = useLocation();
+  // RotaProtegida guarda em `state.de` a tela que o usuario tentou abrir.
+  const destino = (local.state as { de?: string } | null)?.de ?? '/';
 
   const {
     register,
@@ -40,7 +47,11 @@ export function Login() {
 
   const login = useMutation({
     mutationFn: autenticar,
-    onSuccess: entrar,
+    onSuccess: (resposta) => {
+      entrar(resposta);
+      // `replace` evita que o botao voltar do navegador retorne ao login.
+      navegar(destino, { replace: true });
+    },
   });
 
   const mensagemDeErro =
@@ -49,6 +60,12 @@ export function Login() {
       : login.error
         ? 'Não foi possível entrar. Tente novamente.'
         : null;
+
+  // Sessao ja aberta (aba duplicada, ou volta ao /login pelo historico):
+  // nao faz sentido pedir credencial de novo.
+  if (autenticado) {
+    return <Navigate to={destino} replace />;
+  }
 
   const OlhoIcone = senhaVisivel ? icones['eye-off'] : icones.eye;
   const AlertaIcone = icones['alert-triangle'];
