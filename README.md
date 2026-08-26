@@ -80,7 +80,15 @@ Frontend na porta **3010**, API na **8000**.
 | `admin` | `Admin@123` | ADMIN  |
 
 Criado pela migration `008_dados_iniciais.sql`. **Troque a senha antes de
-qualquer ambiente que não seja o seu.**
+qualquer ambiente que não seja o seu:**
+
+```bash
+TOKEN=$(curl -s -X POST http://localhost:8000/api/v1/auth/login   -H 'Content-Type: application/json'   -d '{"username":"admin","password":"Admin@123"}' | jq -r .access_token)
+
+curl -X POST http://localhost:8000/api/v1/auth/trocar-senha   -H "Authorization: Bearer $TOKEN"   -H 'Content-Type: application/json'   -d '{"senha_atual":"Admin@123","nova_senha":"SuaNovaSenha@2026"}'
+```
+
+A senha nova precisa ter no mínimo 8 caracteres (RNF3) e ser diferente da atual.
 
 ---
 

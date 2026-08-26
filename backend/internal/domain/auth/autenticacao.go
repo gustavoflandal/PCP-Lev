@@ -9,6 +9,10 @@ import (
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/usuario"
 )
 
+// ErrSenhaRepetida impede trocar a senha por ela mesma: a troca costuma ser
+// pedida justamente porque a senha atual foi exposta.
+var ErrSenhaRepetida = errors.New("a nova senha deve ser diferente da atual")
+
 // ResultadoLogin e o contrato de resposta de POST /auth/login
 // (docs/3_ESPECIFICACAO_APIS.md).
 type ResultadoLogin struct {
@@ -70,4 +74,27 @@ func (s *ServicoAutenticacao) Autenticar(ctx context.Context, username, senha st
 		ExpiraEm:    expiraEm,
 		Usuario:     u,
 	}, nil
+}
+
+// TrocarSenha altera a senha do usuario da sessao.
+//
+// Exigir a senha atual protege contra troca por terceiro que tenha apenas o
+// token — sessao aberta em maquina compartilhada do chao de fabrica.
+func (s *ServicoAutenticacao) TrocarSenha(ctx context.Context, usuarioID int64, senhaAtual, novaSenha string) error {
+	u, err := s.repo.BuscarPorID(ctx, usuarioID)
+	if err != nil {
+		return err
+	}
+	if !u.SenhaConfere(senhaAtual) {
+		return usuario.ErrCredenciaisInvalidas
+	}
+	if senhaAtual == novaSenha {
+		return ErrSenhaRepetida
+	}
+
+	hash, err := usuario.GerarHashSenha(novaSenha)
+	if err != nil {
+		return err
+	}
+	return s.repo.AtualizarSenha(ctx, usuarioID, hash, u.Username)
 }

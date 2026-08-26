@@ -51,6 +51,19 @@ func (r *UsuarioRepositorio) RegistrarLogin(ctx context.Context, id int64) error
 	return nil
 }
 
+// AtualizarSenha grava o novo hash da senha do usuario.
+func (r *UsuarioRepositorio) AtualizarSenha(ctx context.Context, id int64, senhaHash, autor string) error {
+	etiqueta, err := r.pool.Exec(ctx,
+		`UPDATE usuarios SET senha_hash = $2, updated_by = $3 WHERE id = $1`, id, senhaHash, autor)
+	if err != nil {
+		return fmt.Errorf("atualizar senha: %w", err)
+	}
+	if etiqueta.RowsAffected() == 0 {
+		return usuario.ErrNaoEncontrado
+	}
+	return nil
+}
+
 func (r *UsuarioRepositorio) buscarUm(ctx context.Context, sql string, arg any) (*usuario.Usuario, error) {
 	var u usuario.Usuario
 	err := r.pool.QueryRow(ctx, sql, arg).Scan(

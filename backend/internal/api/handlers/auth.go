@@ -59,6 +59,48 @@ func (h *AuthHandler) Login(c echo.Context) error {
 	return c.JSON(http.StatusOK, resultado)
 }
 
+// TrocarSenhaRequest e o corpo de POST /auth/trocar-senha.
+type TrocarSenhaRequest struct {
+	SenhaAtual string `json:"senha_atual" validate:"required"`
+	NovaSenha  string `json:"nova_senha" validate:"required,min=8"`
+}
+
+// TrocarSenha altera a senha do usuario da sessao corrente.
+func (h *AuthHandler) TrocarSenha(c echo.Context) error {
+	claims := middleware.ClaimsDoContexto(c)
+	if claims == nil {
+		return httpx.NaoAutorizado(c, "Token de acesso ausente")
+	}
+
+	var req TrocarSenhaRequest
+	if err := c.Bind(&req); err != nil {
+		return httpx.Erro(c, http.StatusBadRequest, httpx.CodigoRequisicaoInvalida,
+			"Corpo da requisicao invalido")
+	}
+	if problemas := httpx.Validar(req); problemas != nil {
+		return httpx.ErroValidacao(c, problemas)
+	}
+
+	err := h.servico.TrocarSenha(c.Request().Context(), claims.UsuarioID, req.SenhaAtual, req.NovaSenha)
+	switch {
+	case err == nil:
+		return httpx.OKComMensagem(c, nil, "Senha alterada")
+	case errors.Is(err, usuario.ErrCredenciaisInvalidas):
+		// Sem detalhar: quem tem o token mas nao a senha nao deve descobrir
+		// se errou a senha atual ou esbarrou em outra regra.
+		return httpx.NaoAutorizado(c, "Senha atual invalida")
+	case errors.Is(err, auth.ErrSenhaRepetida):
+		return httpx.Erro(c, http.StatusBadRequest, httpx.CodigoErroValidacao, err.Error())
+	case errors.Is(err, usuario.ErrSenhaFraca):
+		return httpx.Erro(c, http.StatusBadRequest, httpx.CodigoErroValidacao, err.Error())
+	case errors.Is(err, usuario.ErrNaoEncontrado):
+		return httpx.NaoEncontrado(c, "Usuario nao encontrado")
+	default:
+		slog.Error("falha ao trocar a senha", "usuario_id", claims.UsuarioID, "erro", err)
+		return httpx.ErroInterno(c)
+	}
+}
+
 // Eu devolve os dados do usuario da sessao corrente.
 func (h *AuthHandler) Eu(c echo.Context) error {
 	claims := middleware.ClaimsDoContexto(c)

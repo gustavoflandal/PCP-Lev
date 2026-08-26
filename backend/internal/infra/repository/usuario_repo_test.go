@@ -78,3 +78,28 @@ func TestRegistrarLoginGravaOUltimoAcesso(t *testing.T) {
 	require.NotNil(t, atualizado.UltimoLogin)
 	assert.WithinDuration(t, atualizado.CreatedAt, *atualizado.UltimoLogin, 60_000_000_000)
 }
+
+func TestAtualizarSenhaGravaONovoHash(t *testing.T) {
+	ctx := context.Background()
+	repo := repository.NovoUsuarioRepositorio(testsupport.BancoMigrado(t))
+	admin, err := repo.BuscarPorUsername(ctx, "admin")
+	require.NoError(t, err)
+
+	novoHash, err := usuario.GerarHashSenha("NovaSenha@2026")
+	require.NoError(t, err)
+	require.NoError(t, repo.AtualizarSenha(ctx, admin.ID, novoHash, "admin"))
+
+	atualizado, err := repo.BuscarPorID(ctx, admin.ID)
+	require.NoError(t, err)
+	assert.True(t, atualizado.SenhaConfere("NovaSenha@2026"))
+	assert.False(t, atualizado.SenhaConfere("Admin@123"), "a senha antiga deixa de valer")
+}
+
+func TestAtualizarSenhaDeUsuarioInexistente(t *testing.T) {
+	ctx := context.Background()
+	repo := repository.NovoUsuarioRepositorio(testsupport.BancoMigrado(t))
+
+	err := repo.AtualizarSenha(ctx, 999999, "hash-qualquer", "admin")
+
+	require.ErrorIs(t, err, usuario.ErrNaoEncontrado)
+}

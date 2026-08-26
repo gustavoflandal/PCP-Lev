@@ -31,6 +31,7 @@ func apiDeTeste(t *testing.T) (*echo.Echo, *auth.ServicoToken) {
 	e := echo.New()
 	e.POST("/api/v1/auth/login", handler.Login)
 	e.GET("/api/v1/auth/eu", handler.Eu, middleware.Autenticacao(tokens))
+	e.POST("/api/v1/auth/trocar-senha", handler.TrocarSenha, middleware.Autenticacao(tokens))
 	return e, tokens
 }
 
@@ -118,6 +119,75 @@ func TestEuExigeAutenticacao(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/auth/eu", nil)
 	rec := httptest.NewRecorder()
 	e.ServeHTTP(rec, req)
+
+	assert.Equal(t, http.StatusUnauthorized, rec.Code)
+}
+
+// postTrocaDeSenha dispara a troca autenticada com o token informado.
+func postTrocaDeSenha(t *testing.T, e *echo.Echo, token, corpo string) *httptest.ResponseRecorder {
+	t.Helper()
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/trocar-senha", strings.NewReader(corpo))
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	if token != "" {
+		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
+	}
+	rec := httptest.NewRecorder()
+	e.ServeHTTP(rec, req)
+	return rec
+}
+
+func tokenDoAdmin(t *testing.T, e *echo.Echo) string {
+	t.Helper()
+	return json_(t, postLogin(t, e, `{"username":"admin","password":"Admin@123"}`))["access_token"].(string)
+}
+
+func TestTrocarSenhaPermiteEntrarComANovaSenha(t *testing.T) {
+	e, _ := apiDeTeste(t)
+	token := tokenDoAdmin(t, e)
+
+	rec := postTrocaDeSenha(t, e, token, `{"senha_atual":"Admin@123","nova_senha":"NovaSenha@2026"}`)
+
+	require.Equal(t, http.StatusOK, rec.Code, rec.Body.String())
+	assert.Equal(t, true, json_(t, rec)["sucesso"])
+
+	novoLogin := postLogin(t, e, `{"username":"admin","password":"NovaSenha@2026"}`)
+	assert.Equal(t, http.StatusOK, novoLogin.Code)
+}
+
+func TestTrocarSenhaComSenhaAtualErradaResponde401(t *testing.T) {
+	e, _ := apiDeTeste(t)
+	token := tokenDoAdmin(t, e)
+
+	rec := postTrocaDeSenha(t, e, token, `{"senha_atual":"errada","nova_senha":"NovaSenha@2026"}`)
+
+	require.Equal(t, http.StatusUnauthorized, rec.Code)
+	assert.Equal(t, "NAO_AUTORIZADO", json_(t, rec)["erro"].(map[string]any)["codigo"])
+}
+
+func TestTrocarSenhaCurtaResponde400(t *testing.T) {
+	e, _ := apiDeTeste(t)
+	token := tokenDoAdmin(t, e)
+
+	rec := postTrocaDeSenha(t, e, token, `{"senha_atual":"Admin@123","nova_senha":"curta1"}`)
+
+	require.Equal(t, http.StatusBadRequest, rec.Code)
+	assert.Equal(t, "ERRO_VALIDACAO", json_(t, rec)["erro"].(map[string]any)["codigo"])
+}
+
+func TestTrocarSenhaRepetindoAAtualResponde400(t *testing.T) {
+	e, _ := apiDeTeste(t)
+	token := tokenDoAdmin(t, e)
+
+	rec := postTrocaDeSenha(t, e, token, `{"senha_atual":"Admin@123","nova_senha":"Admin@123"}`)
+
+	require.Equal(t, http.StatusBadRequest, rec.Code)
+	assert.Contains(t, json_(t, rec)["erro"].(map[string]any)["mensagem"], "diferente")
+}
+
+func TestTrocarSenhaExigeAutenticacao(t *testing.T) {
+	e, _ := apiDeTeste(t)
+
+	rec := postTrocaDeSenha(t, e, "", `{"senha_atual":"Admin@123","nova_senha":"NovaSenha@2026"}`)
 
 	assert.Equal(t, http.StatusUnauthorized, rec.Code)
 }

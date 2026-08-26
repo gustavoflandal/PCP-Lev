@@ -101,3 +101,73 @@ func TestAutenticarRejeitaCredenciaisVazias(t *testing.T) {
 
 	require.ErrorIs(t, err, usuario.ErrCredenciaisInvalidas)
 }
+
+func TestTrocarSenhaPassaAValerNoProximoLogin(t *testing.T) {
+	ctx := context.Background()
+	pool := testsupport.BancoMigrado(t)
+	repo := repository.NovoUsuarioRepositorio(pool)
+	servico := auth.NovoServicoAutenticacao(repo, auth.NovoServicoToken(segredoTeste, time.Hour))
+
+	admin, err := repo.BuscarPorUsername(ctx, "admin")
+	require.NoError(t, err)
+
+	require.NoError(t, servico.TrocarSenha(ctx, admin.ID, "Admin@123", "NovaSenha@2026"))
+
+	_, err = servico.Autenticar(ctx, "admin", "NovaSenha@2026")
+	require.NoError(t, err)
+
+	_, err = servico.Autenticar(ctx, "admin", "Admin@123")
+	require.ErrorIs(t, err, usuario.ErrCredenciaisInvalidas, "a senha antiga deixa de valer")
+}
+
+func TestTrocarSenhaExigeASenhaAtualCorreta(t *testing.T) {
+	ctx := context.Background()
+	pool := testsupport.BancoMigrado(t)
+	repo := repository.NovoUsuarioRepositorio(pool)
+	servico := auth.NovoServicoAutenticacao(repo, auth.NovoServicoToken(segredoTeste, time.Hour))
+	admin, err := repo.BuscarPorUsername(ctx, "admin")
+	require.NoError(t, err)
+
+	err = servico.TrocarSenha(ctx, admin.ID, "senha_errada", "NovaSenha@2026")
+
+	require.ErrorIs(t, err, usuario.ErrCredenciaisInvalidas)
+}
+
+func TestTrocarSenhaAplicaAPoliticaDoRNF3(t *testing.T) {
+	ctx := context.Background()
+	pool := testsupport.BancoMigrado(t)
+	repo := repository.NovoUsuarioRepositorio(pool)
+	servico := auth.NovoServicoAutenticacao(repo, auth.NovoServicoToken(segredoTeste, time.Hour))
+	admin, err := repo.BuscarPorUsername(ctx, "admin")
+	require.NoError(t, err)
+
+	err = servico.TrocarSenha(ctx, admin.ID, "Admin@123", "curta1")
+
+	require.ErrorIs(t, err, usuario.ErrSenhaFraca)
+}
+
+func TestTrocarSenhaRecusaRepetirASenhaAtual(t *testing.T) {
+	ctx := context.Background()
+	pool := testsupport.BancoMigrado(t)
+	repo := repository.NovoUsuarioRepositorio(pool)
+	servico := auth.NovoServicoAutenticacao(repo, auth.NovoServicoToken(segredoTeste, time.Hour))
+	admin, err := repo.BuscarPorUsername(ctx, "admin")
+	require.NoError(t, err)
+
+	err = servico.TrocarSenha(ctx, admin.ID, "Admin@123", "Admin@123")
+
+	require.ErrorIs(t, err, auth.ErrSenhaRepetida)
+}
+
+func TestTrocarSenhaDeUsuarioInexistente(t *testing.T) {
+	ctx := context.Background()
+	pool := testsupport.BancoMigrado(t)
+	servico := auth.NovoServicoAutenticacao(
+		repository.NovoUsuarioRepositorio(pool),
+		auth.NovoServicoToken(segredoTeste, time.Hour),
+	)
+
+	err := servico.TrocarSenha(ctx, 999999, "Admin@123", "NovaSenha@2026")
+
+	require.ErrorIs(t, err, usuario.ErrNaoEncontrado)
+}

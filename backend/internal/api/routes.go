@@ -64,7 +64,9 @@ func registrarAutenticacao(v1 *echo.Group, dep Dependencias) {
 	handler := handlers.NovoAuthHandler(servico)
 
 	v1.POST("/auth/login", handler.Login)
-	v1.GET("/auth/eu", handler.Eu, middleware.Autenticacao(dep.Tokens))
+	protegida := middleware.Autenticacao(dep.Tokens)
+	v1.GET("/auth/eu", handler.Eu, protegida)
+	v1.POST("/auth/trocar-senha", handler.TrocarSenha, protegida)
 }
 
 // registrarCadastros publica os modulos de cadastro base (RF1).

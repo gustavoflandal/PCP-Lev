@@ -11,4 +11,6 @@ type Repositorio interface {
 	BuscarPorID(ctx context.Context, id int64) (*Usuario, error)
 	// RegistrarLogin marca o instante do acesso bem-sucedido.
 	RegistrarLogin(ctx context.Context, id int64) error
+	// AtualizarSenha grava o novo hash da senha.
+	AtualizarSenha(ctx context.Context, id int64, senhaHash, autor string) error
 }
