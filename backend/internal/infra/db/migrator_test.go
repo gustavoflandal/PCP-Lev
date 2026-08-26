@@ -2,6 +2,7 @@ package db_test
 
 import (
 	"context"
+	"sync"
 	"testing"
 
 	"github.com/gustavoflandal/pcp-lev/backend/internal/infra/db"
@@ -19,7 +20,7 @@ func TestAplicarCriaSchemaCompleto(t *testing.T) {
 	var tabelas int
 	require.NoError(t, pool.QueryRow(ctx,
 		`SELECT count(*) FROM information_schema.tables
-		  WHERE table_schema = 'public' AND table_type = 'BASE TABLE'`).Scan(&tabelas))
+		  WHERE table_schema = current_schema() AND table_type = 'BASE TABLE'`).Scan(&tabelas))
 	assert.GreaterOrEqual(t, tabelas, 18, "todas as tabelas do doc 2 devem existir")
 
 	var versoes int
@@ -67,4 +68,31 @@ func TestSaldoEstoqueRejeitaDisponivelNegativo(t *testing.T) {
 	// RN2: o estoque disponivel nunca pode ficar negativo.
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "chk_saldo_disponivel")
+}
+
+func TestAplicarSuportaDuasInstanciasSubindoAoMesmoTempo(t *testing.T) {
+	ctx := context.Background()
+	pool := testsupport.PoolLimpo(t)
+
+	// Duas replicas da API iniciando em paralelo contra o mesmo banco.
+	const replicas = 4
+	erros := make(chan error, replicas)
+	var largada sync.WaitGroup
+	largada.Add(1)
+
+	for i := 0; i < replicas; i++ {
+		go func() {
+			largada.Wait()
+			erros <- db.Aplicar(ctx, pool)
+		}()
+	}
+	largada.Done()
+
+	for i := 0; i < replicas; i++ {
+		require.NoError(t, <-erros, "nenhuma replica pode falhar ao migrar")
+	}
+
+	var versoes int
+	require.NoError(t, pool.QueryRow(ctx, `SELECT count(*) FROM schema_version`).Scan(&versoes))
+	assert.Equal(t, 8, versoes, "cada migration deve ser aplicada uma unica vez")
 }
