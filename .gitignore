@@ -30,3 +30,6 @@ Thumbs.db
 
 # Dados do Postgres (volume local)
 .docker-data/
+
+# Build incremental do TypeScript
+*.tsbuildinfo

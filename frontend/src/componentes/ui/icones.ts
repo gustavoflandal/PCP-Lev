@@ -1,0 +1,77 @@
+/**
+ * Registro de icones do sistema.
+ *
+ * O sistema de design proibe icones fora do conjunto Lucide. Centralizar o
+ * mapeamento aqui torna a regra verificavel: um icone so existe na interface
+ * se estiver nesta lista.
+ */
+import {
+  AlertTriangle,
+  ArrowUpDown,
+  Boxes,
+  Check,
+  CheckCircle2,
+  ChevronDown,
+  ChevronRight,
+  Circle,
+  CircleDot,
+  ClipboardList,
+  Eye,
+  EyeOff,
+  Factory,
+  Filter,
+  LayoutDashboard,
+  Loader2,
+  Lock,
+  LogIn,
+  LogOut,
+  Package,
+  Pencil,
+  Plus,
+  RefreshCw,
+  Save,
+  Search,
+  Settings,
+  ShieldAlert,
+  ShoppingCart,
+  Trash2,
+  Users,
+  X,
+  type LucideIcon,
+} from 'lucide-react';
+
+export const icones = {
+  'alert-triangle': AlertTriangle,
+  'arrow-up-down': ArrowUpDown,
+  boxes: Boxes,
+  check: Check,
+  'check-circle-2': CheckCircle2,
+  'chevron-down': ChevronDown,
+  'chevron-right': ChevronRight,
+  circle: Circle,
+  'circle-dot': CircleDot,
+  'clipboard-list': ClipboardList,
+  eye: Eye,
+  'eye-off': EyeOff,
+  factory: Factory,
+  filter: Filter,
+  'layout-dashboard': LayoutDashboard,
+  'loader-2': Loader2,
+  lock: Lock,
+  'log-in': LogIn,
+  'log-out': LogOut,
+  package: Package,
+  pencil: Pencil,
+  plus: Plus,
+  'refresh-cw': RefreshCw,
+  save: Save,
+  search: Search,
+  settings: Settings,
+  'shield-alert': ShieldAlert,
+  'shopping-cart': ShoppingCart,
+  'trash-2': Trash2,
+  users: Users,
+  x: X,
+} satisfies Record<string, LucideIcon>;
+
+export type NomeIcone = keyof typeof icones;

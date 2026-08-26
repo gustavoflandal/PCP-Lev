@@ -1,0 +1,99 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  backend:
+    name: Backend (Go)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: pcp_user
+          POSTGRES_PASSWORD: senha_segura
+          POSTGRES_DB: pcp_db_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U pcp_user -d pcp_db_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    defaults:
+      run:
+        working-directory: backend
+
+    env:
+      PCP_TEST_DSN: postgres://pcp_user:senha_segura@localhost:5432/pcp_db_test?sslmode=disable
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+          cache-dependency-path: backend/go.sum
+
+      - name: Verificar formatacao
+        run: test -z "$(gofmt -l .)" || (gofmt -l . && exit 1)
+
+      - name: Analise estatica
+        run: go vet ./...
+
+      - name: Testes com cobertura
+        run: go test ./... -race -coverprofile=cobertura.out -covermode=atomic
+
+      - name: Relatorio de cobertura
+        run: go tool cover -func=cobertura.out | tail -1
+
+  frontend:
+    name: Frontend (React)
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Verificacao de tipos
+        run: npx tsc -b --force
+
+      - name: Testes com cobertura
+        run: npm run test:cobertura
+
+      - name: Build de producao
+        run: npm run build
+
+  imagens:
+    name: Imagens Docker
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build da imagem do backend
+        run: docker build -t pcp-backend:${{ github.sha }} ./backend
+
+      - name: Build da imagem do frontend
+        run: docker build -t pcp-frontend:${{ github.sha }} ./frontend

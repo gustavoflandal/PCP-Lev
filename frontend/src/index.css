@@ -1,0 +1,39 @@
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/jetbrains-mono';
+@import './estilos/tokens.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    color-scheme: light;
+  }
+
+  body {
+    @apply bg-surface-base text-texto-primary font-sans text-body antialiased;
+  }
+
+  /* Foco de teclado sempre visivel, 2px — requisito de acessibilidade. */
+  :focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+
+  /* Quantidades e codigos alinham digito a digito. */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Movimento so quando comunica algo — e nem isso sob reducao de movimento. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
