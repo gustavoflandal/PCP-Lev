@@ -8,6 +8,8 @@ import (
 	"github.com/gustavoflandal/pcp-lev/backend/internal/api/middleware"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/config"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/auth"
+	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/produto"
+	"github.com/gustavoflandal/pcp-lev/backend/internal/infra/repository"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/platform/httpx"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/labstack/echo/v4"
@@ -49,7 +51,10 @@ func NovoRoteador(dep Dependencias) *echo.Echo {
 		return httpx.OK(c, map[string]string{"status": "ok", "ambiente": dep.Cfg.APIEnv})
 	})
 
+	autenticacao := middleware.Autenticacao(dep.Tokens)
+
 	registrarAutenticacao(v1, dep)
+	registrarCadastros(v1, dep, autenticacao)
 
 	return e
 }
@@ -60,6 +65,13 @@ func registrarAutenticacao(v1 *echo.Group, dep Dependencias) {
 
 	v1.POST("/auth/login", handler.Login)
 	v1.GET("/auth/eu", handler.Eu, middleware.Autenticacao(dep.Tokens))
+}
+
+// registrarCadastros publica os modulos de cadastro base (RF1).
+func registrarCadastros(v1 *echo.Group, dep Dependencias, autenticacao echo.MiddlewareFunc) {
+	handlers.NovoProdutoHandler(
+		produto.NovoServico(repository.NovoProdutoRepositorio(dep.Pool)),
+	).Registrar(v1, autenticacao)
 }
 
 // tratarErro garante que qualquer erro nao tratado saia no envelope do doc 3,
