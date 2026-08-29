@@ -71,6 +71,7 @@
 13. Navegação lateral, Shell e rotas
 14. Painel (substitui `Inicio`)
 15. Tela de Fornecedores
+15b. Extrair `useCadastroCrud`
 16. Tela de Partes/Peças
 17. Tela de Produtos Acabados
 18. Verificação final
@@ -4022,6 +4023,110 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 
 ---
 
+## Task 15b: Extrair `useCadastroCrud`
+
+**Files:**
+- Create: `frontend/src/hooks/useCadastroCrud.ts`
+- Create: `frontend/src/hooks/useCadastroCrud.test.tsx`
+- Create: `frontend/src/lib/errosDeFormulario.ts`
+- Modify: `frontend/src/paginas/cadastros/Fornecedores.tsx`
+
+**Por que esta tarefa existe:** as tarefas 16 e 17 repetiriam, verbatim, a máquina de estado da tela de Fornecedores — abrir novo, abrir edição, fechar, salvar, pedir e confirmar inativação, separar o erro da API. São ~40 linhas idênticas por tela. O hook extrai só isso. Colunas, schema zod e JSX continuam explícitos em cada tela: **não** transforme isto num componente genérico de tela — a spec descartou esse caminho porque o BOM é mestre-detalhe e não caberia nele.
+
+**Interfaces:**
+- Consumes: `useMutacoesCadastro`, `type MensagensCadastro` de `@/hooks/useMutacoesCadastro`; `ErroApi` de `@/servicos/api`.
+- Produces:
+
+```ts
+// frontend/src/lib/errosDeFormulario.ts
+export interface ErroDeFormulario {
+  geral: string | null;
+  porCampo: Record<string, string>;
+}
+export function separarErro(erro: unknown): ErroDeFormulario;
+
+// frontend/src/hooks/useCadastroCrud.ts
+export interface CadastroCrud<T> {
+  emEdicao: T | null;
+  formularioAberto: boolean;
+  aInativar: T | null;
+  salvando: boolean;
+  inativando: boolean;
+  erroGeral: string | null;
+  errosPorCampo: Record<string, string>;
+  abrirNovo: () => void;
+  abrirEdicao: (item: T) => void;
+  fecharFormulario: () => void;
+  salvar: (corpo: unknown) => void;
+  pedirInativacao: (item: T) => void;
+  cancelarInativacao: () => void;
+  confirmarInativacao: () => void;
+}
+export function useCadastroCrud<T extends { id: number }>(
+  recurso: Recurso,
+  mensagens: MensagensCadastro,
+): CadastroCrud<T>;
+```
+
+- [ ] **Step 1: Mover `separarErro` para `@/lib/errosDeFormulario`**
+
+Tirar a função de `Fornecedores.tsx`, pôr em `frontend/src/lib/errosDeFormulario.ts` com o mesmo corpo, exportada, e importar de volta em `Fornecedores.tsx`.
+
+Run: `cd frontend && npm test -- src/paginas/cadastros/Fornecedores.test.tsx` — segue verde, é só movimentação.
+
+- [ ] **Step 2: Escrever o teste do hook (falhando)**
+
+`frontend/src/hooks/useCadastroCrud.test.tsx` — cobre a máquina de estado, com o servidor falso respondendo às mutações:
+
+1. `formularioAberto` começa falso e `emEdicao` nulo;
+2. `abrirNovo` abre o formulário sem registro em edição;
+3. `abrirEdicao(item)` abre com o registro;
+4. `fecharFormulario` fecha e limpa `emEdicao`;
+5. `salvar` sem `emEdicao` faz POST; com `emEdicao` faz PUT no id;
+6. sucesso do `salvar` fecha o formulário sozinho;
+7. `pedirInativacao` guarda o item **sem** chamar a API;
+8. `confirmarInativacao` chama DELETE e limpa `aInativar` no sucesso;
+9. erro 400 com `detalhes` preenche `errosPorCampo` e deixa `erroGeral` nulo;
+10. erro 409 preenche `erroGeral` e mantém o formulário aberto.
+
+Use o mesmo `envolver` com `QueryClientProvider` dos testes das tarefas 10 e 11, e `useToasts.setState({ itens: [] })` no `beforeEach`.
+
+- [ ] **Step 3: Rodar e ver falhar**
+
+Run: `cd frontend && npm test -- src/hooks/useCadastroCrud.test.tsx`
+Expected: FAIL — `Failed to resolve import "./useCadastroCrud"`.
+
+- [ ] **Step 4: Implementar o hook**
+
+Mover para dentro dele, sem mudar comportamento, os estados `emEdicao`, `formularioAberto` e `aInativar` de `Fornecedores.tsx`, a escolha de `mutacaoAtiva`, o `separarErro` aplicado a ela, e as funções `abrirNovo`, `abrirEdicao`, `fecharFormulario`, `salvar`. Acrescentar `pedirInativacao`, `cancelarInativacao` e `confirmarInativacao` a partir do que hoje está inline no `<Confirmacao>`.
+
+- [ ] **Step 5: Rodar e ver passar**
+
+Run: `cd frontend && npm test -- src/hooks/useCadastroCrud.test.tsx`
+Expected: PASS — 10 testes.
+
+- [ ] **Step 6: Refazer `Fornecedores.tsx` sobre o hook**
+
+A tela passa a chamar `const crud = useCadastroCrud<Fornecedor>('fornecedores', { criado: 'Fornecedor cadastrado', atualizado: 'Fornecedor atualizado', inativado: 'Fornecedor inativado' })` e a usar `crud.*` no lugar dos estados locais. Nenhum teste de `Fornecedores.test.tsx` muda: o comportamento é o mesmo.
+
+Run: `cd frontend && npm test`
+Expected: PASS — tudo verde, inclusive os 10 testes de `Fornecedores`.
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add frontend/src/hooks/useCadastroCrud.ts frontend/src/hooks/useCadastroCrud.test.tsx frontend/src/lib/errosDeFormulario.ts frontend/src/paginas/cadastros/Fornecedores.tsx
+git commit -m "refactor(frontend): extrai a maquina de estado dos cadastros
+
+As telas de pecas e produtos repetiriam verbatim abrir/editar/fechar/salvar
+e a separacao do erro da API. O hook fica com isso; colunas, schema e JSX
+seguem explicitos em cada tela.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
+```
+
+---
+
 ## Task 16: Tela de Partes/Peças
 
 **Files:**
@@ -4031,7 +4136,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 - Modify: `frontend/src/App.tsx`
 
 **Interfaces:**
-- Consumes: tudo das tarefas 1 a 12; `separarErro` — copie a função para este arquivo **não**: extraia-a de `Fornecedores.tsx` para `frontend/src/lib/errosDeFormulario.ts` e importe nos três lugares.
+- Consumes: tudo das tarefas 1 a 12, mais `useCadastroCrud` de `@/hooks/useCadastroCrud` e `separarErro` de `@/lib/errosDeFormulario` (Task 15b). A tela **não** repete a máquina de estado: usa o hook.
 - Produces: `PartesPecas` de `@/paginas/cadastros/PartesPecas`; `FormularioPeca` e `type CorpoPeca`.
 
 **Estrutura idêntica à Task 15.** O que muda:
@@ -4086,10 +4191,6 @@ const fornecedores = useQuery({
 ```
 
 `limite: 200` é o teto que `consulta.Analisar` aceita. Se a base passar disso, troque a `Selecao` por um campo de busca — não aumente o limite.
-
-- [ ] **Step 1: Extrair `separarErro` para `frontend/src/lib/errosDeFormulario.ts`**
-
-Mover a função de `Fornecedores.tsx` para o novo arquivo, exportá-la, e importar em `Fornecedores.tsx`. Rodar `npm test -- src/paginas/cadastros/Fornecedores.test.tsx` e confirmar que segue verde.
 
 - [ ] **Step 2: Escrever o teste de `PartesPecas` (falhando)**
 
@@ -4164,7 +4265,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 - Modify: `frontend/src/App.tsx`
 
 **Interfaces:**
-- Consumes: tudo das tarefas 1 a 12 e `separarErro` de `@/lib/errosDeFormulario` (extraído na Task 16).
+- Consumes: tudo das tarefas 1 a 12, mais `useCadastroCrud` de `@/hooks/useCadastroCrud` (Task 15b). A tela **não** repete a máquina de estado: usa o hook.
 - Produces: `ProdutosAcabados` de `@/paginas/cadastros/ProdutosAcabados`; `FormularioProduto` e `type CorpoProduto`.
 
 **Estrutura idêntica à Task 15.** O que muda:
