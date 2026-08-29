@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { BarraDeFiltros } from '@/componentes/ui/BarraDeFiltros';
 import { BadgeSituacao } from '@/componentes/ui/Badge';
 import { Botao } from '@/componentes/ui/Botao';
@@ -6,72 +5,24 @@ import { Confirmacao } from '@/componentes/ui/Confirmacao';
 import { Modal } from '@/componentes/ui/Modal';
 import { Paginacao } from '@/componentes/ui/Paginacao';
 import { Tabela, type Coluna } from '@/componentes/ui/Tabela';
+import { useCadastroCrud } from '@/hooks/useCadastroCrud';
 import { useListagem } from '@/hooks/useListagem';
-import { useMutacoesCadastro } from '@/hooks/useMutacoesCadastro';
 import { formatarCNPJ, formatarDias } from '@/lib/formato';
 import { podeGerenciarCadastros } from '@/lib/permissoes';
-import { ErroApi } from '@/servicos/api';
 import { useAutenticacao } from '@/store/autenticacao';
 import type { Fornecedor } from '@/tipos/cadastros';
-import { FormularioFornecedor, type CorpoFornecedor } from './FormularioFornecedor';
-
-/** Separa o erro da API em "marca o campo" e "mostra no topo do modal". */
-function separarErro(erro: unknown): { geral: string | null; porCampo: Record<string, string> } {
-  if (!(erro instanceof ErroApi)) {
-    return { geral: erro ? 'Não foi possível salvar. Tente de novo.' : null, porCampo: {} };
-  }
-  if (erro.detalhes?.length) {
-    return {
-      geral: null,
-      porCampo: Object.fromEntries(erro.detalhes.map((d) => [d.campo, d.mensagem])),
-    };
-  }
-  return { geral: erro.message, porCampo: {} };
-}
+import { FormularioFornecedor } from './FormularioFornecedor';
 
 export function Fornecedores() {
   const perfil = useAutenticacao((estado) => estado.usuario?.perfil);
   const podeGerenciar = podeGerenciarCadastros(perfil);
 
   const lista = useListagem<Fornecedor>('fornecedores', 'razao_social');
-  const mutacoes = useMutacoesCadastro('fornecedores', {
+  const crud = useCadastroCrud<Fornecedor>('fornecedores', {
     criado: 'Fornecedor cadastrado',
     atualizado: 'Fornecedor atualizado',
     inativado: 'Fornecedor inativado',
   });
-
-  const [emEdicao, definirEmEdicao] = useState<Fornecedor | null>(null);
-  const [formularioAberto, definirFormularioAberto] = useState(false);
-  const [aInativar, definirAInativar] = useState<Fornecedor | null>(null);
-
-  const mutacaoAtiva = emEdicao ? mutacoes.atualizar : mutacoes.criar;
-  const { geral, porCampo } = separarErro(mutacaoAtiva.error);
-
-  function abrirNovo() {
-    mutacoes.criar.reset();
-    definirEmEdicao(null);
-    definirFormularioAberto(true);
-  }
-
-  function abrirEdicao(f: Fornecedor) {
-    mutacoes.atualizar.reset();
-    definirEmEdicao(f);
-    definirFormularioAberto(true);
-  }
-
-  function fecharFormulario() {
-    definirFormularioAberto(false);
-    definirEmEdicao(null);
-  }
-
-  function salvar(corpo: CorpoFornecedor) {
-    const aoConcluir = { onSuccess: () => fecharFormulario() };
-    if (emEdicao) {
-      mutacoes.atualizar.mutate({ id: emEdicao.id, corpo }, aoConcluir);
-    } else {
-      mutacoes.criar.mutate(corpo, aoConcluir);
-    }
-  }
 
   const colunas: Coluna<Fornecedor>[] = [
     {
@@ -128,7 +79,7 @@ export function Fornecedores() {
         aoFiltrarSituacao={lista.definirFiltroAtivo}
       >
         {podeGerenciar && (
-          <Botao icone="plus" onClick={abrirNovo}>
+          <Botao icone="plus" onClick={crud.abrirNovo}>
             Novo fornecedor
           </Botao>
         )}
@@ -155,7 +106,7 @@ export function Fornecedores() {
                       variante="fantasma"
                       icone="pencil"
                       aria-label={`Editar ${f.razao_social}`}
-                      onClick={() => abrirEdicao(f)}
+                      onClick={() => crud.abrirEdicao(f)}
                     >
                       Editar
                     </Botao>
@@ -164,7 +115,7 @@ export function Fornecedores() {
                         variante="fantasma"
                         icone="trash-2"
                         aria-label={`Inativar ${f.razao_social}`}
-                        onClick={() => definirAInativar(f)}
+                        onClick={() => crud.pedirInativacao(f)}
                       >
                         Inativar
                       </Botao>
@@ -183,41 +134,37 @@ export function Fornecedores() {
       </div>
 
       <Modal
-        aberto={formularioAberto}
-        aoFechar={fecharFormulario}
-        titulo={emEdicao ? 'Editar fornecedor' : 'Novo fornecedor'}
+        aberto={crud.formularioAberto}
+        aoFechar={crud.fecharFormulario}
+        titulo={crud.emEdicao ? 'Editar fornecedor' : 'Novo fornecedor'}
         descricao="Campos com * são obrigatórios."
       >
         <FormularioFornecedor
           // A chave remonta o formulario ao trocar de registro: sem isso os
           // defaultValues do react-hook-form ficam presos no primeiro item.
-          key={emEdicao?.id ?? 'novo'}
-          inicial={emEdicao ?? undefined}
-          ocupado={mutacaoAtiva.isPending}
-          erroGeral={geral}
-          errosPorCampo={porCampo}
-          aoEnviar={salvar}
-          aoCancelar={fecharFormulario}
+          key={crud.emEdicao?.id ?? 'novo'}
+          inicial={crud.emEdicao ?? undefined}
+          ocupado={crud.salvando}
+          erroGeral={crud.erroGeral}
+          errosPorCampo={crud.errosPorCampo}
+          aoEnviar={crud.salvar}
+          aoCancelar={crud.fecharFormulario}
         />
       </Modal>
 
       <Confirmacao
-        aberto={aInativar !== null}
+        aberto={crud.aInativar !== null}
         titulo="Inativar fornecedor"
         mensagem={
-          aInativar
-            ? `Inativar o fornecedor ${aInativar.razao_social}? Ele deixa de aparecer nas listas de seleção. O histórico é preservado.`
+          crud.aInativar
+            ? `Inativar o fornecedor ${crud.aInativar.razao_social}? Ele deixa de aparecer nas listas de seleção. O histórico é preservado.`
             : ''
         }
         rotuloConfirmar="Inativar"
         rotuloOcupado="Inativando…"
-        ocupado={mutacoes.inativar.isPending}
-        aoConfirmar={() => {
-          if (aInativar) {
-            mutacoes.inativar.mutate(aInativar.id, { onSuccess: () => definirAInativar(null) });
-          }
-        }}
-        aoCancelar={() => definirAInativar(null)}
+        ocupado={crud.inativando}
+        aoConfirmar={crud.confirmarInativacao}
+        aoCancelar={crud.cancelarInativacao}
       />
     </div>
   );
