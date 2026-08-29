@@ -21,6 +21,9 @@ const DURACAO_MS = 4000;
 
 let proximoId = 1;
 
+// Store e componente de exibição ficam juntos de propósito: useToasts (fora da
+// árvore de componentes) precisa disparar toast a partir de um callback do TanStack Query.
+// eslint-disable-next-line react-refresh/only-export-components
 export const useToasts = create<EstadoToasts>((set, get) => ({
   itens: [],
 
