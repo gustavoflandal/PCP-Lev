@@ -142,7 +142,13 @@ export function Tabela<T>({
 
           {estado === 'carregando' &&
             Array.from({ length: LINHAS_DO_ESQUELETO }, (_, indice) => (
-              <tr key={indice} data-testid={indice === 0 ? 'esqueleto-tabela' : undefined}>
+              <tr
+                key={indice}
+                // getByTestId exige um unico elemento com este testid; o esqueleto
+                // so o marca na primeira linha. Uma tela que precisar apenas confirmar
+                // que o esqueleto apareceu deve usar getAllByTestId(...).length > 0,
+                // nao um numero fixo de linhas.
+                data-testid={indice === 0 ? 'esqueleto-tabela' : undefined}>
                 {Array.from({ length: totalColunas }, (_, celula) => (
                   <td key={celula} className="border-b border-borda-subtle px-3 py-2">
                     <span className="block h-3 w-full rounded-campo bg-surface-sunken" />
