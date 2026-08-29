@@ -8,6 +8,8 @@ import (
 	"github.com/gustavoflandal/pcp-lev/backend/internal/api/middleware"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/config"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/auth"
+	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/fornecedor"
+	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/peca"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/produto"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/infra/repository"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/platform/httpx"
@@ -73,6 +75,14 @@ func registrarAutenticacao(v1 *echo.Group, dep Dependencias) {
 func registrarCadastros(v1 *echo.Group, dep Dependencias, autenticacao echo.MiddlewareFunc) {
 	handlers.NovoProdutoHandler(
 		produto.NovoServico(repository.NovoProdutoRepositorio(dep.Pool)),
+	).Registrar(v1, autenticacao)
+
+	handlers.NovoPecaHandler(
+		peca.NovoServico(repository.NovoPecaRepositorio(dep.Pool)),
+	).Registrar(v1, autenticacao)
+
+	handlers.NovoFornecedorHandler(
+		fornecedor.NovoServico(repository.NovoFornecedorRepositorio(dep.Pool)),
 	).Registrar(v1, autenticacao)
 }
 
