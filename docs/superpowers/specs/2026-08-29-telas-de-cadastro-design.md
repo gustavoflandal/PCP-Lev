@@ -14,9 +14,9 @@ apenas Login e Início. Não existe navegação: a única rota autenticada é `/
 Ninguém consegue cadastrar um produto, uma peça ou um fornecedor pela
 interface — só por `curl`.
 
-Esta entrega fecha essa lacuna e acrescenta o painel inicial do RF6.1 com
-dados simulados, para que a tela de abertura mostre a forma final antes de
-existirem OPs e pedidos reais.
+Esta entrega fecha essa lacuna e acrescenta o painel inicial do RF6.1 já com o
+leiaute final dos widgets — sem números, só os rótulos e o estado vazio de cada
+um, até existirem OPs e pedidos reais.
 
 ## 2. Escopo
 
@@ -25,15 +25,16 @@ existirem OPs e pedidos reais.
 - Navegação lateral e as rotas dos cadastros.
 - Tela de Fornecedores, Partes/Peças e Produtos Acabados — listar, buscar,
   ordenar, paginar, criar, editar e inativar.
-- Painel com os widgets do RF6.1 alimentados por dados simulados.
+- Painel com a estrutura dos widgets do RF6.1, sem numeros simulados.
 - Os componentes de UI que faltam para isso: tabela, modal, badge de estado,
   paginação, seleção, confirmação e toast.
 
 **Fica de fora:**
 
 - BOM (RF1.3) — é a próxima entrega, com desenho próprio.
-- Qualquer widget do painel ligado a dado real. O painel desta entrega é
-  explicitamente simulado e será refeito quando houver OPs e PCs.
+- Qualquer widget do painel ligado a dado real. Os cartoes desta entrega
+  mostram apenas titulo e estado vazio; o conteudo entra quando houver OPs e
+  PCs.
 - Tela de usuários e preferências.
 
 ## 3. Decisões tomadas
@@ -188,14 +189,21 @@ aceita `5000.00`).
 
 **Painel** (`/`)
 
-Substitui a tela `Inicio`, que passa a ser removida. Quatro cartões com dados
-simulados, cada um com o aviso "Dados simulados — os números reais entram com
-o módulo de produção":
+Substitui a tela `Inicio`, que passa a ser removida.
 
-- OPs em atraso (contagem + lista curta)
-- Pedidos de compra a receber nos próximos 7 dias
-- Insumos em nível crítico
-- Conexão com o servidor (o cartão real que já existe em `Inicio`, preservado)
+O painel mostra a **estrutura** dos widgets do RF6.1, sem número nenhum. Cada
+cartão traz seu título e o estado vazio, no formato que o §7 do design system
+pede para vazio ("vazio é convite"):
+
+- OPs em atraso — "Nenhuma ordem de produção ainda. O módulo de produção entra na Sprint 6."
+- Pedidos de compra a receber — "Nenhum pedido de compra ainda. O módulo de compras entra na Sprint 3."
+- Insumos em nível crítico — "Nenhum insumo monitorado ainda. O controle de estoque entra na Sprint 3."
+- Conexão com o servidor — cartão real, preservado de `Inicio`, com dado de verdade.
+
+Número simulado em tela de gestão é armadilha: alguém decide com ele. Os
+cartões existem para mostrar onde a informação vai aparecer, e o texto diz
+quando. Quando o dado real chegar, troca-se o estado vazio pelo conteúdo sem
+mexer no leiaute.
 
 ### 4.5 Navegação
 
@@ -273,9 +281,9 @@ inertes.
 
 - **`@radix-ui/react-dialog` é dependência nova.** Baixo risco: mesma família
   já usada, sem peer dependency nova.
-- **O painel simulado pode ser confundido com dado real.** Mitigado pelo aviso
-  explícito em cada cartão. Se ainda parecer ambíguo na revisão visual, os
-  números saem e ficam só os rótulos.
+- **Risco de dado simulado ser lido como real: eliminado.** O painel nao tem
+  numero nenhum. Cada cartao mostra titulo e estado vazio dizendo em qual
+  sprint aquela informacao passa a existir.
 - **A tabela é o componente mais reusado do sistema** e nasce aqui. Se ficar
   errada, o custo se espalha. Por isso ela tem teste próprio e não só teste
   através das telas.
