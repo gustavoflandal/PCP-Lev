@@ -2,8 +2,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { RotaProtegida } from '@/componentes/layout/RotaProtegida';
 import { Shell } from '@/componentes/layout/Shell';
-import { Inicio } from '@/paginas/Inicio';
 import { Login } from '@/paginas/Login';
+import { Painel } from '@/paginas/Painel';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -25,7 +25,7 @@ export function App() {
 
         <Route element={<RotaProtegida />}>
           <Route element={<Shell />}>
-            <Route path="/" element={<Inicio />} />
+            <Route path="/" element={<Painel />} />
           </Route>
         </Route>
 

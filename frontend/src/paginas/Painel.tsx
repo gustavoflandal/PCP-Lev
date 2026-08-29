@@ -8,11 +8,33 @@ interface RespostaSaude {
   dados: { status: string; ambiente: string };
 }
 
+interface WidgetPendente {
+  titulo: string;
+  /** Convite do §7: diz o que falta e quando chega. */
+  vazio: string;
+}
+
 /**
- * Tela inicial da Sprint 1. Os widgets do RF6.1 (OPs em atraso, PCs a receber,
- * insumos criticos) entram na Sprint 2, quando houver dados para exibir.
+ * Widgets do RF6.1 sem numero. Enquanto nao houver OP e PC de verdade, o
+ * painel mostra apenas onde a informacao vai aparecer e quando: numero
+ * simulado em tela de gestao acaba virando base de decisao.
  */
-export function Inicio() {
+const WIDGETS: WidgetPendente[] = [
+  {
+    titulo: 'Ordens de produção em atraso',
+    vazio: 'Nenhuma ordem de produção ainda. O módulo de produção entra na Sprint 6.',
+  },
+  {
+    titulo: 'Pedidos de compra a receber',
+    vazio: 'Nenhum pedido de compra ainda. O módulo de compras entra na Sprint 3.',
+  },
+  {
+    titulo: 'Insumos em nível crítico',
+    vazio: 'Nenhum insumo monitorado ainda. O controle de estoque entra na Sprint 3.',
+  },
+];
+
+export function Painel() {
   const usuario = useAutenticacao((estado) => estado.usuario);
 
   const saude = useQuery({
@@ -27,10 +49,20 @@ export function Inicio() {
   return (
     <div className="mx-auto flex max-w-[960px] flex-col gap-4">
       <div>
-        <h1 className="text-title text-texto-primary">Início</h1>
+        <h1 className="text-title text-texto-primary">Painel</h1>
         <p className="text-body text-texto-secondary">
           {usuario ? `Sessão aberta como ${usuario.nome}.` : 'Sessão aberta.'}
         </p>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-3">
+        {WIDGETS.map((widget) => (
+          <Cartao key={widget.titulo} titulo={widget.titulo}>
+            <p data-widget-vazio className="text-body text-texto-secondary">
+              {widget.vazio}
+            </p>
+          </Cartao>
+        ))}
       </div>
 
       <Cartao titulo="Conexão com o servidor">
@@ -49,13 +81,6 @@ export function Inicio() {
             Operacional · ambiente {saude.data.ambiente}
           </p>
         )}
-      </Cartao>
-
-      <Cartao titulo="Próximos módulos">
-        <p className="text-body text-texto-secondary">
-          Cadastros base, compras, estoque e o quadro Kanban de produção entram nas próximas
-          sprints, na ordem do cronograma técnico.
-        </p>
       </Cartao>
     </div>
   );
