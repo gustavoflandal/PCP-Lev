@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { RotaProtegida } from '@/componentes/layout/RotaProtegida';
 import { Shell } from '@/componentes/layout/Shell';
+import { Fornecedores } from '@/paginas/cadastros/Fornecedores';
 import { Login } from '@/paginas/Login';
 import { Painel } from '@/paginas/Painel';
 
@@ -26,6 +27,7 @@ export function App() {
         <Route element={<RotaProtegida />}>
           <Route element={<Shell />}>
             <Route path="/" element={<Painel />} />
+            <Route path="/fornecedores" element={<Fornecedores />} />
           </Route>
         </Route>
 
