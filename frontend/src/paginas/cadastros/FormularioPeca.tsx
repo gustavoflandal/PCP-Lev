@@ -1,12 +1,11 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
-import { useQuery } from '@tanstack/react-query';
 import { z } from 'zod';
 import { Botao } from '@/componentes/ui/Botao';
 import { Campo } from '@/componentes/ui/Campo';
 import { Selecao } from '@/componentes/ui/Selecao';
-import { listar } from '@/servicos/cadastros';
-import type { Fornecedor, PartePeca } from '@/tipos/cadastros';
+import { useFornecedoresAtivos } from '@/hooks/useFornecedoresAtivos';
+import type { PartePeca } from '@/tipos/cadastros';
 
 /**
  * Validacao de forma, nao de regra: o dominio no backend e a autoridade sobre
@@ -60,18 +59,7 @@ export function FormularioPeca({
   aoEnviar,
   aoCancelar,
 }: FormularioPecaProps) {
-  const fornecedores = useQuery({
-    queryKey: ['fornecedores', 'selecao'],
-    queryFn: () =>
-      listar<Fornecedor>('fornecedores', {
-        pagina: 1,
-        limite: 200,
-        ordenar_por: 'razao_social',
-        ordem: 'asc',
-        busca: '',
-        filtro_ativo: true,
-      }),
-  });
+  const { opcoes: opcoesFornecedor } = useFornecedoresAtivos();
 
   const {
     register,
@@ -94,11 +82,6 @@ export function FormularioPeca({
   /** O erro do formulario vence o da API: e o mais recente que a pessoa viu. */
   const erroDe = (campo: keyof Formulario): string | undefined =>
     errors[campo]?.message ?? errosPorCampo[campo];
-
-  const opcoesFornecedor = (fornecedores.data?.itens ?? []).map((f) => ({
-    valor: String(f.id),
-    rotulo: f.razao_social,
-  }));
 
   return (
     <form
