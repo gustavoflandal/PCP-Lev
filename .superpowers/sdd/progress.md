@@ -26,14 +26,14 @@ Task 15: complete (commits 2051d86..316b8b3, review clean; reference screen for 
 Task 15b: complete (commits 316b8b3..2263234, review clean; advisory carried forward to Tasks 16/17: useCadastroCrud.salvar takes `unknown`, tsc won't catch a form wired to the wrong crud instance -- verify by hand)
 Task 16: complete (commits 2263234..bbe32f7, review clean; useCadastroCrud wiring risk verified by hand, holds)
 Task 17: complete (commits bbe32f7..7f6b56a, review clean; two verified test adaptations: NBSP normalizer mismatch fixed with plain-space matcher, userEvent.clear() added before typing over pre-filled numeric defaults)
-Task 18: complete. npm test 197/197, lint limpo, build limpo. Ambiente subido (postgres via
-docker compose, backend `go run`, frontend `npm run dev`) e as tres telas exercitadas de
-ponta a ponta via Playwright real (nao API direta): criar, duplicata 409, campo obrigatorio,
-busca, ordenacao, editar, inativar, filtro Todos, CNPJ pontuado na lista -- 16/16 passos.
-Checagem do §8.4 tambem via Playwright: escala de cinza (CDP achromatopsia, badges seguem
-legiveis por icone+texto), so teclado (Tab ate a acao, abrir/preencher/salvar/fechar o modal),
-1280px e 800px sem rolagem horizontal -- 8/8 apos corrigir 3 bugs reais que so apareceriam num
-navegador de verdade:
+Task 18: complete (commits 7f6b56a..639a43c, review needed 1 fix round: 3 bugs so visiveis num
+navegador de verdade, resolvidos). npm test 197/197, lint limpo, build limpo. Ambiente subido
+(postgres via docker compose, backend `go run`, frontend `npm run dev`) e as tres telas
+exercitadas de ponta a ponta via Playwright real (nao API direta): criar, duplicata 409, campo
+obrigatorio, busca, ordenacao, editar, inativar, filtro Todos, CNPJ pontuado na lista -- 16/16
+passos. Checagem do §8.4 tambem via Playwright: escala de cinza (CDP achromatopsia, badges
+seguem legiveis por icone+texto), so teclado (Tab ate a acao, abrir/preencher/salvar/fechar o
+modal), 1280px e 800px sem rolagem horizontal -- 8/8 apos corrigir:
   1. `required` nativo no `<input>`/`<select>` disparava o popup do proprio navegador (em
      ingles) antes do zod rodar, escondendo a mensagem em portugues do design system. Corrigido
      com `noValidate` nos 3 `<form>`.
@@ -51,5 +51,13 @@ reativar um registro inativo ao editar. Ao criar, o registro sempre nasce ativo 
 adicionava uma decisao sem sentido (e mais um Tab no fluxo por teclado). Escondido nos 3
 formularios quando `!inicial`; reativacao via edicao verificada por script (Situacao some ao
 criar, aparece ao editar, reativar Inativo->Ativo funciona).
-Verificacao visual manual pelo usuario (fora do automatizado) ainda recomendada antes do merge,
-mas todos os itens do checklist do plano foram cobertos com evidencia real de navegador.
+Branch enviada e PR aberto: https://github.com/gustavoflandal/PCP-Lev/pull/1 (main <- feat/telas-de-cadastro).
+
+Task 19 (fora do plano original, pedido do usuario apos a Task 18): complete (commits
+639a43c..554335c, review clean). Componente `Ajuda` novo (TDD, 9 testes): botao de ajuda
+contextual no cabecalho, presente em todas as telas inclusive o login, conteudo calculado pela
+rota atual. 15 capturas de tela em `docs/screenshots/` (login, painel, os 3 cadastros com lista
+e formularios/dialogos) tiradas via Playwright contra o app real, com dados de exemplo do
+dominio (radar de transito, paineis eletronicos) no lugar do lixo de teste anterior. Manual de
+operacao `docs/8_MANUAL_OPERACAO.md` criado e indexado em `docs/README.md`. npm test 206/206,
+lint limpo, build limpo. Push feito para a mesma branch/PR #1.
