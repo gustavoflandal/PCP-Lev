@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Badge } from '@/componentes/ui/Badge';
+import { Badge, type TomBadge } from '@/componentes/ui/Badge';
 import { Botao } from '@/componentes/ui/Botao';
 import { Campo } from '@/componentes/ui/Campo';
 import { Confirmacao } from '@/componentes/ui/Confirmacao';
@@ -9,6 +9,7 @@ import { Modal } from '@/componentes/ui/Modal';
 import { Tabela, type Coluna } from '@/componentes/ui/Tabela';
 import { useToasts } from '@/componentes/ui/Toast';
 import { TrilhaEtapas, type Etapa, type EstadoEtapa } from '@/componentes/ui/TrilhaEtapas';
+import type { NomeIcone } from '@/componentes/ui/icones';
 import { useFornecedoresAtivos } from '@/hooks/useFornecedoresAtivos';
 import { usePartesPecasAtivas } from '@/hooks/usePartesPecasAtivas';
 import { separarErro } from '@/lib/errosDeFormulario';
@@ -19,6 +20,17 @@ import type { ItemPedidoCompra, PedidoCompra } from '@/tipos/compras';
 type ModalAberto = 'emitir' | 'cancelar' | 'recebimento' | null;
 
 const STATUS_TERMINAIS = ['Concluido', 'Cancelado'];
+
+// A trilha (§5) so distingue concluida/pendente-acionavel/pendente-futura na
+// etapa "Concluido" -- "Aguardando Entrega" e "Recebido Parcial" caem no
+// mesmo estado visual (mesma cor, mesmo icone, mesmo rotulo "Pendente ·
+// iniciar"), entao sem essa marca a pessoa nao sabe se ja chegou parte da
+// mercadoria sem abrir o modal de recebimento. Cobre so os dois status que a
+// trilha nao diferencia; os demais ja sao claros pela etapa correspondente.
+const STATUS_AMBIGUO_NA_TRILHA: Partial<Record<PedidoCompra['status'], { tom: TomBadge; icone: NomeIcone; rotulo: string }>> = {
+  'Aguardando Entrega': { tom: 'pending', icone: 'circle-dot', rotulo: 'Aguardando entrega — nenhum item recebido ainda' },
+  'Recebido Parcial': { tom: 'warning', icone: 'package', rotulo: 'Recebido parcial' },
+};
 
 function estadoDaEtapaEmitido(status: PedidoCompra['status']): EstadoEtapa {
   return status === 'Rascunho' ? 'pendente-acionavel' : 'concluida';
@@ -144,7 +156,18 @@ export function DetalhePedidoCompra() {
           Pedido cancelado em {formatarData(pedido.updated_at)}
         </Badge>
       ) : (
-        <TrilhaEtapas rotulo="Status do pedido de compra" etapas={etapas} />
+        <>
+          {STATUS_AMBIGUO_NA_TRILHA[pedido.status] && (
+            <Badge
+              tom={STATUS_AMBIGUO_NA_TRILHA[pedido.status]!.tom}
+              icone={STATUS_AMBIGUO_NA_TRILHA[pedido.status]!.icone}
+              className="self-start"
+            >
+              {STATUS_AMBIGUO_NA_TRILHA[pedido.status]!.rotulo}
+            </Badge>
+          )}
+          <TrilhaEtapas rotulo="Status do pedido de compra" etapas={etapas} />
+        </>
       )}
 
       <Tabela<ItemPedidoCompra>

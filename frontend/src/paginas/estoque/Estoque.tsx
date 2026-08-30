@@ -64,7 +64,12 @@ export function Estoque() {
     { chave: 'codigo', rotulo: 'Código', ordenavel: true, renderizar: (i) => <span className="font-mono">{i.codigo}</span> },
     { chave: 'descricao', rotulo: 'Descrição', renderizar: (i) => i.descricao },
     { chave: 'quantidade_atual', rotulo: 'Saldo atual', ordenavel: true, alinhamento: 'direita', renderizar: (i) => i.quantidade_atual },
-    { chave: 'quantidade_reservada', rotulo: 'Reservado', alinhamento: 'direita', renderizar: (i) => i.quantidade_reservada },
+    // "Reservado" (quantidade_reservada) foi retirado da tabela: reserva por
+    // OP so chega no Sprint 6 (backend/internal/domain/estoque/estoque.go),
+    // entao a coluna era sempre 0 em todo saldo cadastrado nesta sprint --
+    // ocupava espaco sem ajudar a decisao de quem opera. "Disponível" fica,
+    // porque e o numero que ja importa hoje (o que pode ser prometido/usado)
+    // e continua correto quando a reserva passar a existir.
     { chave: 'disponivel', rotulo: 'Disponível', alinhamento: 'direita', renderizar: (i) => i.disponivel },
     {
       chave: 'status',
