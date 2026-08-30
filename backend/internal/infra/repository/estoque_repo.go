@@ -118,15 +118,25 @@ func (r *EstoqueRepositorio) ListarCriticos(ctx context.Context) ([]estoque.Sald
 	return itens, linhas.Err()
 }
 
-// ListarMovimentacoes traz o historico, paginado e filtrado por
-// data/motivo/parte_peca_id.
-func (r *EstoqueRepositorio) ListarMovimentacoes(ctx context.Context, params consulta.Parametros) ([]estoque.Movimentacao, int, error) {
-	filtros, argumentos := filtrosDeCadastro(params)
+func escanearMovimentacao(linha interface{ Scan(...any) error }) (estoque.Movimentacao, error) {
+	var m estoque.Movimentacao
+	err := linha.Scan(
+		&m.ID, &m.PartePecaID, &m.Codigo, &m.Tipo, &m.Quantidade, &m.Motivo,
+		&m.ReferenciaNumero, &m.Observacoes, &m.Usuario, &m.DataHora,
+	)
+	return m, err
+}
 
+// ListarMovimentacoes traz o historico paginado; sem filtro nesta sprint
+// (nenhuma rota ainda envia motivo/data/parte_peca_id -- ver RF2.3 para
+// quando isso mudar). Nao usar filtrosDeCadastro aqui: o "ativo = $1" que ela
+// gera ficaria ambiguo, pois tanto partes_pecas quanto usuarios (JOIN/LEFT
+// JOIN abaixo) tem coluna ativo.
+func (r *EstoqueRepositorio) ListarMovimentacoes(ctx context.Context, params consulta.Parametros) ([]estoque.Movimentacao, int, error) {
 	var total int
 	if err := r.pool.QueryRow(ctx,
-		`SELECT count(*) FROM movimentacao_estoque m JOIN partes_pecas pp ON pp.id = m.parte_peca_id `+filtros,
-		argumentos...).Scan(&total); err != nil {
+		`SELECT count(*) FROM movimentacao_estoque m JOIN partes_pecas pp ON pp.id = m.parte_peca_id`,
+	).Scan(&total); err != nil {
 		return nil, 0, fmt.Errorf("contar movimentacoes: %w", err)
 	}
 
@@ -134,11 +144,10 @@ func (r *EstoqueRepositorio) ListarMovimentacoes(ctx context.Context, params con
 		`SELECT %s FROM movimentacao_estoque m
 		 JOIN partes_pecas pp ON pp.id = m.parte_peca_id
 		 LEFT JOIN usuarios u ON u.id = m.usuario_id
-		 %s ORDER BY m.data_hora DESC LIMIT $%d OFFSET $%d`,
-		colunasMovimentacao, filtros, len(argumentos)+1, len(argumentos)+2)
-	argumentos = append(argumentos, params.Limite, params.Offset())
+		 ORDER BY m.data_hora DESC LIMIT $1 OFFSET $2`,
+		colunasMovimentacao)
 
-	linhas, err := r.pool.Query(ctx, sql, argumentos...)
+	linhas, err := r.pool.Query(ctx, sql, params.Limite, params.Offset())
 	if err != nil {
 		return nil, 0, fmt.Errorf("listar movimentacoes: %w", err)
 	}
@@ -146,11 +155,8 @@ func (r *EstoqueRepositorio) ListarMovimentacoes(ctx context.Context, params con
 
 	itens := make([]estoque.Movimentacao, 0, params.Limite)
 	for linhas.Next() {
-		var m estoque.Movimentacao
-		if err := linhas.Scan(
-			&m.ID, &m.PartePecaID, &m.Codigo, &m.Tipo, &m.Quantidade, &m.Motivo,
-			&m.ReferenciaNumero, &m.Observacoes, &m.Usuario, &m.DataHora,
-		); err != nil {
+		m, err := escanearMovimentacao(linhas)
+		if err != nil {
 			return nil, 0, err
 		}
 		itens = append(itens, m)
@@ -159,15 +165,12 @@ func (r *EstoqueRepositorio) ListarMovimentacoes(ctx context.Context, params con
 }
 
 func (r *EstoqueRepositorio) BuscarMovimentacao(ctx context.Context, id int64) (*estoque.Movimentacao, error) {
-	var m estoque.Movimentacao
-	err := r.pool.QueryRow(ctx,
+	linha := r.pool.QueryRow(ctx,
 		`SELECT `+colunasMovimentacao+` FROM movimentacao_estoque m
 		 JOIN partes_pecas pp ON pp.id = m.parte_peca_id
 		 LEFT JOIN usuarios u ON u.id = m.usuario_id
-		 WHERE m.id = $1`, id).Scan(
-		&m.ID, &m.PartePecaID, &m.Codigo, &m.Tipo, &m.Quantidade, &m.Motivo,
-		&m.ReferenciaNumero, &m.Observacoes, &m.Usuario, &m.DataHora,
-	)
+		 WHERE m.id = $1`, id)
+	m, err := escanearMovimentacao(linha)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, estoque.ErrMovimentacaoNaoEncontrada
