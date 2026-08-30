@@ -93,7 +93,7 @@ export function Estoque() {
   ];
 
   return (
-    <div className="mx-auto flex max-w-[1100px] flex-col gap-4">
+    <div className="mx-auto flex max-w-[1400px] flex-col gap-4">
       <div>
         <h1 className="text-title text-texto-primary">Estoque</h1>
         <p className="text-body text-texto-secondary">Saldo de partes e peças em armazém.</p>
