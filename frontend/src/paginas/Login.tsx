@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { z } from 'zod';
+import { Ajuda } from '@/componentes/layout/Ajuda';
 import { Botao } from '@/componentes/ui/Botao';
 import { Campo } from '@/componentes/ui/Campo';
 import { icones } from '@/componentes/ui/icones';
@@ -72,6 +73,10 @@ export function Login() {
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-surface-base p-6">
+      <div className="fixed right-4 top-4">
+        <Ajuda />
+      </div>
+
       <div className="w-full max-w-[400px]">
         <header className="mb-6">
           <h1 className="text-display text-texto-primary">Sistema PCP</h1>

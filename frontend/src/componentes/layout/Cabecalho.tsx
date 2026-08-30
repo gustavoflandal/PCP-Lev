@@ -1,6 +1,7 @@
 import { Botao } from '@/componentes/ui/Botao';
 import { icones } from '@/componentes/ui/icones';
 import { useAutenticacao, type Perfil } from '@/store/autenticacao';
+import { Ajuda } from './Ajuda';
 
 /** Rotulo de exibicao do perfil — sentence case, conforme §7 do design. */
 const ROTULO_PERFIL: Record<Perfil, string> = {
@@ -28,6 +29,7 @@ export function Cabecalho() {
             <p className="text-label text-texto-secondary">{ROTULO_PERFIL[usuario.perfil]}</p>
           </div>
         )}
+        <Ajuda />
         <Botao variante="secundaria" icone="log-out" onClick={() => sair()}>
           Sair
         </Botao>
