@@ -27,9 +27,13 @@ const STATUS_TERMINAIS = ['Concluido', 'Cancelado'];
 // iniciar"), entao sem essa marca a pessoa nao sabe se ja chegou parte da
 // mercadoria sem abrir o modal de recebimento. Cobre so os dois status que a
 // trilha nao diferencia; os demais ja sao claros pela etapa correspondente.
+// Tom/icone alinhados com TOM_STATUS em PedidosCompra.tsx: "Aguardando
+// Entrega" usa "blocked" porque e uma dependencia externa do fornecedor, nao
+// uma pendencia do operador; "Recebido Parcial" usa "warning" por ser um
+// estado de atencao/acompanhamento.
 const STATUS_AMBIGUO_NA_TRILHA: Partial<Record<PedidoCompra['status'], { tom: TomBadge; icone: NomeIcone; rotulo: string }>> = {
-  'Aguardando Entrega': { tom: 'pending', icone: 'circle-dot', rotulo: 'Aguardando entrega — nenhum item recebido ainda' },
-  'Recebido Parcial': { tom: 'warning', icone: 'package', rotulo: 'Recebido parcial' },
+  'Aguardando Entrega': { tom: 'blocked', icone: 'shield-alert', rotulo: 'Aguardando entrega — nenhum item recebido ainda' },
+  'Recebido Parcial': { tom: 'warning', icone: 'alert-triangle', rotulo: 'Recebido parcial' },
 };
 
 function estadoDaEtapaEmitido(status: PedidoCompra['status']): EstadoEtapa {
