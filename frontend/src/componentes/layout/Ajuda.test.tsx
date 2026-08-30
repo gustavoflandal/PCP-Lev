@@ -66,6 +66,30 @@ describe('Ajuda', () => {
     expect(screen.getByRole('dialog', { name: /Entrar/ })).toBeInTheDocument();
   });
 
+  it('o conteudo muda conforme a tela: cotacoes', async () => {
+    renderizar('/cotacoes');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Ajuda' }));
+
+    expect(screen.getByRole('dialog', { name: /Cotações/ })).toBeInTheDocument();
+  });
+
+  it('o conteudo muda conforme a tela: pedidos de compra', async () => {
+    renderizar('/pedidos-compra');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Ajuda' }));
+
+    expect(screen.getByRole('dialog', { name: /Pedidos de compra/ })).toBeInTheDocument();
+  });
+
+  it('uma sub-rota de cotacoes cai no conteudo da lista (prefixo)', async () => {
+    renderizar('/cotacoes/nova');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Ajuda' }));
+
+    expect(screen.getByRole('dialog', { name: /Cotações/ })).toBeInTheDocument();
+  });
+
   it('uma rota desconhecida mostra o conteudo generico', async () => {
     renderizar('/rota-que-nao-existe');
 

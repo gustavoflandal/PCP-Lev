@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Cartao } from '@/componentes/ui/Cartao';
 import { icones } from '@/componentes/ui/icones';
 import { api } from '@/servicos/api';
+import { listarPedidosEmAtraso } from '@/servicos/compras';
 import { useAutenticacao } from '@/store/autenticacao';
 
 interface RespostaSaude {
@@ -15,18 +16,16 @@ interface WidgetPendente {
 }
 
 /**
- * Widgets do RF6.1 sem numero. Enquanto nao houver OP e PC de verdade, o
- * painel mostra apenas onde a informacao vai aparecer e quando: numero
- * simulado em tela de gestao acaba virando base de decisao.
+ * Widgets do RF6.1 que ainda nao tem dado real por tras: o modulo
+ * correspondente ainda nao existe. "Pedidos de compra a receber" saiu
+ * daqui na Sprint 3 — agora e o unico com numero de verdade (ver widget
+ * dedicado abaixo). Numero simulado em tela de gestao acaba virando base de
+ * decisao, entao os que restam continuam so dizendo onde e quando chegam.
  */
 const WIDGETS: WidgetPendente[] = [
   {
     titulo: 'Ordens de produção em atraso',
     vazio: 'Nenhuma ordem de produção ainda. O módulo de produção entra na Sprint 6.',
-  },
-  {
-    titulo: 'Pedidos de compra a receber',
-    vazio: 'Nenhum pedido de compra ainda. O módulo de compras entra na Sprint 3.',
   },
   {
     titulo: 'Insumos em nível crítico',
@@ -43,6 +42,11 @@ export function Painel() {
     refetchInterval: 60_000,
   });
 
+  const pedidosEmAtraso = useQuery({
+    queryKey: ['pedidos-compra', 'em-atraso'],
+    queryFn: listarPedidosEmAtraso,
+  });
+
   const IconeOk = icones['check-circle-2'];
   const IconeFalha = icones['alert-triangle'];
 
@@ -56,13 +60,42 @@ export function Painel() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        {WIDGETS.map((widget) => (
-          <Cartao key={widget.titulo} titulo={widget.titulo}>
+        <Cartao key={WIDGETS[0].titulo} titulo={WIDGETS[0].titulo}>
+          <p data-widget-vazio className="text-body text-texto-secondary">
+            {WIDGETS[0].vazio}
+          </p>
+        </Cartao>
+
+        <Cartao titulo="Pedidos de compra em atraso">
+          {pedidosEmAtraso.isPending && <p className="text-body text-texto-secondary">Verificando…</p>}
+
+          {pedidosEmAtraso.isError && (
             <p data-widget-vazio className="text-body text-texto-secondary">
-              {widget.vazio}
+              Não foi possível verificar agora.
             </p>
-          </Cartao>
-        ))}
+          )}
+
+          {pedidosEmAtraso.data && pedidosEmAtraso.data.length === 0 && (
+            <p data-widget-vazio className="text-body text-texto-secondary">
+              Nenhum pedido de compra em atraso.
+            </p>
+          )}
+
+          {pedidosEmAtraso.data && pedidosEmAtraso.data.length > 0 && (
+            <p className="flex items-center gap-2 text-body text-estado-warning">
+              <IconeFalha size={16} aria-hidden="true" />
+              {pedidosEmAtraso.data.length === 1
+                ? '1 pedido de compra em atraso.'
+                : `${pedidosEmAtraso.data.length} pedidos de compra em atraso.`}
+            </p>
+          )}
+        </Cartao>
+
+        <Cartao key={WIDGETS[1].titulo} titulo={WIDGETS[1].titulo}>
+          <p data-widget-vazio className="text-body text-texto-secondary">
+            {WIDGETS[1].vazio}
+          </p>
+        </Cartao>
       </div>
 
       <Cartao titulo="Conexão com o servidor">
