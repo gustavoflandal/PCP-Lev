@@ -5,14 +5,17 @@ import type { ReactElement } from 'react';
 import { api } from '@/servicos/api';
 
 /** Renderiza com os provedores reais da aplicacao — sem repetir em cada teste. */
-export function renderizarComProvedores(elemento: ReactElement): RenderResult {
+export function renderizarComProvedores(
+  elemento: ReactElement,
+  opcoes: { rota?: string } = {},
+): RenderResult {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
 
   return render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter>{elemento}</MemoryRouter>
+      <MemoryRouter initialEntries={[opcoes.rota ?? '/']}>{elemento}</MemoryRouter>
     </QueryClientProvider>,
   );
 }
