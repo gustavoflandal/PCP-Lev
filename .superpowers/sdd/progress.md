@@ -235,4 +235,9 @@ passa a listar sem filtro nesta sprint (nenhuma rota ainda envia data/motivo/par
 e escanearMovimentacao extraido mirror de escanearSaldo. Reaprovado limpo). estoque.Servico +
 EstoqueRepositorio: AplicarMovimento com FOR UPDATE, Ajustar, ListarSaldo/Criticos/
 Movimentacoes. 10/10 testes (2 servico + 8 repositorio).
+Task B3: complete (commits fefc9a6..b8eb2fb, review clean). Handler HTTP de estoque:
+GET /estoque, GET /estoque/:parte_peca_id, GET /estoque/criticos (registrada antes de
+:parte_peca_id), POST /estoque/ajuste (Admin/Gestor), GET /movimentacoes,
+GET /movimentacoes/:id. errosEstoque mapeia as 7 sentinelas do dominio. 8/8 testes novos
+(98/98 no pacote handlers).
 
