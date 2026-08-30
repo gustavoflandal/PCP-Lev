@@ -25,7 +25,6 @@ const esquema = z.object({
   fornecedor_id: z.string().trim().min(1, 'Selecione o fornecedor'),
   data_entrega_prevista: z.string().trim().min(1, 'Informe a data de entrega'),
   condicao_pagamento: z.string().trim().max(50).default(''),
-  observacoes: z.string().trim().max(1000).default(''),
   itens: z.array(itemEsquema).min(1, 'Informe ao menos um item'),
 });
 
@@ -34,7 +33,6 @@ type Formulario = {
   fornecedor_id: string;
   data_entrega_prevista: string;
   condicao_pagamento: string;
-  observacoes: string;
   itens: { parte_peca_id: string; quantidade_solicitada: string; preco_unitario: string }[];
 };
 
@@ -61,7 +59,6 @@ export function NovoPedidoCompra() {
       fornecedor_id: '',
       data_entrega_prevista: '',
       condicao_pagamento: '',
-      observacoes: '',
       itens: [ITEM_VAZIO],
     },
   });
@@ -77,7 +74,6 @@ export function NovoPedidoCompra() {
         fornecedor_id: Number(valores.fornecedor_id),
         data_entrega_prevista: valores.data_entrega_prevista,
         condicao_pagamento: valores.condicao_pagamento,
-        observacoes: valores.observacoes,
         itens: valores.itens.map((item) => ({
           parte_peca_id: Number(item.parte_peca_id),
           quantidade_solicitada: Number(item.quantidade_solicitada),
@@ -150,8 +146,6 @@ export function NovoPedidoCompra() {
           />
           <Campo rotulo="Condição de pagamento" {...register('condicao_pagamento')} />
         </div>
-
-        <Campo rotulo="Observações" {...register('observacoes')} />
 
         <div className="flex flex-col gap-3">
           <h2 className="text-subtitle text-texto-primary">Itens</h2>

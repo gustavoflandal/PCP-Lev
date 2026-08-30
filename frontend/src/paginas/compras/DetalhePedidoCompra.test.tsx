@@ -105,6 +105,22 @@ describe('DetalhePedidoCompra', () => {
     expect(screen.getByRole('link', { name: /Ver cotação de origem/ })).toHaveAttribute('href', '/cotacoes/7');
   });
 
+  it('mostra a condicao de pagamento quando informada', async () => {
+    servidor.responder([
+      { metodo: 'get', url: '/fornecedores', status: 200, corpo: paginaFornecedores },
+      { metodo: 'get', url: '/partes-pecas', status: 200, corpo: paginaPecas },
+      {
+        metodo: 'get',
+        url: '/pedidos-compra/1',
+        status: 200,
+        corpo: { sucesso: true, dados: pedidoBase('Emitido', { condicao_pagamento: '30 dias' }) },
+      },
+    ]);
+    renderizar();
+
+    expect(await screen.findByText(/30 dias/)).toBeInTheDocument();
+  });
+
   it('pedido cancelado mostra o aviso em vez da trilha', async () => {
     servidor.responder([
       { metodo: 'get', url: '/fornecedores', status: 200, corpo: paginaFornecedores },

@@ -24,7 +24,6 @@ const esquema = z.object({
   numero_cotacao: z.string().trim().min(1, 'Informe o número'),
   fornecedor_id: z.string().trim().min(1, 'Selecione o fornecedor'),
   data_validade: z.string().trim().min(1, 'Informe a validade'),
-  observacoes: z.string().trim().max(1000).default(''),
   itens: z.array(itemEsquema).min(1, 'Informe ao menos um item'),
 });
 
@@ -32,7 +31,6 @@ type Formulario = {
   numero_cotacao: string;
   fornecedor_id: string;
   data_validade: string;
-  observacoes: string;
   itens: { parte_peca_id: string; quantidade: string; preco_unitario: string }[];
 };
 
@@ -56,7 +54,6 @@ export function NovaCotacao() {
       numero_cotacao: '',
       fornecedor_id: '',
       data_validade: '',
-      observacoes: '',
       itens: [ITEM_VAZIO],
     },
   });
@@ -70,7 +67,6 @@ export function NovaCotacao() {
         numero_cotacao: valores.numero_cotacao,
         fornecedor_id: Number(valores.fornecedor_id),
         data_validade: valores.data_validade,
-        observacoes: valores.observacoes,
         itens: valores.itens.map((item) => ({
           parte_peca_id: Number(item.parte_peca_id),
           quantidade: Number(item.quantidade),
@@ -138,8 +134,6 @@ export function NovaCotacao() {
           erro={errors.data_validade?.message}
           {...register('data_validade')}
         />
-
-        <Campo rotulo="Observações" {...register('observacoes')} />
 
         <div className="flex flex-col gap-3">
           <h2 className="text-subtitle text-texto-primary">Itens</h2>

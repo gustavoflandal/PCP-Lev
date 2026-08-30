@@ -108,6 +108,7 @@ export function DetalhePedidoCompra() {
           <p className="text-body text-texto-secondary">
             {fornecedorPorId.get(pedido.fornecedor_id) ?? '—'} · Entrega prevista{' '}
             {formatarData(pedido.data_entrega_prevista)}
+            {pedido.condicao_pagamento && ` · ${pedido.condicao_pagamento}`}
           </p>
           {pedido.cotacao_id && (
             <Link to={`/cotacoes/${pedido.cotacao_id}`} className="text-label text-brand hover:underline">
