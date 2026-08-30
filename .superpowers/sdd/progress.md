@@ -61,3 +61,23 @@ e formularios/dialogos) tiradas via Playwright contra o app real, com dados de e
 dominio (radar de transito, paineis eletronicos) no lugar do lixo de teste anterior. Manual de
 operacao `docs/8_MANUAL_OPERACAO.md` criado e indexado em `docs/README.md`. npm test 206/206,
 lint limpo, build limpo. Push feito para a mesma branch/PR #1.
+
+---
+
+# Ledger — Sprint 3: Cotações e Pedidos de Compra (feat/sprint3-cotacoes-pedidos-compra)
+
+Plano: docs/superpowers/plans/2026-08-30-sprint3-cotacoes-pedidos-compra.md
+Decisoes de pre-voo:
+- Branch empilhada sobre feat/telas-de-cadastro (PR #1 ainda aberto; reusa Tabela/Modal/
+  Badge/BarraDeFiltros de la). PR desta sprint aponta base para feat/telas-de-cadastro, nao main.
+- Escopo EXCLUI registrar-recebimento (precisa de Estoque, Sprint 4) e necessidade-compra/gerar
+  (precisa de OPs, Sprint 5/6). GET /pedidos-compra/em-atraso ENTRA (so depende de data+status).
+- Descoberta: as tabelas cotacoes/itens_cotacao/pedidos_compra/itens_pedido_compra ja existem
+  migradas (003_criar_tabelas_compras.sql) -- sem migration nova para o CRUD basico.
+- numero_cotacao/numero_pc sao digitados pelo usuario (sem gerador automatico), mesmo padrao
+  de codigo de peca/produto.
+
+Base do branch: 554335c (topo de feat/telas-de-cadastro na hora da criacao)
+
+## Progresso
+
