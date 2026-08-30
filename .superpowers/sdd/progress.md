@@ -258,4 +258,15 @@ de novo se o operador reenviar a lista inteira em vez de so o que faltou. Suite 
 do backend (go build/vet/test ./...) verde. routes.go recebeu uma instancia local de
 estoque.Servico so para compilar -- Task B6 deve compartilhar a mesma instancia, nao
 duplicar.
+Task B5: complete (commits ec8821d..a499669, review clean). Rota POST
+/pedidos-compra/:id/registrar-recebimento (Admin/Gestor), errosPedidoCompra ganha
+ErrQuantidadeRecebidaExcedeSolicitada->400. 4/4 testes novos (93/93 no pacote handlers).
+Ajuste fora do brief: fixture criarFornecedorEPecaDeApoio (compartilhado com
+cotacoes_test.go) ganhou INSERT em saldo_estoque -- sem isso o teste de recebimento dava
+500 (fixture antigo pulava a abertura de saldo que peca.Servico.Criar faz em producao).
+Achado Minor para a revisao final da branch triar: esse INSERT grava status='OK' a mao,
+inconsistente com a RN5 (saldo 0 <= estoque_minimo 0 deveria nascer CRITICO, como o
+fixture irmao criarPecaDeApoio em estoque_test.go ja faz corretamente) -- inocuo hoje
+porque AplicarMovimento recalcula o status na primeira movimentacao e nenhum teste le o
+status antes disso, mas vale alinhar os dois fixtures.
 
