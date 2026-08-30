@@ -311,4 +311,12 @@ zero/negativos nao exercida com multiplos itens; titulo do modal e rotulo do bot
 identicos (heranca do brief); invalidacao de query redundante (heranca do brief); sem
 clamping client-side de quantidade pendente por item (mesmo padrao ja aceito em
 ModalRegistrarResposta/DetalheCotacao, confirmado pela revisao).
+Task F5: complete (commits cce0d7f..7feb2c3, review clean). Rota /estoque em App.tsx,
+secao "Estoque" na navegacao lateral (icone 'boxes' -- 'warehouse' nao existe no registro
+de icones, confirmado antes de implementar), conteudo de Ajuda para /estoque, widget do
+Painel trocado de placeholder estatico para listarEstoqueCriticos() real (mesmo padrao de
+"Pedidos em atraso"). 2 testes pre-existentes de Painel.test.tsx adaptados (nao so
+adicionados) porque dependiam do widget estatico substituido -- revisao confirmou que
+preservam a intencao original, sem enfraquecer cobertura. Suite inteira do frontend
+300/300.
 
