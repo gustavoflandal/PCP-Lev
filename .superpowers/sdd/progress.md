@@ -116,3 +116,24 @@ passos.
 
 Backend completo. Frontend (Tasks F1-F11) a seguir.
 
+Task F1: complete (commit 24cd13e, review clean). tipos/servicos/compras.ts, espelhando
+cadastros.ts mas com `status` no lugar de `filtro_ativo`.
+Task F2: complete (commit 5a65000, review needed 1 fix round: pendente-acionavel so virava
+botao quando aoAcionar era passado, mas a spec exige que seja sempre a etapa clicavel por
+definicao -- corrigido). TrilhaEtapas, novo componente §5 do design system.
+Task F3: complete (commit 5574326, review clean). useListagemCompras, compartilhado por
+cotacoes e pedidos de compra (duplicacao ja visivel de antemao, ao contrario do Sprint 2).
+Extra (nao numerada no plano): useFornecedoresAtivos (commit ce0e2e7, refatora
+FormularioPeca para reusar) e usePartesPecasAtivas (commit da43484) -- hooks compartilhados
+de selecao/resolucao de nome, precisos pelas 4 telas novas de compras.
+Extra: formatarData (commit ca6d89e) para exibir AAAA-MM-DD em DD/MM/AAAA.
+Task F4: complete (commit 062d00a, review clean). Lista de cotacoes.
+Task F5: complete (commit 8f7459c, review clean). Formulario de nova cotacao (pagina cheia,
+useFieldArray para os itens).
+Task F6: complete (commit 438b3a5, review needed 1 fix round: renderizarComProvedores nao
+aceitava rota inicial, impedindo testar paginas com :id -- ganhou um parametro opcional
+`{rota}`; testes de toast tambem precisaram do padrao ja usado nos cadastros --
+useToasts.setState({itens:[]}) no beforeEach e assercao via useToasts.getState(), nao a
+regiao role=status do DOM). Detalhe da cotacao com TrilhaEtapas + acoes contextuais.
+npm test 255/255 apos F6, lint e tsc limpos em cada etapa.
+
