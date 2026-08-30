@@ -81,3 +81,24 @@ Base do branch: 554335c (topo de feat/telas-de-cadastro na hora da criacao)
 
 ## Progresso
 
+Task B0: complete (commit d8ad638, review clean). platform/tempo.Data, espelhando
+dinheiro.Dinheiro, para colunas DATE (JSON como "AAAA-MM-DD", nao RFC3339).
+Task B1: complete (commit 7a20e01, review clean). Dominio cotacao: modelo e validacao.
+Task B2+B3: complete (commit bf0764b, review clean; feitas juntas porque servico_test.go so
+compila com o repositorio existindo -- ver nota abaixo). consulta.AnalisarComStatus (aditivo,
+nao muda Analisar) + cotacao.Servico (criar/atualizar/enviar/registrar-resposta/cancelar).
+Task B4: complete (commit 8796833, review needed 1 fix round: SQLSTATE 42P08 -- reusar o
+mesmo parametro numa atribuicao e numa expressao aritmetica exigiu cast explicito $1::numeric
+em RegistrarResposta, resolvido). Repositorio de cotacoes, transacional (header+itens).
+Task B6: complete (commit 5862cd6, review clean). Dominio pedidocompra: modelo e validacao.
+Task B7+B8: complete (commit 41c4f15, review needed 1 fix round: fixture de teste de EmAtraso
+comparava CURRENT_DATE-5 com uma data_pedido fixa no fixture, quebrando o CHECK
+chk_pc_data_entrega dependendo do dia real em que o teste roda -- corrigido empurrando
+data_pedido tambem para o passado no fixture). Servico + repositorio de pedidos de compra.
+
+Nota de ordem: o plano previa B1->B2->B4->B5 sequenciais, mas servico_test.go (B2) so
+compila com o repositorio (B4) ja existindo -- neste codebase os testes de servico de
+dominio rodam contra Postgres real via testsupport.BancoMigrado, sem interface mock. Path
+real seguido: B0, B1, (B2+B3+B4 implementados juntos, testados juntos), B6, (B7+B8 juntos).
+go test ./... 255+70 = todos verdes apos cada etapa, gofmt/go vet limpos.
+
