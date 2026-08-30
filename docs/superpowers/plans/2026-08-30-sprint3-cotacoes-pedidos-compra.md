@@ -60,7 +60,122 @@ os códigos existentes de `httpx` (`CodigoNaoEncontrado`, `CodigoConflito`,
 
 ---
 
-## Tarefas — Backend
+## Correção pós-exploração: tipos de dinheiro e data
+
+Os blocos de código abaixo (escritos antes de eu inspecionar `platform/dinheiro`) usam
+`float64` para preço/valor e `time.Time` para datas. **Isso está errado** — o resto do
+código já resolveu os dois problemas e esta sprint tem que seguir o padrão, não reabri-lo:
+
+- **Dinheiro**: `produto.PrecoVenda` já é `dinheiro.Dinheiro` (centavos, sem erro de ponto
+  flutuante), não `float64` — ver `backend/internal/platform/dinheiro/dinheiro.go`, já tem
+  `MarshalJSON`/`UnmarshalJSON`/`Scan`/`Value` prontos. Todo campo de dinheiro desta sprint
+  (`ItemCotacao.PrecoUnitario`, `.Total`, `Cotacao.ValorTotal`, `ItemPedido.PrecoUnitario`,
+  `.Total`, `PedidoCompra.ValorTotal`) usa `dinheiro.Dinheiro`, não `float64`. `ValorTotal`
+  não precisa ser ponteiro mesmo a coluna sendo nullable em `cotacoes` — o `Servico.Criar`
+  sempre calcula um valor, então na prática nunca é nulo; usar `dinheiro.Dinheiro` puro
+  (zero-value é `0`) é mais simples que `*dinheiro.Dinheiro` e não perde nada.
+- **Data**: não existe ainda um tipo para campos `DATE` (nenhum módulo anterior tinha um).
+  A doc 3 documenta `data_validade` como `"2026-09-25"` (data pura), mas `time.Time` teria
+  `MarshalJSON` no formato RFC3339 (`"2026-09-25T00:00:00Z"`), quebrando o contrato. **Nova
+  Tarefa B0**, antes de tudo o resto, cria `platform/tempo.Data` espelhando exatamente a
+  forma do `dinheiro.Dinheiro` (mesma dupla Marshal/Scan). Todo campo de data-sem-hora desta
+  sprint (`DataEmissao`, `DataValidade`, `DataResposta`, `DataPedido`, `DataEntregaPrevista`,
+  `DataEntregaReal`) usa `tempo.Data`, não `time.Time`.
+
+Nos blocos de código das tarefas B1/B2/B6/B7 abaixo, onde está escrito `float64` leia-se
+`dinheiro.Dinheiro`; onde está escrito `time.Time` (exceto `CreatedAt`/`UpdatedAt`, que
+continuam `time.Time` normal — são `TIMESTAMP`, não `DATE`) leia-se `tempo.Data`. Não reescrevi
+os blocos por extenso para não duplicar manutenção; a implementação real segue esta nota, não
+o literal dos blocos.
+
+### Tarefa B0: `platform/tempo.Data` — datas sem hora (JSON e Postgres `DATE`)
+
+**Arquivos:**
+- Create: `backend/internal/platform/tempo/tempo.go`
+- Create: `backend/internal/platform/tempo/tempo_test.go`
+
+```go
+// Package tempo representa datas sem hora (colunas DATE do doc 2), com o
+// mesmo cuidado de dinheiro.Dinheiro: um tipo que sabe se ler/escrever
+// sozinho no formato certo em JSON (doc 3: "2026-09-25", nao RFC3339) e no
+// Postgres (DATE via pgx).
+package tempo
+
+import (
+	"database/sql/driver"
+	"fmt"
+	"strings"
+	"time"
+)
+
+const camada = "2006-01-02"
+
+type Data struct{ time.Time }
+
+// Hoje devolve a data corrente, sem hora (UTC).
+func Hoje() Data { return Data{time.Now().UTC().Truncate(24 * time.Hour)} }
+
+// DeString le "2026-09-25".
+func DeString(texto string) (Data, error) {
+	t, err := time.Parse(camada, strings.TrimSpace(texto))
+	if err != nil {
+		return Data{}, fmt.Errorf("data %q invalida, use AAAA-MM-DD", texto)
+	}
+	return Data{t}, nil
+}
+
+func (d Data) After(outra Data) bool { return d.Time.After(outra.Time) }
+func (d Data) IsZero() bool          { return d.Time.IsZero() }
+
+func (d Data) MarshalJSON() ([]byte, error) {
+	if d.IsZero() {
+		return []byte("null"), nil
+	}
+	return []byte(`"` + d.Time.Format(camada) + `"`), nil
+}
+
+func (d *Data) UnmarshalJSON(bruto []byte) error {
+	texto := strings.Trim(string(bruto), `"`)
+	if texto == "null" || texto == "" {
+		*d = Data{}
+		return nil
+	}
+	valor, err := DeString(texto)
+	if err != nil {
+		return err
+	}
+	*d = valor
+	return nil
+}
+
+// Scan le o DATE devolvido pelo pgx (jackc/pgx mapeia DATE para time.Time).
+func (d *Data) Scan(origem any) error {
+	switch v := origem.(type) {
+	case nil:
+		*d = Data{}
+		return nil
+	case time.Time:
+		*d = Data{v}
+		return nil
+	default:
+		return fmt.Errorf("nao e possivel ler %T como data", origem)
+	}
+}
+
+// Value envia time.Time puro — o pgx sabe codificar isso para DATE.
+func (d Data) Value() (driver.Value, error) {
+	if d.IsZero() {
+		return nil, nil
+	}
+	return d.Time, nil
+}
+```
+
+- [ ] Testes primeiro: `DeString`/round-trip JSON; `DeString` com formato errado falha com
+  mensagem legível; `MarshalJSON` de zero-value vira `null`; `Scan(nil)` vira zero-value sem
+  erro; `Scan(time.Time)` funciona; `After`/`IsZero`.
+- [ ] Implementar, ver passar.
+- [ ] Commit: `feat(backend): tipo de data sem hora para colunas DATE`
 
 ### Tarefa B1: Domínio `cotacao` — modelo e validação
 
