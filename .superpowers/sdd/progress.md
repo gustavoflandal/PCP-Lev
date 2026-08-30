@@ -197,3 +197,28 @@ verificado sem -race (255/255 em #1, 336/336 em #2) e por analise do mecanismo e
 deadlock a partir dos logs de execucao reais da CI. Aguardando a CI confirmar em ambas as
 PRs.
 
+---
+
+# Ledger — Sprint 4: Recebimento e Estoque (feat/sprint4-recebimento-estoque)
+
+Plano: docs/superpowers/plans/2026-08-30-sprint4-recebimento-estoque.md
+Spec: docs/superpowers/specs/2026-08-30-sprint4-estoque-recebimento-design.md
+Decisoes de pre-voo:
+- Branch empilhada sobre feat/sprint3-cotacoes-pedidos-compra (PR #2 ainda aberta).
+- Escopo EXCLUI relatorio de estoque/movimentacoes em PDF/CSV (Sprint 5, mesma
+  infraestrutura de exportacao de compras/producao), reserva/bloqueio de estoque por OP e
+  entrada de PA por conclusao de OP (Sprint 6, dependem de Ordem de Producao que nao existe
+  ainda), geracao automatica de necessidade de compra (Sprint 5, precisa de OPs+BOM).
+- Descoberta: peca_repo.go.Criar ja grava a linha de saldo_estoque zerada/CRITICO na mesma
+  transacao da peca desde o Sprint 2 -- nenhuma migration ou codigo novo precisou disso.
+- Emitir um PC vai direto para "Aguardando Entrega" (nao mais "Emitido") -- nao ha, em
+  nenhum requisito, um passo de "confirmar aceite do fornecedor".
+- Duplicacao deliberada confirmada com o usuario (pre-flight do subagent-driven-development):
+  estoque.SituacaoDoSaldo duplica peca.PartePeca.SituacaoDoSaldo (RN5), e useListagemEstoque
+  duplica a forma de useListagemCompras -- em ambos os casos, mantidos como o plano manda,
+  para nao acoplar os pacotes de dominio/hooks por uma coincidencia de formato.
+
+Base do branch: 4dfa866 (topo de feat/sprint3-cotacoes-pedidos-compra na hora da criacao)
+
+## Progresso
+
