@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/gustavoflandal/pcp-lev/backend/internal/api/handlers"
+	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/estoque"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/pedidocompra"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/usuario"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/infra/repository"
@@ -19,8 +20,9 @@ func apiPedidosCompra(t *testing.T) (*apiProtegida, int64, int64) {
 	pool := testsupport.BancoMigrado(t)
 	api := novaAPIProtegida(t, pool)
 
+	estoqueServico := estoque.NovoServico(repository.NovoEstoqueRepositorio(pool))
 	handler := handlers.NovoPedidoCompraHandler(
-		pedidocompra.NovoServico(repository.NovoPedidoCompraRepositorio(pool)),
+		pedidocompra.NovoServico(repository.NovoPedidoCompraRepositorio(pool), estoqueServico),
 	)
 	handler.Registrar(api.echo.Group("/api/v1"), api.autenticacao())
 
@@ -119,7 +121,7 @@ func TestListarPedidosCompraComFiltroDeStatus(t *testing.T) {
 	rec := api.chamar(http.MethodPost, rotaPedidoCompra(criado)+"/emitir", "", usuario.PerfilGestor)
 	require.Equal(t, http.StatusOK, rec.Code)
 
-	rec = api.chamar(http.MethodGet, "/api/v1/pedidos-compra?status=Emitido", "", usuario.PerfilOperador)
+	rec = api.chamar(http.MethodGet, "/api/v1/pedidos-compra?status=Aguardando+Entrega", "", usuario.PerfilOperador)
 
 	require.Equal(t, http.StatusOK, rec.Code)
 	assert.Len(t, lista(t, rec), 1)
@@ -140,7 +142,7 @@ func TestEmitirPedidoCompraMudaStatus(t *testing.T) {
 	rec := api.chamar(http.MethodPost, rotaPedidoCompra(criado)+"/emitir", "", usuario.PerfilGestor)
 
 	require.Equal(t, http.StatusOK, rec.Code)
-	assert.Equal(t, "Emitido", dados(t, rec)["status"])
+	assert.Equal(t, "Aguardando Entrega", dados(t, rec)["status"])
 }
 
 func TestEmitirPedidoCompraForaDeRascunhoResponde409(t *testing.T) {

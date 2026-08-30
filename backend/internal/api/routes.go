@@ -9,6 +9,7 @@ import (
 	"github.com/gustavoflandal/pcp-lev/backend/internal/config"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/auth"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/cotacao"
+	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/estoque"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/fornecedor"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/peca"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/pedidocompra"
@@ -91,7 +92,8 @@ func registrarCadastros(v1 *echo.Group, dep Dependencias, autenticacao echo.Midd
 
 // registrarCompras publica os modulos de cotacoes e pedidos de compra (RF3).
 func registrarCompras(v1 *echo.Group, dep Dependencias, autenticacao echo.MiddlewareFunc) {
-	pedidoServico := pedidocompra.NovoServico(repository.NovoPedidoCompraRepositorio(dep.Pool))
+	estoqueServico := estoque.NovoServico(repository.NovoEstoqueRepositorio(dep.Pool))
+	pedidoServico := pedidocompra.NovoServico(repository.NovoPedidoCompraRepositorio(dep.Pool), estoqueServico)
 	cotacaoServico := cotacao.NovoServico(repository.NovoCotacaoRepositorio(dep.Pool))
 
 	handlers.NovoCotacaoHandler(cotacaoServico, pedidoServico).Registrar(v1, autenticacao)
