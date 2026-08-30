@@ -299,4 +299,16 @@ imprecisao do proprio plano, nao do implementador. 5/5 testes. Achado Minor para
 final triar (heranca do brief, nao do implementador): o alerta do modal de ajuste so
 mostra o erro geral, nunca erro por campo (separarErro().porCampo nunca repassado aos
 Campo), e nao ha validacao client-side antes do submit (noValidate desliga a nativa).
+Task F4: complete (commits 5f4fbc7..b11b550, review clean). Etapa "Concluido" da trilha do
+PC vira pendente-acionavel quando Aguardando Entrega/Recebido Parcial, abre
+ModalRegistrarRecebimento (mirror de ModalRegistrarResposta da cotacao), filtra itens com
+quantidade_recebida<=0 antes de enviar. Correcao necessaria do brief: fixture inventado
+PEDIDO_AGUARDANDO_ENTREGA nao existe -- usado o padrao real (funcao fabrica pedidoBase(status,
+extra) + helper renderizar() ja existentes no arquivo). Os 6 testes originais de
+DetalhePedidoCompra.test.tsx continuam intactos, 2 novos + 1 em compras.test.ts. Suite
+inteira do frontend 296/296. Achados Minor (nao bloqueiam): cobertura do filtro de
+zero/negativos nao exercida com multiplos itens; titulo do modal e rotulo do botao
+identicos (heranca do brief); invalidacao de query redundante (heranca do brief); sem
+clamping client-side de quantidade pendente por item (mesmo padrao ja aceito em
+ModalRegistrarResposta/DetalheCotacao, confirmado pela revisao).
 
