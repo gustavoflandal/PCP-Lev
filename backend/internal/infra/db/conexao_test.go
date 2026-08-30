@@ -7,18 +7,31 @@ import (
 	"github.com/gustavoflandal/pcp-lev/backend/internal/config"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/infra/db"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/testsupport"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
+// configDeTeste deriva a configuracao de conexao de testsupport.DSNTeste(),
+// em vez de host/porta fixos: a porta local de quem desenvolve (5442, do
+// docker-compose deste repo) nao e a mesma do servico de banco no CI, que
+// so expoe PCP_TEST_DSN.
+func configDeTeste(t *testing.T, dbName string) *config.Config {
+	t.Helper()
+	pgCfg, err := pgxpool.ParseConfig(testsupport.DSNTeste())
+	require.NoError(t, err, "PCP_TEST_DSN invalida")
+
+	return &config.Config{
+		DBHost: pgCfg.ConnConfig.Host, DBPort: int(pgCfg.ConnConfig.Port),
+		DBUser: pgCfg.ConnConfig.User, DBPassword: pgCfg.ConnConfig.Password,
+		DBName: dbName, DBSSLMode: "disable", DBMaxConns: 5,
+	}
+}
+
 func TestConectarAbrePoolValido(t *testing.T) {
 	testsupport.PularSemBanco(t)
 
-	pool, err := db.Conectar(context.Background(), &config.Config{
-		DBHost: "localhost", DBPort: 5442, DBUser: "pcp_user",
-		DBPassword: "senha_segura", DBName: "pcp_db_test",
-		DBSSLMode: "disable", DBMaxConns: 5,
-	})
+	pool, err := db.Conectar(context.Background(), configDeTeste(t, "pcp_db_test"))
 
 	require.NoError(t, err)
 	defer pool.Close()
@@ -28,11 +41,7 @@ func TestConectarAbrePoolValido(t *testing.T) {
 func TestConectarFalhaComBancoInexistente(t *testing.T) {
 	testsupport.PularSemBanco(t)
 
-	_, err := db.Conectar(context.Background(), &config.Config{
-		DBHost: "localhost", DBPort: 5442, DBUser: "pcp_user",
-		DBPassword: "senha_segura", DBName: "banco_que_nao_existe",
-		DBSSLMode: "disable", DBMaxConns: 5,
-	})
+	_, err := db.Conectar(context.Background(), configDeTeste(t, "banco_que_nao_existe"))
 
 	require.Error(t, err)
 }
