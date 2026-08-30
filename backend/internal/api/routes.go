@@ -8,8 +8,10 @@ import (
 	"github.com/gustavoflandal/pcp-lev/backend/internal/api/middleware"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/config"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/auth"
+	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/cotacao"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/fornecedor"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/peca"
+	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/pedidocompra"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/produto"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/infra/repository"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/platform/httpx"
@@ -57,6 +59,7 @@ func NovoRoteador(dep Dependencias) *echo.Echo {
 
 	registrarAutenticacao(v1, dep)
 	registrarCadastros(v1, dep, autenticacao)
+	registrarCompras(v1, dep, autenticacao)
 
 	return e
 }
@@ -84,6 +87,15 @@ func registrarCadastros(v1 *echo.Group, dep Dependencias, autenticacao echo.Midd
 	handlers.NovoFornecedorHandler(
 		fornecedor.NovoServico(repository.NovoFornecedorRepositorio(dep.Pool)),
 	).Registrar(v1, autenticacao)
+}
+
+// registrarCompras publica os modulos de cotacoes e pedidos de compra (RF3).
+func registrarCompras(v1 *echo.Group, dep Dependencias, autenticacao echo.MiddlewareFunc) {
+	pedidoServico := pedidocompra.NovoServico(repository.NovoPedidoCompraRepositorio(dep.Pool))
+	cotacaoServico := cotacao.NovoServico(repository.NovoCotacaoRepositorio(dep.Pool))
+
+	handlers.NovoCotacaoHandler(cotacaoServico, pedidoServico).Registrar(v1, autenticacao)
+	handlers.NovoPedidoCompraHandler(pedidoServico).Registrar(v1, autenticacao)
 }
 
 // tratarErro garante que qualquer erro nao tratado saia no envelope do doc 3,

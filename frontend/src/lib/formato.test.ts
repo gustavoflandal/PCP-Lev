@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatarCNPJ, formatarDias, formatarMoeda } from './formato';
+import { formatarCNPJ, formatarData, formatarDias, formatarMoeda } from './formato';
 
 describe('formatarCNPJ', () => {
   it('pontua os 14 digitos vindos da API', () => {
@@ -33,5 +33,19 @@ describe('formatarDias', () => {
 
   it('usa o plural para os demais', () => {
     expect(formatarDias(7)).toBe('7 dias');
+  });
+});
+
+describe('formatarData', () => {
+  it('converte AAAA-MM-DD (contrato da API) para DD/MM/AAAA', () => {
+    expect(formatarData('2026-09-25')).toBe('25/09/2026');
+  });
+
+  it('ignora a hora quando a API manda um timestamp completo', () => {
+    expect(formatarData('2026-09-25T00:00:00Z')).toBe('25/09/2026');
+  });
+
+  it('data ausente vira travessao, nao uma string vazia sem sentido', () => {
+    expect(formatarData(undefined)).toBe('—');
   });
 });

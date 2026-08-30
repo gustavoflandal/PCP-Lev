@@ -61,3 +61,139 @@ e formularios/dialogos) tiradas via Playwright contra o app real, com dados de e
 dominio (radar de transito, paineis eletronicos) no lugar do lixo de teste anterior. Manual de
 operacao `docs/8_MANUAL_OPERACAO.md` criado e indexado em `docs/README.md`. npm test 206/206,
 lint limpo, build limpo. Push feito para a mesma branch/PR #1.
+
+---
+
+# Ledger — Sprint 3: Cotações e Pedidos de Compra (feat/sprint3-cotacoes-pedidos-compra)
+
+Plano: docs/superpowers/plans/2026-08-30-sprint3-cotacoes-pedidos-compra.md
+Decisoes de pre-voo:
+- Branch empilhada sobre feat/telas-de-cadastro (PR #1 ainda aberto; reusa Tabela/Modal/
+  Badge/BarraDeFiltros de la). PR desta sprint aponta base para feat/telas-de-cadastro, nao main.
+- Escopo EXCLUI registrar-recebimento (precisa de Estoque, Sprint 4) e necessidade-compra/gerar
+  (precisa de OPs, Sprint 5/6). GET /pedidos-compra/em-atraso ENTRA (so depende de data+status).
+- Descoberta: as tabelas cotacoes/itens_cotacao/pedidos_compra/itens_pedido_compra ja existem
+  migradas (003_criar_tabelas_compras.sql) -- sem migration nova para o CRUD basico.
+- numero_cotacao/numero_pc sao digitados pelo usuario (sem gerador automatico), mesmo padrao
+  de codigo de peca/produto.
+
+Base do branch: 554335c (topo de feat/telas-de-cadastro na hora da criacao)
+
+## Progresso
+
+Task B0: complete (commit d8ad638, review clean). platform/tempo.Data, espelhando
+dinheiro.Dinheiro, para colunas DATE (JSON como "AAAA-MM-DD", nao RFC3339).
+Task B1: complete (commit 7a20e01, review clean). Dominio cotacao: modelo e validacao.
+Task B2+B3: complete (commit bf0764b, review clean; feitas juntas porque servico_test.go so
+compila com o repositorio existindo -- ver nota abaixo). consulta.AnalisarComStatus (aditivo,
+nao muda Analisar) + cotacao.Servico (criar/atualizar/enviar/registrar-resposta/cancelar).
+Task B4: complete (commit 8796833, review needed 1 fix round: SQLSTATE 42P08 -- reusar o
+mesmo parametro numa atribuicao e numa expressao aritmetica exigiu cast explicito $1::numeric
+em RegistrarResposta, resolvido). Repositorio de cotacoes, transacional (header+itens).
+Task B6: complete (commit 5862cd6, review clean). Dominio pedidocompra: modelo e validacao.
+Task B7+B8: complete (commit 41c4f15, review needed 1 fix round: fixture de teste de EmAtraso
+comparava CURRENT_DATE-5 com uma data_pedido fixa no fixture, quebrando o CHECK
+chk_pc_data_entrega dependendo do dia real em que o teste roda -- corrigido empurrando
+data_pedido tambem para o passado no fixture). Servico + repositorio de pedidos de compra.
+
+Nota de ordem: o plano previa B1->B2->B4->B5 sequenciais, mas servico_test.go (B2) so
+compila com o repositorio (B4) ja existindo -- neste codebase os testes de servico de
+dominio rodam contra Postgres real via testsupport.BancoMigrado, sem interface mock. Path
+real seguido: B0, B1, (B2+B3+B4 implementados juntos, testados juntos), B6, (B7+B8 juntos).
+Task B8 (handler): complete (commit 6ed9ef2, review clean). Handler HTTP de pedidos de
+compra, com /em-atraso registrada antes de /:id.
+Task B5: complete (commit 6fbb2c5, review clean). Handler HTTP de cotacoes, incluindo
+converter-pc (cria PedidoCompra a partir de uma Cotacao Respondida, preco travado na
+cotacao). numero_pc do PC gerado por conversao tambem e digitado pelo usuario no corpo do
+converter-pc -- mesmo padrao de "sem gerador automatico" do resto do sistema.
+Task B9: complete (commit 3c40cb3, review clean). registrarCompras publica cotacoes e
+pedidos de compra em routes.go. Backend da Sprint 3 fechado: 336/336 testes (255 anteriores
++ 81 novos), go vet e gofmt limpos. Fluxo completo verificado manualmente contra o Postgres
+real via curl/node fetch (nao so testes automatizados): criar cotacao -> enviar ->
+registrar-resposta (valor_total recalculado) -> converter-pc (preco negociado preservado) ->
+emitir PC -> em-atraso -> cancelar PC -> reenviar cotacao ja respondida devolve 409 -- 8/8
+passos.
+
+Backend completo. Frontend (Tasks F1-F11) a seguir.
+
+Task F1: complete (commit 24cd13e, review clean). tipos/servicos/compras.ts, espelhando
+cadastros.ts mas com `status` no lugar de `filtro_ativo`.
+Task F2: complete (commit 5a65000, review needed 1 fix round: pendente-acionavel so virava
+botao quando aoAcionar era passado, mas a spec exige que seja sempre a etapa clicavel por
+definicao -- corrigido). TrilhaEtapas, novo componente §5 do design system.
+Task F3: complete (commit 5574326, review clean). useListagemCompras, compartilhado por
+cotacoes e pedidos de compra (duplicacao ja visivel de antemao, ao contrario do Sprint 2).
+Extra (nao numerada no plano): useFornecedoresAtivos (commit ce0e2e7, refatora
+FormularioPeca para reusar) e usePartesPecasAtivas (commit da43484) -- hooks compartilhados
+de selecao/resolucao de nome, precisos pelas 4 telas novas de compras.
+Extra: formatarData (commit ca6d89e) para exibir AAAA-MM-DD em DD/MM/AAAA.
+Task F4: complete (commit 062d00a, review clean). Lista de cotacoes.
+Task F5: complete (commit 8f7459c, review clean). Formulario de nova cotacao (pagina cheia,
+useFieldArray para os itens).
+Task F6: complete (commit 438b3a5, review needed 1 fix round: renderizarComProvedores nao
+aceitava rota inicial, impedindo testar paginas com :id -- ganhou um parametro opcional
+`{rota}`; testes de toast tambem precisaram do padrao ja usado nos cadastros --
+useToasts.setState({itens:[]}) no beforeEach e assercao via useToasts.getState(), nao a
+regiao role=status do DOM). Detalhe da cotacao com TrilhaEtapas + acoes contextuais.
+npm test 255/255 apos F6, lint e tsc limpos em cada etapa.
+Task F7: complete (commit ba0961e, review clean). Lista de pedidos de compra + bloco
+"Pedidos em atraso" (so aparece quando ha algum).
+Task F8: complete (commit cabd312, review clean). Formulario de novo pedido de compra
+(mesmo padrao de F5), aceita ?cotacao_id= opcional na URL.
+Task F9: complete (commit ae7e6de, review clean). Detalhe do pedido de compra: trilha com
+3 etapas (Criado -> Emitido -> Concluido), mais enxuta que a de cotacao porque as fases
+intermediarias do enum nao tem acao nesta sprint (recebimento e Sprint 4).
+Task F10: complete (commit 5b4d43f, review clean). Rotas em App.tsx, "Compras" vira secao
+real na NavegacaoLateral, Ajuda ganha lookup por prefixo para sub-rotas com :id, Painel troca
+o widget estatico de compras por dado real (GET /pedidos-compra/em-atraso).
+Task F11 (verificacao final): complete. npm test 275/275, lint e build limpos (tsc -b +
+vite build). Fluxo completo via Playwright real contra o app rodando (nao so testes
+unitarios): criar cotacao -> enviar -> registrar resposta -> converter em PC -> emitir PC ->
+cancelar PC -- 14/14 passos, incluindo checagem de grayscale (achromatopsia via CDP) na
+trilha de etapas e responsividade 800px nas duas listas novas. Nenhum bug de navegador
+encontrado desta vez (as licoes do Sprint 2 -- noValidate, foco do Modal -- ja valiam para
+os componentes reusados aqui).
+Passo "tirar um acessorio" (commit 0d98651): "Observações" nos dois formularios de criacao
+era escrito mas nunca lido de volta em nenhuma tela de detalhe -- removido dos dois.
+"Condição de pagamento" tinha o mesmo problema mas e dado relevante pra decisao (prazo de
+pagamento); em vez de remover, completado o ciclo -- agora aparece no detalhe do PC.
+
+Task 20 (screenshots, manual, entrega): capturas 16 a 23 em docs/screenshots/ (Painel com
+indicador real, lista/novo/detalhe de Cotacoes em dois estados -- Rascunho e Respondida --
+lista/novo/detalhe de Pedidos de Compra com o bloco de atraso visivel), com dados de exemplo
+limpos (COT-2026-010/011, PC-2026-020) via API, e um PC com entrega empurrada para o passado
+via SQL direto (a API sempre usa a data de hoje para data_pedido, entao nao da pra criar um
+atrasado so pela API). docs/8_MANUAL_OPERACAO.md ganhou as secoes 7 (Cotacoes) e 8 (Pedidos
+de compra), indice e FAQ atualizados, Ajuda/Paginel renumerados para 9/10.
+
+Sprint 3 completa: backend (336 testes) + frontend (275 testes) verdes, verificacao de
+navegador real feita duas vezes (fluxo funcional + fluxo apos o corte de acessorio),
+documentacao e capturas de tela entregues.
+
+## Pos-entrega: CI quebrada (achado durante checagem autonoma)
+
+A CI do backend (GitHub Actions) falhava de forma consistente desde antes desta sprint --
+mesmo padrao de falha (3 pacotes travando 10min ate timeout) numa execucao na main de
+26/08, ou seja, pre-existente ao trabalho desta sessao. Diagnosticado e corrigido:
+
+1. **Deadlock em `TestAplicarSuportaDuasInstanciasSubindoAoMesmoTempo`**: `db.Aplicar`
+   segura uma conexao do pool durante todo o lock de migracao E precisa de uma segunda
+   conexao do MESMO pool para aplicar cada migration. O teste sobe 4 goroutines chamando
+   Aplicar ao mesmo tempo, mas `testsupport.PoolLimpo` nunca fixava `MaxConns` -- o pgxpool
+   usa por padrao um tamanho proporcional a `runtime.NumCPU()`, pequeno demais nos runners
+   de CI (poucos nucleos). Pool esgotado -> quem venceu a corrida pelo lock fica preso
+   esperando uma segunda conexao que nunca sobra -> ninguem libera o lock -> timeout de
+   10min. Corrigido fixando `MaxConns=20` no pool de teste (commit 008031b em
+   feat/telas-de-cadastro, mesclado em af934e3 nesta branch).
+2. **`TestConectarAbrePoolValido`/`TestConectarFalhaComBancoInexistente` com porta
+   hardcoded**: usavam `localhost:5442` (porta local deste repo via docker-compose) em vez
+   de respeitar `PCP_TEST_DSN` (porta 5432 no servico Postgres do workflow de CI) --
+   corrigido derivando a config de `testsupport.DSNTeste()`.
+
+Aplicado primeiro em feat/telas-de-cadastro (PR #1, a causa e anterior a ambas as PRs) e
+depois mesclado em feat/sprint3-cotacoes-pedidos-compra (PR #2) para que a CI desta tambem
+passe. Nao foi possivel rodar `-race` localmente (sem toolchain de cgo nesta maquina) --
+verificado sem -race (255/255 em #1, 336/336 em #2) e por analise do mecanismo exato de
+deadlock a partir dos logs de execucao reais da CI. Aguardando a CI confirmar em ambas as
+PRs.
+

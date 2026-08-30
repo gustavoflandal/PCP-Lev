@@ -21,13 +21,14 @@ const CADASTROS: ItemNavegacao[] = [
   { rota: '/fornecedores', rotulo: 'Fornecedores', icone: 'users' },
 ];
 
+const COMPRAS: ItemNavegacao[] = [
+  { rota: '/cotacoes', rotulo: 'Cotações', icone: 'clipboard-list' },
+  { rota: '/pedidos-compra', rotulo: 'Pedidos de compra', icone: 'shopping-cart' },
+];
+
 // Ficam visiveis de proposito: quem usa o sistema precisa saber que estes
 // modulos vao existir, e em que ordem chegam.
-const FUTUROS: ItemFuturo[] = [
-  { rotulo: 'Compras', icone: 'shopping-cart' },
-  { rotulo: 'Estoque', icone: 'clipboard-list' },
-  { rotulo: 'Produção', icone: 'factory' },
-];
+const FUTUROS: ItemFuturo[] = [{ rotulo: 'Produção', icone: 'factory' }];
 
 function classesDoLink({ isActive }: { isActive: boolean }): string {
   return cn(
@@ -61,6 +62,15 @@ export function NavegacaoLateral() {
       <p className="mb-1 mt-6 px-3 text-label text-texto-disabled">Cadastros</p>
       <ul className="flex flex-col gap-1">
         {CADASTROS.map((item) => (
+          <li key={item.rota}>
+            <Link item={item} />
+          </li>
+        ))}
+      </ul>
+
+      <p className="mb-1 mt-6 px-3 text-label text-texto-disabled">Compras</p>
+      <ul className="flex flex-col gap-1">
+        {COMPRAS.map((item) => (
           <li key={item.rota}>
             <Link item={item} />
           </li>

@@ -40,7 +40,11 @@ type Parametros struct {
 	Ordem      Ordem
 	// FiltroAtivo nil significa "sem filtro": traz ativos e inativos.
 	FiltroAtivo *bool
-	Busca       string
+	// FiltroStatus nil significa "sem filtro". Usado por cotacoes e pedidos
+	// de compra, que nao tem coluna `ativo` — o soft-delete deles e uma
+	// transicao de status (Cancelada/Cancelado), nao um booleano.
+	FiltroStatus *string
+	Busca        string
 }
 
 // Offset converte a pagina em deslocamento para o SQL.
@@ -53,6 +57,30 @@ func (p Parametros) Offset() int {
 // `colunasPermitidas` e obrigatorio porque a coluna de ordenacao e
 // interpolada no SQL — aceitar valor livre abriria injecao.
 func Analisar(valores url.Values, colunasPermitidas []string, colunaPadrao string) (Parametros, error) {
+	return analisarComum(valores, colunasPermitidas, colunaPadrao)
+}
+
+// AnalisarComStatus e como Analisar, mas para listagens que filtram por
+// status (cotacoes, pedidos de compra) em vez de por ativo/inativo.
+// `statusPermitidos` e obrigatorio pelo mesmo motivo de `colunasPermitidas`:
+// o valor e usado num filtro de igualdade, mas so aceitar um conjunto
+// fechado evita que a listagem responda erro 500 por um valor absurdo.
+func AnalisarComStatus(valores url.Values, colunasPermitidas []string, colunaPadrao string, statusPermitidos []string) (Parametros, error) {
+	p, err := analisarComum(valores, colunasPermitidas, colunaPadrao)
+	if err != nil {
+		return p, err
+	}
+
+	if bruto := valores.Get("status"); bruto != "" {
+		if !slices.Contains(statusPermitidos, bruto) {
+			return p, fmt.Errorf("status aceita apenas: %s", strings.Join(statusPermitidos, ", "))
+		}
+		p.FiltroStatus = &bruto
+	}
+	return p, nil
+}
+
+func analisarComum(valores url.Values, colunasPermitidas []string, colunaPadrao string) (Parametros, error) {
 	p := Parametros{
 		Pagina:     1,
 		Limite:     limitePadrao,

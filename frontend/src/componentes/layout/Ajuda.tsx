@@ -55,6 +55,24 @@ const CONTEUDO_POR_ROTA: Record<string, ConteudoAjuda> = {
       '"Inativar" preserva o histórico; para reativar, edite o registro e mude a situação.',
     ],
   },
+  '/cotacoes': {
+    titulo: 'Ajuda · Cotações',
+    itens: [
+      'Uma cotação nasce em Rascunho, com ao menos um item; "Enviar" registra que foi encaminhada ao fornecedor.',
+      'Depois de enviada, "Registrar resposta" grava o preço negociado por item e recalcula o valor total.',
+      'Uma cotação Respondida pode ser convertida num pedido de compra — o preço vai travado, igual ao negociado.',
+      'Cancelar preserva o histórico; uma cotação cancelada não volta a nenhum status anterior.',
+    ],
+  },
+  '/pedidos-compra': {
+    titulo: 'Ajuda · Pedidos de compra',
+    itens: [
+      'Um pedido nasce em Rascunho; "Emitir" o envia ao fornecedor.',
+      'O bloco "Pedidos em atraso" no topo da lista mostra os que passaram da data de entrega prevista.',
+      'Um pedido pode ser criado a partir de uma cotação respondida (tela da cotação) ou manualmente aqui.',
+      'Cancelar só é possível enquanto o pedido não estiver Concluído ou já Cancelado.',
+    ],
+  },
 };
 
 const CONTEUDO_GENERICO: ConteudoAjuda = {
@@ -65,11 +83,26 @@ const CONTEUDO_GENERICO: ConteudoAjuda = {
   ],
 };
 
+/**
+ * Acha o conteudo pela rota exata primeiro (`/`, `/login`); rotas com
+ * sub-paginas (`/cotacoes/nova`, `/cotacoes/123`) caem no prefixo da lista —
+ * a ajuda da lista ja cobre o essencial de criar e abrir um registro.
+ */
+function conteudoDaRota(pathname: string): ConteudoAjuda {
+  if (CONTEUDO_POR_ROTA[pathname]) {
+    return CONTEUDO_POR_ROTA[pathname];
+  }
+  const raiz = Object.keys(CONTEUDO_POR_ROTA).find(
+    (rota) => rota !== '/' && pathname.startsWith(`${rota}/`),
+  );
+  return raiz ? CONTEUDO_POR_ROTA[raiz] : CONTEUDO_GENERICO;
+}
+
 /** Botao de ajuda contextual: o conteudo do dialogo muda conforme a rota atual. */
 export function Ajuda() {
   const [aberto, setAberto] = useState(false);
   const { pathname } = useLocation();
-  const conteudo = CONTEUDO_POR_ROTA[pathname] ?? CONTEUDO_GENERICO;
+  const conteudo = conteudoDaRota(pathname);
 
   return (
     <>
