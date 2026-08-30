@@ -240,4 +240,22 @@ GET /estoque, GET /estoque/:parte_peca_id, GET /estoque/criticos (registrada ant
 :parte_peca_id), POST /estoque/ajuste (Admin/Gestor), GET /movimentacoes,
 GET /movimentacoes/:id. errosEstoque mapeia as 7 sentinelas do dominio. 8/8 testes novos
 (98/98 no pacote handlers).
+Task B4: complete (commits 9d58a3b..75aa0db, review clean). Emitir vai direto para
+Aguardando Entrega; NovoServico(repo, estoqueServico) muda assinatura (4 chamadas
+atualizadas: routes.go, cotacoes_test.go, pedidos_compra_test.go, servico_test.go);
+RegistrarRecebimento (servico+repositorio) soma quantidade_recebida cumulativo com FOR
+UPDATE, fecha o PC (Concluido + data_entrega_real via tempo.Hoje()) ou deixa Recebido
+Parcial, aciona estoque.AplicarMovimento depois do PC commitado (no essa ordem, nao ao
+contrario -- ver risco documentado no plano). Consequencia mecanica corrigida: 3 testes
+pre-existentes que checavam o status "Emitido" literal passaram a checar "Aguardando
+Entrega". Achados Minor da revisao (nao bloqueiam, registrados para referencia futura):
+reuso de ErrFornecedorOuPecaInexistente para "item nao pertence a este PC" (decisao do
+proprio brief); ordem de lock por item segue a ordem do slice recebido -- risco teorico
+de deadlock com chamadas concorrentes que informem itens em ordens diferentes, sem teste
+de concorrencia (nao exigido pelo brief); reenvio de recebimento parcial com multiplos
+itens, se um item no meio do laco de estoque falhar, poderia contaritens ja recebidos
+de novo se o operador reenviar a lista inteira em vez de so o que faltou. Suite completa
+do backend (go build/vet/test ./...) verde. routes.go recebeu uma instancia local de
+estoque.Servico so para compilar -- Task B6 deve compartilhar a mesma instancia, nao
+duplicar.
 
