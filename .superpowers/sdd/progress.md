@@ -170,3 +170,30 @@ Sprint 3 completa: backend (336 testes) + frontend (275 testes) verdes, verifica
 navegador real feita duas vezes (fluxo funcional + fluxo apos o corte de acessorio),
 documentacao e capturas de tela entregues.
 
+## Pos-entrega: CI quebrada (achado durante checagem autonoma)
+
+A CI do backend (GitHub Actions) falhava de forma consistente desde antes desta sprint --
+mesmo padrao de falha (3 pacotes travando 10min ate timeout) numa execucao na main de
+26/08, ou seja, pre-existente ao trabalho desta sessao. Diagnosticado e corrigido:
+
+1. **Deadlock em `TestAplicarSuportaDuasInstanciasSubindoAoMesmoTempo`**: `db.Aplicar`
+   segura uma conexao do pool durante todo o lock de migracao E precisa de uma segunda
+   conexao do MESMO pool para aplicar cada migration. O teste sobe 4 goroutines chamando
+   Aplicar ao mesmo tempo, mas `testsupport.PoolLimpo` nunca fixava `MaxConns` -- o pgxpool
+   usa por padrao um tamanho proporcional a `runtime.NumCPU()`, pequeno demais nos runners
+   de CI (poucos nucleos). Pool esgotado -> quem venceu a corrida pelo lock fica preso
+   esperando uma segunda conexao que nunca sobra -> ninguem libera o lock -> timeout de
+   10min. Corrigido fixando `MaxConns=20` no pool de teste (commit 008031b em
+   feat/telas-de-cadastro, mesclado em af934e3 nesta branch).
+2. **`TestConectarAbrePoolValido`/`TestConectarFalhaComBancoInexistente` com porta
+   hardcoded**: usavam `localhost:5442` (porta local deste repo via docker-compose) em vez
+   de respeitar `PCP_TEST_DSN` (porta 5432 no servico Postgres do workflow de CI) --
+   corrigido derivando a config de `testsupport.DSNTeste()`.
+
+Aplicado primeiro em feat/telas-de-cadastro (PR #1, a causa e anterior a ambas as PRs) e
+depois mesclado em feat/sprint3-cotacoes-pedidos-compra (PR #2) para que a CI desta tambem
+passe. Nao foi possivel rodar `-race` localmente (sem toolchain de cgo nesta maquina) --
+verificado sem -race (255/255 em #1, 336/336 em #2) e por analise do mecanismo exato de
+deadlock a partir dos logs de execucao reais da CI. Aguardando a CI confirmar em ambas as
+PRs.
+
