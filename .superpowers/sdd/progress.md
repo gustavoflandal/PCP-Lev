@@ -226,4 +226,13 @@ Task B1: complete (commits 3263648..01baacb, review clean -- so achados Minor ja
 conhecidos: duplicacao de SituacaoDoSaldo com peca.go, aprovada previamente com o usuario).
 Dominio estoque: Saldo, Movimentacao, AjusteDados, constantes de status/tipo/motivo,
 Validar/Normalizar. 8/8 testes.
+Task B2: complete (commits 95f6a53..ccbc3e7, review encontrou 2 Important reais na
+primeira rodada -- bug do proprio plano, nao do implementador: ListarMovimentacoes
+reusava filtrosDeCadastro, o que deixaria WHERE ativo=$1 ambiguo assim que o LEFT JOIN
+usuarios entrasse (partes_pecas e usuarios tem coluna ativo); e Scan de Movimentacao
+duplicado em 2 call sites sem o helper que Saldo ja tinha. Corrigido: ListarMovimentacoes
+passa a listar sem filtro nesta sprint (nenhuma rota ainda envia data/motivo/parte_peca_id),
+e escanearMovimentacao extraido mirror de escanearSaldo. Reaprovado limpo). estoque.Servico +
+EstoqueRepositorio: AplicarMovimento com FOR UPDATE, Ajustar, ListarSaldo/Criticos/
+Movimentacoes. 10/10 testes (2 servico + 8 repositorio).
 
