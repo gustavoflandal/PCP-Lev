@@ -136,4 +136,37 @@ aceitava rota inicial, impedindo testar paginas com :id -- ganhou um parametro o
 useToasts.setState({itens:[]}) no beforeEach e assercao via useToasts.getState(), nao a
 regiao role=status do DOM). Detalhe da cotacao com TrilhaEtapas + acoes contextuais.
 npm test 255/255 apos F6, lint e tsc limpos em cada etapa.
+Task F7: complete (commit ba0961e, review clean). Lista de pedidos de compra + bloco
+"Pedidos em atraso" (so aparece quando ha algum).
+Task F8: complete (commit cabd312, review clean). Formulario de novo pedido de compra
+(mesmo padrao de F5), aceita ?cotacao_id= opcional na URL.
+Task F9: complete (commit ae7e6de, review clean). Detalhe do pedido de compra: trilha com
+3 etapas (Criado -> Emitido -> Concluido), mais enxuta que a de cotacao porque as fases
+intermediarias do enum nao tem acao nesta sprint (recebimento e Sprint 4).
+Task F10: complete (commit 5b4d43f, review clean). Rotas em App.tsx, "Compras" vira secao
+real na NavegacaoLateral, Ajuda ganha lookup por prefixo para sub-rotas com :id, Painel troca
+o widget estatico de compras por dado real (GET /pedidos-compra/em-atraso).
+Task F11 (verificacao final): complete. npm test 275/275, lint e build limpos (tsc -b +
+vite build). Fluxo completo via Playwright real contra o app rodando (nao so testes
+unitarios): criar cotacao -> enviar -> registrar resposta -> converter em PC -> emitir PC ->
+cancelar PC -- 14/14 passos, incluindo checagem de grayscale (achromatopsia via CDP) na
+trilha de etapas e responsividade 800px nas duas listas novas. Nenhum bug de navegador
+encontrado desta vez (as licoes do Sprint 2 -- noValidate, foco do Modal -- ja valiam para
+os componentes reusados aqui).
+Passo "tirar um acessorio" (commit 0d98651): "Observações" nos dois formularios de criacao
+era escrito mas nunca lido de volta em nenhuma tela de detalhe -- removido dos dois.
+"Condição de pagamento" tinha o mesmo problema mas e dado relevante pra decisao (prazo de
+pagamento); em vez de remover, completado o ciclo -- agora aparece no detalhe do PC.
+
+Task 20 (screenshots, manual, entrega): capturas 16 a 23 em docs/screenshots/ (Painel com
+indicador real, lista/novo/detalhe de Cotacoes em dois estados -- Rascunho e Respondida --
+lista/novo/detalhe de Pedidos de Compra com o bloco de atraso visivel), com dados de exemplo
+limpos (COT-2026-010/011, PC-2026-020) via API, e um PC com entrega empurrada para o passado
+via SQL direto (a API sempre usa a data de hoje para data_pedido, entao nao da pra criar um
+atrasado so pela API). docs/8_MANUAL_OPERACAO.md ganhou as secoes 7 (Cotacoes) e 8 (Pedidos
+de compra), indice e FAQ atualizados, Ajuda/Paginel renumerados para 9/10.
+
+Sprint 3 completa: backend (336 testes) + frontend (275 testes) verdes, verificacao de
+navegador real feita duas vezes (fluxo funcional + fluxo apos o corte de acessorio),
+documentacao e capturas de tela entregues.
 

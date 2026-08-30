@@ -14,8 +14,10 @@
 4. [Fornecedores](#4-fornecedores)
 5. [Partes e peças](#5-partes-e-peças)
 6. [Produtos acabados](#6-produtos-acabados)
-7. [Ajuda contextual](#7-ajuda-contextual)
-8. [Perguntas frequentes](#8-perguntas-frequentes)
+7. [Cotações](#7-cotações)
+8. [Pedidos de compra](#8-pedidos-de-compra)
+9. [Ajuda contextual](#9-ajuda-contextual)
+10. [Perguntas frequentes](#10-perguntas-frequentes)
 
 ---
 
@@ -48,21 +50,29 @@ tela atual à direita.
 
 - **Cabeçalho**: nome e perfil de quem está operando, o botão **Ajuda** e o
   botão **Sair**.
-- **Navegação lateral**: acesso ao Painel e aos cadastros (Fornecedores,
-  Partes e peças, Produtos acabados). Os itens em cinza, com "Próxima
-  sprint" (Compras, Estoque, Produção), ainda não foram implementados.
+- **Navegação lateral**: acesso ao Painel, aos cadastros (Fornecedores,
+  Partes e peças, Produtos acabados) e a Compras (Cotações, Pedidos de
+  compra). O item em cinza, com "Próxima sprint" (Produção), ainda não foi
+  implementado.
 - **Sair**: encerra a sessão imediatamente e volta para o login.
 
 ---
 
 ## 3. Painel
 
-O Painel é a tela inicial. Ele mostra:
+O Painel é a tela inicial.
 
-- Três indicadores do módulo de PCP (ordens de produção em atraso, pedidos de
-  compra a receber, insumos em nível crítico). Enquanto os módulos
-  correspondentes não entrarem em operação, cada cartão explica quando isso
-  vai acontecer, em vez de mostrar um número inventado.
+![Painel com o indicador de compras](screenshots/16-painel-com-compras.png)
+
+Ele mostra:
+
+- **Ordens de produção em atraso** e **Insumos em nível crítico**: os módulos
+  correspondentes ainda não existem, então cada cartão só explica quando vai
+  entrar em operação, em vez de mostrar um número inventado.
+- **Pedidos de compra em atraso**: este já é um indicador real, calculado a
+  partir dos pedidos de compra emitidos cuja data de entrega prevista já
+  passou (veja a seção [8](#8-pedidos-de-compra)). Vazio quando não há
+  nenhum atraso.
 - Um cartão de **Conexão com o servidor**, que avisa se a API está fora do
   ar. Se aparecer "Servidor indisponível", nenhuma tela de cadastro vai
   funcionar até a conexão voltar — não é necessário reportar como bug, espere
@@ -164,7 +174,101 @@ inativar/reativar da seção [4](#4-fornecedores). O formulário de cadastro:
 
 ---
 
-## 7. Ajuda contextual
+## 7. Cotações
+
+Tela de pedido de preço a um fornecedor, antes de qualquer compromisso de
+compra.
+
+![Lista de cotações](screenshots/17-cotacoes-lista.png)
+
+### 7.1 Buscar, filtrar e ordenar
+
+Segue o mesmo padrão das telas de cadastro (seção [4.1](#41-buscar-filtrar-e-ordenar)),
+trocando "Situação" por status da cotação: Rascunho, Enviada, Respondida ou
+Cancelada.
+
+### 7.2 Cadastrar uma cotação
+
+Clique em **Nova cotação**. Diferente dos cadastros, esta tela abre uma
+página inteira, não uma janela — uma cotação tem uma lista de itens que não
+cabe bem num espaço pequeno.
+
+![Formulário de nova cotação](screenshots/18-cotacoes-novo.png)
+
+**Número**, **Fornecedor**, **Validade** e ao menos **um item** (peça,
+quantidade e preço unitário) são obrigatórios. Use **Adicionar item** para
+incluir mais peças; o total é recalculado a cada alteração. Ao salvar, você
+vai para a tela de detalhe da cotação recém-criada.
+
+### 7.3 O ciclo de vida de uma cotação
+
+A cotação nasce em **Rascunho** e segue uma trilha de três etapas, mostrada
+na tela de detalhe:
+
+![Detalhe de uma cotação em Rascunho](screenshots/19-cotacoes-detalhe-rascunho.png)
+
+- **Criada** — sempre concluída, é o momento do cadastro.
+- **Enviada** — clique na etapa para confirmar que a cotação foi encaminhada
+  ao fornecedor. Muda o status para Enviada.
+- **Respondida** — clique na etapa para registrar o preço que o fornecedor
+  respondeu, item por item, e a data da resposta. O valor total é
+  recalculado com os preços negociados.
+
+![Detalhe de uma cotação respondida](screenshots/20-cotacoes-detalhe-respondida.png)
+
+Com a cotação **Respondida**, aparece o botão **Converter em pedido de
+compra**: informe o número do novo PC, a data de entrega prevista e a
+condição de pagamento, e o sistema cria um pedido de compra com o
+fornecedor, as peças e os **preços já negociados** — sem digitar tudo de
+novo. Veja a seção [8](#8-pedidos-de-compra).
+
+**Cancelar cotação** fica disponível em qualquer ponto antes do
+cancelamento; preserva o histórico e substitui a trilha por um aviso — uma
+cotação cancelada não volta a nenhum status anterior.
+
+---
+
+## 8. Pedidos de compra
+
+Tela do pedido de compra propriamente dito — o compromisso formal com o
+fornecedor.
+
+![Lista de pedidos de compra](screenshots/21-pedidos-compra-lista.png)
+
+Segue o mesmo padrão de busca, filtro por status e ordenação da tela de
+Cotações. Quando existe algum pedido com a entrega vencida, um bloco
+**Pedidos em atraso** aparece no topo da lista (é o mesmo indicador do
+Painel — veja a seção [3](#3-painel)).
+
+### 8.1 Cadastrar um pedido de compra
+
+Clique em **Novo pedido de compra**.
+
+![Formulário de novo pedido de compra](screenshots/22-pedidos-compra-novo.png)
+
+Assim como a cotação, é uma página inteira com uma lista de itens.
+**Número**, **Fornecedor**, **Entrega prevista** e ao menos um item são
+obrigatórios; **Condição de pagamento** é opcional. Um pedido também pode
+nascer de uma cotação respondida, pelo botão "Converter em pedido de
+compra" da seção [7.3](#73-o-ciclo-de-vida-de-uma-cotação) — nesse caso, o
+pedido já sai vinculado à cotação de origem.
+
+### 8.2 O ciclo de vida de um pedido de compra
+
+![Detalhe de um pedido de compra](screenshots/23-pedidos-compra-detalhe.png)
+
+A trilha aqui tem três etapas: **Criado** (sempre concluída), **Emitido**
+(clique para confirmar o envio ao fornecedor) e **Concluído** — esta última
+ainda não tem nenhuma ação nesta versão do sistema: ela vai se completar
+quando o recebimento dos itens for implementado. Se o pedido veio de uma
+cotação, um link **Ver cotação de origem** aparece abaixo do número.
+
+**Cancelar pedido** fica disponível enquanto o pedido não estiver
+Concluído nem já Cancelado; preserva o histórico.
+
+---
+
+## 9. Ajuda contextual
 
 Toda tela do sistema, inclusive o login, tem um botão **Ajuda** no
 cabeçalho. Ele abre uma janela com um lembrete rápido do que dá para fazer
@@ -179,7 +283,7 @@ telas se relacionam.
 
 ---
 
-## 8. Perguntas frequentes
+## 10. Perguntas frequentes
 
 **Inativei um cadastro por engano. Como desfaço?**
 Mude o filtro Situação para "Inativos" ou "Todos", clique em Editar no
@@ -204,6 +308,18 @@ procura foi inativado, mude o filtro para "Inativos" ou "Todos".
 A sessão expira depois de um tempo de inatividade, por segurança. Entre de
 novo — nenhum dado é perdido.
 
+**Não consigo editar uma cotação ou um pedido de compra depois de enviado.**
+Por enquanto não há edição livre depois do Rascunho — o fluxo passa por
+"Registrar resposta" (cotação) ou segue até a emissão (pedido). Se os dados
+estiverem errados, cancele e cadastre de novo.
+
+**Converti uma cotação em pedido de compra, mas o preço não é o que eu
+esperava.**
+O preço do pedido é sempre o preço **negociado na cotação** (o que foi
+registrado em "Registrar resposta"), nunca um novo valor digitado na
+conversão — isso evita que o pedido saia com um preço diferente do que foi
+combinado com o fornecedor.
+
 ---
 
-**Última atualização**: Agosto 2026 · Sprint 2 (telas de cadastro e painel).
+**Última atualização**: Agosto 2026 · Sprint 3 (cotações e pedidos de compra).
