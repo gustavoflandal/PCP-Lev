@@ -282,3 +282,7 @@ demais -> 409).
 
 Backend da Sprint 4 fechado (Tasks B1-B6). Frontend (Tasks F1-F6) a seguir.
 
+Task F1: complete (commits a7e9f5b..69115f1, review clean). tipos/estoque.ts +
+servicos/estoque.ts (mirror de compras.ts): listarEstoque/obterEstoque/
+listarEstoqueCriticos/ajustarEstoque/listarMovimentacoes. 7/7 testes.
+
