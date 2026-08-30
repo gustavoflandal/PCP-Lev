@@ -3,6 +3,7 @@ import { Cartao } from '@/componentes/ui/Cartao';
 import { icones } from '@/componentes/ui/icones';
 import { api } from '@/servicos/api';
 import { listarPedidosEmAtraso } from '@/servicos/compras';
+import { listarEstoqueCriticos } from '@/servicos/estoque';
 import { useAutenticacao } from '@/store/autenticacao';
 
 interface RespostaSaude {
@@ -18,18 +19,15 @@ interface WidgetPendente {
 /**
  * Widgets do RF6.1 que ainda nao tem dado real por tras: o modulo
  * correspondente ainda nao existe. "Pedidos de compra a receber" saiu
- * daqui na Sprint 3 — agora e o unico com numero de verdade (ver widget
- * dedicado abaixo). Numero simulado em tela de gestao acaba virando base de
- * decisao, entao os que restam continuam so dizendo onde e quando chegam.
+ * daqui na Sprint 3 e "Insumos em nivel critico" saiu na Sprint 4 — cada um
+ * vira widget dedicado com numero de verdade assim que o modulo existe.
+ * Numero simulado em tela de gestao acaba virando base de decisao, entao o
+ * que resta continua so dizendo onde e quando chega.
  */
 const WIDGETS: WidgetPendente[] = [
   {
     titulo: 'Ordens de produção em atraso',
     vazio: 'Nenhuma ordem de produção ainda. O módulo de produção entra na Sprint 6.',
-  },
-  {
-    titulo: 'Insumos em nível crítico',
-    vazio: 'Nenhum insumo monitorado ainda. O controle de estoque entra na Sprint 3.',
   },
 ];
 
@@ -45,6 +43,11 @@ export function Painel() {
   const pedidosEmAtraso = useQuery({
     queryKey: ['pedidos-compra', 'em-atraso'],
     queryFn: listarPedidosEmAtraso,
+  });
+
+  const estoqueCritico = useQuery({
+    queryKey: ['estoque', 'criticos'],
+    queryFn: listarEstoqueCriticos,
   });
 
   const IconeOk = icones['check-circle-2'];
@@ -91,10 +94,29 @@ export function Painel() {
           )}
         </Cartao>
 
-        <Cartao key={WIDGETS[1].titulo} titulo={WIDGETS[1].titulo}>
-          <p data-widget-vazio className="text-body text-texto-secondary">
-            {WIDGETS[1].vazio}
-          </p>
+        <Cartao titulo="Insumos em nível crítico">
+          {estoqueCritico.isPending && <p className="text-body text-texto-secondary">Verificando…</p>}
+
+          {estoqueCritico.isError && (
+            <p data-widget-vazio className="text-body text-texto-secondary">
+              Não foi possível verificar agora.
+            </p>
+          )}
+
+          {estoqueCritico.data && estoqueCritico.data.length === 0 && (
+            <p data-widget-vazio className="text-body text-texto-secondary">
+              Nenhum insumo em estoque crítico.
+            </p>
+          )}
+
+          {estoqueCritico.data && estoqueCritico.data.length > 0 && (
+            <p className="flex items-center gap-2 text-body text-estado-warning">
+              <IconeFalha size={16} aria-hidden="true" />
+              {estoqueCritico.data.length === 1
+                ? '1 insumo em estoque crítico.'
+                : `${estoqueCritico.data.length} insumos em estoque crítico.`}
+            </p>
+          )}
         </Cartao>
       </div>
 

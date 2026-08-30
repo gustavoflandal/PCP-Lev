@@ -26,6 +26,8 @@ const COMPRAS: ItemNavegacao[] = [
   { rota: '/pedidos-compra', rotulo: 'Pedidos de compra', icone: 'shopping-cart' },
 ];
 
+const ESTOQUE: ItemNavegacao[] = [{ rota: '/estoque', rotulo: 'Estoque', icone: 'boxes' }];
+
 // Ficam visiveis de proposito: quem usa o sistema precisa saber que estes
 // modulos vao existir, e em que ordem chegam.
 const FUTUROS: ItemFuturo[] = [{ rotulo: 'Produção', icone: 'factory' }];
@@ -71,6 +73,15 @@ export function NavegacaoLateral() {
       <p className="mb-1 mt-6 px-3 text-label text-texto-disabled">Compras</p>
       <ul className="flex flex-col gap-1">
         {COMPRAS.map((item) => (
+          <li key={item.rota}>
+            <Link item={item} />
+          </li>
+        ))}
+      </ul>
+
+      <p className="mb-1 mt-6 px-3 text-label text-texto-disabled">Estoque</p>
+      <ul className="flex flex-col gap-1">
+        {ESTOQUE.map((item) => (
           <li key={item.rota}>
             <Link item={item} />
           </li>

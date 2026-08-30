@@ -11,6 +11,7 @@ import { DetalhePedidoCompra } from '@/paginas/compras/DetalhePedidoCompra';
 import { NovaCotacao } from '@/paginas/compras/NovaCotacao';
 import { NovoPedidoCompra } from '@/paginas/compras/NovoPedidoCompra';
 import { PedidosCompra } from '@/paginas/compras/PedidosCompra';
+import { Estoque } from '@/paginas/estoque/Estoque';
 import { Login } from '@/paginas/Login';
 import { Painel } from '@/paginas/Painel';
 
@@ -44,6 +45,7 @@ export function App() {
             <Route path="/pedidos-compra" element={<PedidosCompra />} />
             <Route path="/pedidos-compra/novo" element={<NovoPedidoCompra />} />
             <Route path="/pedidos-compra/:id" element={<DetalhePedidoCompra />} />
+            <Route path="/estoque" element={<Estoque />} />
           </Route>
         </Route>
 
