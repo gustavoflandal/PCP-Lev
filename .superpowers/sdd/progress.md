@@ -288,4 +288,15 @@ listarEstoqueCriticos/ajustarEstoque/listarMovimentacoes. 7/7 testes.
 Task F2: complete (commits b5b50f4..0c3ae6c, review clean). useListagemEstoque: mesma
 forma de useListagemCompras, sem busca/debounce (decisao deliberada, ja aprovada -- sem
 acoplar estoque a compras por coincidencia de formato). 6/6 testes.
+Task F3: complete (commits eda859e..9b32122, review clean). Tela /estoque (sem rota ainda
+-- isso e a Task F5): lista com filtro de situacao, badge por status, modal de ajuste
+manual com noValidate desde o primeiro commit, erro 409 mantem o modal aberto. Desvio
+necessario do teste do brief: 4 linhas de getByLabelText('Quantidade'/'Motivo') (string
+exata) trocadas para regex, porque Campo com obrigatorio acrescenta um "*" visivel ao
+rotulo -- mesmo padrao ja usado em Campo.test.tsx/PartesPecas.test.tsx, confirmado pela
+revisao. Enunciado do brief tinha contagem errada (dizia 6 casos, o codigo real tem 5) --
+imprecisao do proprio plano, nao do implementador. 5/5 testes. Achado Minor para a revisao
+final triar (heranca do brief, nao do implementador): o alerta do modal de ajuste so
+mostra o erro geral, nunca erro por campo (separarErro().porCampo nunca repassado aos
+Campo), e nao ha validacao client-side antes do submit (noValidate desliga a nativa).
 
