@@ -1,5 +1,5 @@
 import * as Dialog from '@radix-ui/react-dialog';
-import type { ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { icones } from './icones';
 
 export interface ModalProps {
@@ -20,6 +20,17 @@ export interface ModalProps {
  */
 export function Modal({ aberto, aoFechar, titulo, descricao, children, rodape }: ModalProps) {
   const IconeFechar = icones.x;
+  const corpoRef = useRef<HTMLDivElement>(null);
+  const gatilhoRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    // Guardamos quem tinha foco ao abrir porque este dialogo e controlado
+    // por estado externo, sem <Dialog.Trigger>: o retorno automatico do
+    // Radix nao tem um gatilho proprio para mirar ao fechar.
+    if (aberto) {
+      gatilhoRef.current = document.activeElement as HTMLElement | null;
+    }
+  }, [aberto]);
 
   return (
     <Dialog.Root open={aberto} onOpenChange={(estaAberto) => !estaAberto && aoFechar()}>
@@ -27,6 +38,25 @@ export function Modal({ aberto, aoFechar, titulo, descricao, children, rodape }:
         <Dialog.Overlay className="fixed inset-0 bg-texto-primary/40" />
         <Dialog.Content
           className="fixed left-1/2 top-1/2 max-h-[90vh] w-[min(560px,92vw)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-cartao border border-borda-subtle bg-surface-raised shadow-elevado"
+          onOpenAutoFocus={(evento) => {
+            // O padrao do Radix foca o primeiro elemento tabulavel do
+            // dialogo, que e o botao Fechar no cabecalho: quem digita rapido
+            // aperta espaco e fecha o modal sem querer. Focar o corpo poe o
+            // cursor no primeiro campo do formulario, como se espera.
+            const primeiroCampo = corpoRef.current?.querySelector<HTMLElement>(
+              'input, select, textarea, button',
+            );
+            if (primeiroCampo) {
+              evento.preventDefault();
+              primeiroCampo.focus();
+            }
+          }}
+          onCloseAutoFocus={(evento) => {
+            if (gatilhoRef.current) {
+              evento.preventDefault();
+              gatilhoRef.current.focus();
+            }
+          }}
         >
           <div className="flex items-start justify-between gap-4 border-b border-borda-subtle p-4">
             <div>
@@ -50,7 +80,9 @@ export function Modal({ aberto, aoFechar, titulo, descricao, children, rodape }:
             </Dialog.Close>
           </div>
 
-          <div className="p-4">{children}</div>
+          <div ref={corpoRef} className="p-4">
+            {children}
+          </div>
 
           {rodape && (
             <div className="flex items-center justify-end gap-2 border-t border-borda-subtle p-4">

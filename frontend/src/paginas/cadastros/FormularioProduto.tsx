@@ -86,6 +86,7 @@ export function FormularioProduto({
           ativo: valores.ativo === 'true',
         }),
       )}
+      noValidate
       className="flex flex-col gap-4"
     >
       {erroGeral && (
@@ -128,9 +129,14 @@ export function FormularioProduto({
         />
       </div>
 
-      <div className="w-[200px]">
-        <Selecao rotulo="Situação" opcoes={SITUACAO} {...register('ativo')} />
-      </div>
+      {inicial && (
+        // So faz sentido escolher a situacao ao editar: e a unica forma de
+        // reativar um produto. Ao criar, o registro sempre nasce ativo, e
+        // mostrar o campo aqui so adicionaria uma decisao sem sentido.
+        <div className="w-[200px]">
+          <Selecao rotulo="Situação" opcoes={SITUACAO} {...register('ativo')} />
+        </div>
+      )}
 
       <div className="flex items-center justify-end gap-2">
         <Botao variante="secundaria" onClick={aoCancelar} disabled={ocupado}>
