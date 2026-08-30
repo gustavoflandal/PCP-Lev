@@ -319,4 +319,22 @@ Painel trocado de placeholder estatico para listarEstoqueCriticos() real (mesmo 
 adicionados) porque dependiam do widget estatico substituido -- revisao confirmou que
 preservam a intencao original, sem enfraquecer cobertura. Suite inteira do frontend
 300/300.
+Task F6: complete (commits 936b5fb..9a087b8, review encontrou 1 Importante real na
+primeira rodada, reaprovado limpo depois). Suite/lint/build verdes, roteiro de navegador
+real via Playwright 30/30 passos confirmados (peca -> ajuste +/- -> 409 -> cotacao ->
+enviar -> resposta -> converter-pc -> emitir (nasce em Aguardando Entrega) -> recebimento
+parcial -> recebimento total -> saldo em /estoque -> escala de cinza -> so teclado ->
+800px). 2 achados reais corrigidos: (1) trilha do PC nao diferenciava "Aguardando Entrega"
+de "Recebido Parcial" visualmente (mesmo estado pendente-acionavel) -- badge textual
+adicionado acima da trilha so para esses dois status, sem tocar TrilhaEtapas.tsx; (2)
+"tirar um acessorio" -- coluna "Reservado" removida de /estoque (sempre 0 nesta sprint,
+Disponivel mantido). Corrigido apos revisao: o badge novo usava tom/icone diferentes do
+mapa TOM_STATUS ja existente em PedidosCompra.tsx para os mesmos status (mesmo pedido
+comunicando significado diferente dependendo da tela) -- alinhado ('Aguardando Entrega'
+-> blocked/shield-alert, 'Recebido Parcial' -> warning/alert-triangle, batendo com
+PedidosCompra.tsx). Nota: o subagente de correcao caiu por limite de gasto da conta a
+meio caminho (ja tinha o diff certo e 8/8 testes passando) -- controlador verificou
+lint/tsc e fechou o commit diretamente, sem redigitar a correcao.
+
+Frontend da Sprint 4 fechado (Tasks F1-F6). Falta so a Task 21 (documentacao/entrega).
 
