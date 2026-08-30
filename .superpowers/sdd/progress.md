@@ -269,4 +269,16 @@ inconsistente com a RN5 (saldo 0 <= estoque_minimo 0 deveria nascer CRITICO, com
 fixture irmao criarPecaDeApoio em estoque_test.go ja faz corretamente) -- inocuo hoje
 porque AplicarMovimento recalcula o status na primeira movimentacao e nenhum teste le o
 status antes disso, mas vale alinhar os dois fixtures.
+Task B6: complete (commits 6a926f6..253829c, review clean -- so achado Menor cosmetico
+de comentario). registrarEstoque(v1, dep, autenticacao) monta o estoque.Servico, registra
+/estoque e /movimentacoes, e devolve o servico; registrarCompras passa a receber esse
+servico por parametro em vez de montar o proprio (consolida o que a Task B4 tinha criado
+so para compilar -- agora e uma unica instancia por boot). go build/vet/gofmt/test ./...
+limpos: 371 testes em 21 pacotes. Fluxo manual de 15 passos contra Postgres real
+confirmado ponta a ponta (peca -> estoque critico -> cotacao -> enviar -> resposta ->
+converter-pc -> emitir -> Aguardando Entrega -> recebimento parcial -> Recebido Parcial ->
+recebimento total -> Concluido + data_entrega_real -> saldo somado -> ajuste negativo
+demais -> 409).
+
+Backend da Sprint 4 fechado (Tasks B1-B6). Frontend (Tasks F1-F6) a seguir.
 
