@@ -4,6 +4,7 @@ import { RotaProtegida } from '@/componentes/layout/RotaProtegida';
 import { Shell } from '@/componentes/layout/Shell';
 import { Fornecedores } from '@/paginas/cadastros/Fornecedores';
 import { PartesPecas } from '@/paginas/cadastros/PartesPecas';
+import { ProdutosAcabados } from '@/paginas/cadastros/ProdutosAcabados';
 import { Login } from '@/paginas/Login';
 import { Painel } from '@/paginas/Painel';
 
@@ -30,6 +31,7 @@ export function App() {
             <Route path="/" element={<Painel />} />
             <Route path="/fornecedores" element={<Fornecedores />} />
             <Route path="/partes-pecas" element={<PartesPecas />} />
+            <Route path="/produtos-acabados" element={<ProdutosAcabados />} />
           </Route>
         </Route>
 
