@@ -100,5 +100,19 @@ Nota de ordem: o plano previa B1->B2->B4->B5 sequenciais, mas servico_test.go (B
 compila com o repositorio (B4) ja existindo -- neste codebase os testes de servico de
 dominio rodam contra Postgres real via testsupport.BancoMigrado, sem interface mock. Path
 real seguido: B0, B1, (B2+B3+B4 implementados juntos, testados juntos), B6, (B7+B8 juntos).
-go test ./... 255+70 = todos verdes apos cada etapa, gofmt/go vet limpos.
+Task B8 (handler): complete (commit 6ed9ef2, review clean). Handler HTTP de pedidos de
+compra, com /em-atraso registrada antes de /:id.
+Task B5: complete (commit 6fbb2c5, review clean). Handler HTTP de cotacoes, incluindo
+converter-pc (cria PedidoCompra a partir de uma Cotacao Respondida, preco travado na
+cotacao). numero_pc do PC gerado por conversao tambem e digitado pelo usuario no corpo do
+converter-pc -- mesmo padrao de "sem gerador automatico" do resto do sistema.
+Task B9: complete (commit 3c40cb3, review clean). registrarCompras publica cotacoes e
+pedidos de compra em routes.go. Backend da Sprint 3 fechado: 336/336 testes (255 anteriores
++ 81 novos), go vet e gofmt limpos. Fluxo completo verificado manualmente contra o Postgres
+real via curl/node fetch (nao so testes automatizados): criar cotacao -> enviar ->
+registrar-resposta (valor_total recalculado) -> converter-pc (preco negociado preservado) ->
+emitir PC -> em-atraso -> cancelar PC -> reenviar cotacao ja respondida devolve 409 -- 8/8
+passos.
+
+Backend completo. Frontend (Tasks F1-F11) a seguir.
 
