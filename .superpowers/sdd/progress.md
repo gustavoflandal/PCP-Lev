@@ -222,3 +222,8 @@ Base do branch: 4dfa866 (topo de feat/sprint3-cotacoes-pedidos-compra na hora da
 
 ## Progresso
 
+Task B1: complete (commits 3263648..01baacb, review clean -- so achados Minor ja
+conhecidos: duplicacao de SituacaoDoSaldo com peca.go, aprovada previamente com o usuario).
+Dominio estoque: Saldo, Movimentacao, AjusteDados, constantes de status/tipo/motivo,
+Validar/Normalizar. 8/8 testes.
+
