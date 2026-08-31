@@ -1,5 +1,6 @@
 import { api } from './api';
-import type { RespostaLogin } from '@/store/autenticacao';
+import type { UsuarioSessao, RespostaLogin } from '@/store/autenticacao';
+import type { Preferencias } from '@/store/preferencias';
 
 export interface Credenciais {
   username: string;
@@ -10,4 +11,10 @@ export interface Credenciais {
 export async function autenticar(credenciais: Credenciais): Promise<RespostaLogin> {
   const { data } = await api.post<RespostaLogin>('/auth/login', credenciais);
   return data;
+}
+
+/** PUT /auth/preferencias — segue o envelope padrao (sucesso/dados). */
+export async function atualizarPreferencias(preferencias: Preferencias): Promise<UsuarioSessao> {
+  const { data } = await api.put<{ dados: UsuarioSessao }>('/auth/preferencias', preferencias);
+  return data.dados;
 }
