@@ -1114,9 +1114,15 @@ Verificado de forma independente (nao so aceito o relatorio do subagente):
 - Dados de verificacao (usuario `operador_teste`) removidos do Postgres apos os
   testes.
 
-**Falta para fechar a Task F4**: commitar `docs/8_MANUAL_OPERACAO.md`,
-`docs/screenshots/40-41` e este ledger; decidir e executar o formato de entrega
-(commit direto na branch + o usuario abre o PR manualmente, seguindo o padrao já
-usado nesta sub-entrega, vs. outro formato); devolver os containers `pcp_backend`/
-`pcp_frontend` ao build a partir de `D:/PCP-Lev` assim que a branch for mesclada (ou
-deixar como esta, ja que o worktree so tem os fixes a mais).
+Commit de documentacao/ledger feito (`docs: verificacao final da Auditoria (Task F4)
+e manual de operacao`, na mesma branch). Usuario escolheu "Push + PR" (mesmo padrao
+das sub-entregas anteriores) via `finishing-a-development-branch`. Branch enviada:
+https://github.com/gustavoflandal/PCP-Lev/pull/new/chore/auditoria-verificacao-final
+(PR ainda precisa ser aberto manualmente pelo usuario nesse link -- 5 commits: os 4
+de correcao mais o de documentacao). Containers `pcp_backend`/`pcp_frontend`
+devolvidos ao build a partir de `D:/PCP-Lev` (main) apos a verificacao, ja que este
+branch ainda nao foi mesclado.
+
+**Task F4 completa.** Falta so o usuario abrir o PR (link acima) e mesclar. Depois
+do merge, a Fase 4 segue para a proxima sub-entrega da ordem acordada na decisao de
+cronograma v2.1 (mais acima neste arquivo): Parametros regionais (secao 4.6.4).
