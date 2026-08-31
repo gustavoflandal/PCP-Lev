@@ -12,6 +12,7 @@ import (
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/estoque"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/estrutura"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/fornecedor"
+	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/necessidadecompra"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/peca"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/pedidocompra"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/produto"
@@ -113,6 +114,10 @@ func registrarCompras(v1 *echo.Group, dep Dependencias, autenticacao echo.Middle
 
 	handlers.NovoCotacaoHandler(cotacaoServico, pedidoServico).Registrar(v1, autenticacao)
 	handlers.NovoPedidoCompraHandler(pedidoServico).Registrar(v1, autenticacao)
+
+	handlers.NovoNecessidadeCompraHandler(
+		necessidadecompra.NovoServico(repository.NovoNecessidadeCompraRepositorio(dep.Pool)),
+	).Registrar(v1, autenticacao)
 }
 
 // tratarErro garante que qualquer erro nao tratado saia no envelope do doc 3,

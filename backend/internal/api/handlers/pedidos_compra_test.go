@@ -137,6 +137,22 @@ func TestListarPedidosCompraComFiltroDeStatus(t *testing.T) {
 	assert.Len(t, lista(t, rec), 1)
 }
 
+func TestRelatorioCSVDePedidosCompraTrazCabecalhoEFornecedorResolvido(t *testing.T) {
+	api, fornecedorID, pecaID := apiPedidosCompra(t)
+	criarRec := api.chamar(http.MethodPost, "/api/v1/pedidos-compra",
+		corpoPedidoCompraValido(fornecedorID, pecaID), usuario.PerfilGestor)
+	require.Equal(t, http.StatusCreated, criarRec.Code)
+
+	rec := api.chamar(http.MethodGet, "/api/v1/pedidos-compra/relatorio.csv", "", usuario.PerfilOperador)
+
+	require.Equal(t, http.StatusOK, rec.Code)
+	assert.Contains(t, rec.Header().Get("Content-Type"), "text/csv")
+	corpo := rec.Body.String()
+	assert.Contains(t, corpo, "numero_pc;fornecedor;status;data_pedido;data_entrega_prevista;data_entrega_real;valor_total")
+	assert.Contains(t, corpo, "PC-2026-001")
+	assert.Contains(t, corpo, "Fornecedor Teste")
+}
+
 func TestObterPedidoCompraInexistenteResponde404(t *testing.T) {
 	api, _, _ := apiPedidosCompra(t)
 

@@ -34,6 +34,7 @@ type Repositorio interface {
 	AtualizarStatus(ctx context.Context, id int64, status string, autor string) error
 	EmAtraso(ctx context.Context, statusTerminais []string) ([]PedidoCompra, error)
 	RegistrarRecebimento(ctx context.Context, id int64, itens []ItemRecebimentoDados, autor string) (*PedidoCompra, error)
+	ListarParaRelatorio(ctx context.Context) ([]LinhaRelatorio, error)
 }
 
 // Servico reune os casos de uso de pedidos de compra. A dependencia direta
@@ -145,6 +146,12 @@ func (s *Servico) BuscarPorID(ctx context.Context, id int64) (*PedidoCompra, err
 // Listar devolve a pagina de pedidos de compra e o total filtrado.
 func (s *Servico) Listar(ctx context.Context, params consulta.Parametros) ([]PedidoCompra, int, error) {
 	return s.repo.Listar(ctx, params)
+}
+
+// ListarParaRelatorio devolve todos os pedidos de compra (sem paginacao)
+// com o nome do fornecedor ja resolvido, para a exportacao CSV.
+func (s *Servico) ListarParaRelatorio(ctx context.Context) ([]LinhaRelatorio, error) {
+	return s.repo.ListarParaRelatorio(ctx)
 }
 
 // Emitir marca o pedido de compra como emitido e ja aguardando a entrega --

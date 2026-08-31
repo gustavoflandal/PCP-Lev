@@ -1,6 +1,7 @@
 package handlers_test
 
 import (
+	"bytes"
 	"context"
 	"net/http"
 	"testing"
@@ -59,6 +60,20 @@ func TestListarEstoqueResponde200(t *testing.T) {
 	rec := api.chamar(http.MethodGet, "/api/v1/estoque", "", usuario.PerfilOperador)
 
 	require.Equal(t, http.StatusOK, rec.Code)
+}
+
+func TestRelatorioCSVDeEstoqueTrazCabecalhoELinhas(t *testing.T) {
+	api, _ := apiEstoque(t)
+
+	rec := api.chamar(http.MethodGet, "/api/v1/estoque/relatorio.csv", "", usuario.PerfilOperador)
+
+	require.Equal(t, http.StatusOK, rec.Code)
+	assert.Contains(t, rec.Header().Get("Content-Type"), "text/csv")
+	assert.Contains(t, rec.Header().Get("Content-Disposition"), "estoque.csv")
+	assert.True(t, bytes.HasPrefix(rec.Body.Bytes(), []byte{0xEF, 0xBB, 0xBF}), "arquivo deve comecar com o BOM UTF-8 (Excel pt-BR nao detecta UTF-8 sem ele)")
+	corpo := rec.Body.String()
+	assert.Contains(t, corpo, "codigo;descricao;saldo_atual;disponivel;estoque_minimo;situacao")
+	assert.Contains(t, corpo, "HND-001")
 }
 
 func TestObterEstoqueDeParteInexistenteResponde404(t *testing.T) {

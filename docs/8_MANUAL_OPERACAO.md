@@ -18,8 +18,9 @@
 8. [Cotações](#8-cotações)
 9. [Pedidos de compra](#9-pedidos-de-compra)
 10. [Estoque e recebimento](#10-estoque-e-recebimento)
-11. [Ajuda contextual](#11-ajuda-contextual)
-12. [Perguntas frequentes](#12-perguntas-frequentes)
+11. [Necessidade de compra e relatórios](#11-necessidade-de-compra-e-relatórios)
+12. [Ajuda contextual](#12-ajuda-contextual)
+13. [Perguntas frequentes](#13-perguntas-frequentes)
 
 ---
 
@@ -38,7 +39,7 @@ administrador.
   depois de um tempo sem uso) ou expirar, o sistema volta para esta tela e
   avisa o motivo. Basta entrar de novo — nada do que já foi salvo se perde.
 - Todas as telas, inclusive esta, têm um botão **Ajuda** no canto superior
-  direito. Veja a seção [11](#11-ajuda-contextual).
+  direito. Veja a seção [12](#12-ajuda-contextual).
 
 ---
 
@@ -54,8 +55,8 @@ tela atual à direita.
   botão **Sair**.
 - **Navegação lateral**: acesso ao Painel, aos cadastros (Fornecedores,
   Partes e peças, Produtos acabados), à Estrutura de produtos e a Compras
-  (Cotações, Pedidos de compra). O item em cinza, com "Próxima sprint"
-  (Produção), ainda não foi implementado.
+  (Cotações, Pedidos de compra, Necessidade de compra). O item em cinza, com
+  "Próxima sprint" (Produção), ainda não foi implementado.
 - **Sair**: encerra a sessão imediatamente e volta para o login.
 
 ---
@@ -159,7 +160,9 @@ para o passo a passo). O que muda é o formulário de cadastro:
   quando repor.
 - **Lead time de compra** é o prazo esperado, em dias, entre pedir e receber
   a peça do fornecedor.
-- **Fornecedor padrão** é opcional — só lista fornecedores ativos.
+- **Fornecedor padrão** é opcional — só lista fornecedores ativos, e é usado
+  pela tela de [Necessidade de compra](#11-necessidade-de-compra-e-relatórios)
+  para agrupar sugestões de compra.
 
 ---
 
@@ -253,6 +256,11 @@ quantidade e preço unitário) são obrigatórios. Use **Adicionar item** para
 incluir mais peças; o total é recalculado a cada alteração. Ao salvar, você
 vai para a tela de detalhe da cotação recém-criada.
 
+Uma cotação também pode chegar já parcialmente preenchida, vinda da tela de
+[Necessidade de compra](#11-necessidade-de-compra-e-relatórios) — nesse caso,
+fornecedor e itens (peça e quantidade sugerida) já vêm prontos, faltando só o
+preço negociado.
+
 ### 8.3 O ciclo de vida de uma cotação
 
 A cotação nasce em **Rascunho** e segue uma trilha de três etapas, mostrada
@@ -291,7 +299,9 @@ fornecedor.
 Segue o mesmo padrão de busca, filtro por status e ordenação da tela de
 Cotações. Quando existe algum pedido com a entrega vencida, um bloco
 **Pedidos em atraso** aparece no topo da lista (é o mesmo indicador do
-Painel — veja a seção [3](#3-painel)).
+Painel — veja a seção [3](#3-painel)). O botão **Exportar CSV** baixa a
+lista completa de pedidos, sem filtro — veja a seção
+[11](#11-necessidade-de-compra-e-relatórios).
 
 ### 9.1 Cadastrar um pedido de compra
 
@@ -330,6 +340,9 @@ pedido de compra emitido dá entrada em estoque conforme o fornecedor entrega.
 
 ![Lista de estoque](screenshots/24-estoque-lista.png)
 
+O botão **Exportar CSV** baixa o saldo completo, sem filtro — veja a seção
+[11](#11-necessidade-de-compra-e-relatórios).
+
 ### 10.1 Consultar o saldo
 
 - O seletor **Situação** filtra por OK, Crítico ou Bloqueado (o padrão mostra
@@ -343,7 +356,7 @@ pedido de compra emitido dá entrada em estoque conforme o fornecedor entrega.
   ou abaixo do estoque mínimo cadastrado na peça (seção [5](#5-partes-e-peças)),
   **OK** quando está acima, ou **Bloqueado**. Uma peça recém-cadastrada nasce
   com saldo zero e por isso sempre começa em Crítico, mesmo que o estoque
-  mínimo cadastrado seja zero (veja a seção [12](#12-perguntas-frequentes)).
+  mínimo cadastrado seja zero (veja a seção [13](#13-perguntas-frequentes)).
 
 ### 10.2 Ajustar o saldo manualmente
 
@@ -394,7 +407,47 @@ parcial" — sem precisar abrir o modal só para checar.
 
 ---
 
-## 11. Ajuda contextual
+## 11. Necessidade de compra e relatórios
+
+Tela que cruza o estoque mínimo de cada peça com o saldo atual e sugere o que
+precisa ser comprado — a base do planejamento de compras, antes de existir
+Ordem de Produção (a fórmula completa, que também considera OPs pendentes,
+só entra no módulo de Produção).
+
+![Lista de necessidade de compra](screenshots/32-necessidade-compra-lista.png)
+
+- Só aparecem peças **ativas** com saldo **abaixo** do estoque mínimo
+  cadastrado (seção [5](#5-partes-e-peças)).
+- **Necessidade** é a quantidade sugerida: estoque mínimo menos o saldo
+  atual.
+- A lista é agrupada pelo **fornecedor padrão** de cada peça. Peças sem
+  fornecedor padrão aparecem à parte, sem a opção de gerar cotação — cadastre
+  um fornecedor padrão na peça primeiro (seção [5](#5-partes-e-peças)).
+
+### 11.1 Gerar uma cotação a partir da necessidade
+
+Clique em **Gerar cotação** no grupo de um fornecedor.
+
+![Formulário de nova cotação pré-preenchido](screenshots/33-necessidade-compra-gerar-cotacao.png)
+
+O sistema abre o formulário de [Nova cotação](#82-cadastrar-uma-cotação) já
+com o fornecedor selecionado e um item por peça, com a quantidade sugerida —
+falta só **Número**, **Validade** e o **preço unitário** de cada item (o
+preço é exatamente o que a cotação existe para descobrir, então nunca vem
+preenchido). Se algum item não puder ser pré-preenchido (por exemplo, um
+fornecedor que foi inativado entre a lista carregar e o clique), um aviso
+aparece pedindo para conferir o formulário antes de salvar.
+
+### 11.2 Exportar relatórios em CSV
+
+As telas de [Estoque](#10-estoque-e-recebimento) e
+[Pedidos de compra](#9-pedidos-de-compra) têm um botão **Exportar CSV** que
+baixa a lista completa (sem filtro, sem paginação) num arquivo pronto para
+abrir no Excel. Só CSV por enquanto — PDF pode vir depois, se for pedido.
+
+---
+
+## 12. Ajuda contextual
 
 Toda tela do sistema, inclusive o login, tem um botão **Ajuda** no
 cabeçalho. Ele abre uma janela com um lembrete rápido do que dá para fazer
@@ -409,7 +462,7 @@ telas se relacionam.
 
 ---
 
-## 12. Perguntas frequentes
+## 13. Perguntas frequentes
 
 **Inativei um cadastro por engano. Como desfaço?**
 Mude o filtro Situação para "Inativos" ou "Todos", clique em Editar no
@@ -464,6 +517,13 @@ usada para produzir, o histórico de produção ficaria mentindo sobre o que
 realmente foi montado. Para mudar a composição, use "Nova versão" (seção
 [7.2](#72-versionar-nova-versão)) a partir de uma data de vigência futura.
 
+**Uma peça que eu sei que está crítica não aparece em Necessidade de
+compra.**
+Duas causas possíveis: o saldo está **exatamente igual** ao estoque mínimo
+(a tela de Estoque considera isso Crítico, mas a necessidade de compra exige
+saldo **abaixo** do mínimo — sugerir comprar zero unidades não ajudaria); ou
+a peça foi inativada (a necessidade de compra só considera peças ativas).
+
 ---
 
-**Última atualização**: Agosto 2026 · Fase 2.1 (estrutura de produtos / BOM).
+**Última atualização**: Agosto 2026 · Fase 2.4 (necessidade de compra e relatórios).

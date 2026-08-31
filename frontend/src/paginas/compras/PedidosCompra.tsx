@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { Badge, type TomBadge } from '@/componentes/ui/Badge';
 import { Botao } from '@/componentes/ui/Botao';
@@ -6,9 +6,12 @@ import { Campo } from '@/componentes/ui/Campo';
 import { Paginacao } from '@/componentes/ui/Paginacao';
 import { Selecao } from '@/componentes/ui/Selecao';
 import { Tabela, type Coluna } from '@/componentes/ui/Tabela';
+import { useToasts } from '@/componentes/ui/Toast';
 import type { NomeIcone } from '@/componentes/ui/icones';
 import { useFornecedoresAtivos } from '@/hooks/useFornecedoresAtivos';
 import { useListagemCompras } from '@/hooks/useListagemCompras';
+import { baixarArquivo } from '@/lib/arquivos';
+import { separarErro } from '@/lib/errosDeFormulario';
 import { formatarData, formatarMoeda } from '@/lib/formato';
 import { listarPedidosEmAtraso } from '@/servicos/compras';
 import type { PedidoCompra, StatusPedidoCompra } from '@/tipos/compras';
@@ -44,6 +47,12 @@ export function PedidosCompra() {
   const lista = useListagemCompras<PedidoCompra>('pedidos-compra', 'numero_pc');
   const { porId: fornecedorPorId } = useFornecedoresAtivos();
   const emAtraso = useQuery({ queryKey: ['pedidos-compra', 'em-atraso'], queryFn: listarPedidosEmAtraso });
+  const mostrarToast = useToasts((estado) => estado.mostrar);
+  const mutacaoExportar = useMutation({
+    mutationFn: () => baixarArquivo('/pedidos-compra/relatorio.csv', 'pedidos-compra.csv'),
+    onError: (erro) =>
+      mostrarToast(separarErro(erro).geral ?? 'Não foi possível exportar o relatório de pedidos de compra.'),
+  });
 
   const colunas: Coluna<PedidoCompra>[] = [
     {
@@ -139,9 +148,20 @@ export function PedidosCompra() {
           </div>
         </div>
 
-        <Botao icone="plus" onClick={() => navegar('/pedidos-compra/novo')}>
-          Novo pedido de compra
-        </Botao>
+        <div className="flex items-center gap-2">
+          <Botao
+            variante="secundaria"
+            icone="save"
+            ocupado={mutacaoExportar.isPending}
+            rotuloOcupado="Exportando…"
+            onClick={() => mutacaoExportar.mutate()}
+          >
+            Exportar CSV
+          </Botao>
+          <Botao icone="plus" onClick={() => navegar('/pedidos-compra/novo')}>
+            Novo pedido de compra
+          </Botao>
+        </div>
       </div>
 
       <div>

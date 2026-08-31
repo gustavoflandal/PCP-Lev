@@ -1,6 +1,12 @@
 import { api } from './api';
 import type { DadosPaginacao, Pagina } from '@/tipos/cadastros';
-import type { Cotacao, ParametrosListagemCompras, PedidoCompra, RecursoCompras } from '@/tipos/compras';
+import type {
+  Cotacao,
+  ItemNecessidadeCompra,
+  ParametrosListagemCompras,
+  PedidoCompra,
+  RecursoCompras,
+} from '@/tipos/compras';
 
 interface EnvelopeLista<T> {
   dados: T[];
@@ -129,5 +135,12 @@ export async function registrarRecebimentoPedidoCompra(
   corpo: CorpoRegistrarRecebimento,
 ): Promise<PedidoCompra> {
   const { data } = await api.post<EnvelopeItem<PedidoCompra>>(`/pedidos-compra/${id}/registrar-recebimento`, corpo);
+  return data.dados;
+}
+
+// --- Necessidade de compra ---
+
+export async function listarNecessidadeCompra(): Promise<ItemNecessidadeCompra[]> {
+  const { data } = await api.get<{ dados: ItemNecessidadeCompra[] }>('/necessidade-compra');
   return data.dados;
 }

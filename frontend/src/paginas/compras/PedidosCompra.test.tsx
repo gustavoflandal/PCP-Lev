@@ -1,6 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { useToasts } from '@/componentes/ui/Toast';
 import { instalarServidorFalso, renderizarComProvedores, type ServidorFalso } from '@/testes/utilitarios';
 import { PedidosCompra } from './PedidosCompra';
 
@@ -41,6 +42,7 @@ describe('PedidosCompra', () => {
 
   beforeEach(() => {
     navegar.mockClear();
+    useToasts.setState({ itens: [] });
     servidor = instalarServidorFalso();
     servidor.responder([
       { metodo: 'get', url: '/pedidos-compra/em-atraso', status: 200, corpo: { sucesso: true, dados: [] } },
@@ -108,6 +110,42 @@ describe('PedidosCompra', () => {
 
     await waitFor(() =>
       expect(servidor.requisicoes.at(-1)?.params).toMatchObject({ status: 'Concluido' }),
+    );
+  });
+
+  it('exportar CSV baixa o relatorio de pedidos de compra', async () => {
+    URL.createObjectURL = () => 'blob:teste';
+    URL.revokeObjectURL = () => {};
+    const cliqueEspiao = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+    servidor.responder([
+      { metodo: 'get', url: '/pedidos-compra/em-atraso', status: 200, corpo: { sucesso: true, dados: [] } },
+      { metodo: 'get', url: '/pedidos-compra', status: 200, corpo: paginaComUmPedido },
+      { metodo: 'get', url: '/fornecedores', status: 200, corpo: paginaFornecedores },
+      { metodo: 'get', url: '/pedidos-compra/relatorio.csv', status: 200, corpo: new Blob(['numero_pc,fornecedor']) },
+    ]);
+    renderizarComProvedores(<PedidosCompra />);
+    await screen.findByText('PC-2026-001');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Exportar CSV' }));
+
+    await waitFor(() => expect(cliqueEspiao).toHaveBeenCalledTimes(1));
+    cliqueEspiao.mockRestore();
+  });
+
+  it('exportar CSV com falha na API mostra toast de erro', async () => {
+    servidor.responder([
+      { metodo: 'get', url: '/pedidos-compra/em-atraso', status: 200, corpo: { sucesso: true, dados: [] } },
+      { metodo: 'get', url: '/pedidos-compra', status: 200, corpo: paginaComUmPedido },
+      { metodo: 'get', url: '/fornecedores', status: 200, corpo: paginaFornecedores },
+      { metodo: 'get', url: '/pedidos-compra/relatorio.csv', status: 500, corpo: { sucesso: false, erro: { codigo: 'ERRO_INTERNO', mensagem: 'Erro interno do servidor' } } },
+    ]);
+    renderizarComProvedores(<PedidosCompra />);
+    await screen.findByText('PC-2026-001');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Exportar CSV' }));
+
+    await waitFor(() =>
+      expect(useToasts.getState().itens[0]?.mensagem).toBe('Erro interno do servidor'),
     );
   });
 });

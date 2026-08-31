@@ -1,13 +1,19 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { useToasts } from '@/componentes/ui/Toast';
 import { instalarServidorFalso, renderizarComProvedores, type ServidorFalso } from '@/testes/utilitarios';
 import { NovaCotacao } from './NovaCotacao';
 
 const navegar = vi.fn();
+let estadoDeLocalizacao: unknown = null;
 vi.mock('react-router-dom', async (importarOriginal) => {
   const original = await importarOriginal<typeof import('react-router-dom')>();
-  return { ...original, useNavigate: () => navegar };
+  return {
+    ...original,
+    useNavigate: () => navegar,
+    useLocation: () => ({ pathname: '/cotacoes/nova', search: '', hash: '', key: 'teste', state: estadoDeLocalizacao }),
+  };
 });
 
 const paginaFornecedores = {
@@ -40,6 +46,8 @@ describe('NovaCotacao', () => {
 
   beforeEach(() => {
     navegar.mockClear();
+    estadoDeLocalizacao = null;
+    useToasts.setState({ itens: [] });
     servidor = instalarServidorFalso();
     servidor.responder([
       { metodo: 'get', url: '/fornecedores', status: 200, corpo: paginaFornecedores },
@@ -124,5 +132,41 @@ describe('NovaCotacao', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('já existe uma cotação com este número');
     expect(navegar).not.toHaveBeenCalled();
+  });
+
+  it('pre-preenche fornecedor e itens vindos da Necessidade de compra', async () => {
+    estadoDeLocalizacao = { fornecedorId: 1, itens: [{ parte_peca_id: 1, quantidade: 8 }] };
+    renderizarComProvedores(<NovaCotacao />);
+    await screen.findByText('Componentes Silva Ltda');
+
+    expect(screen.getByLabelText(/^Fornecedor/)).toHaveValue('1');
+    expect(screen.getByLabelText(/^Parte\/peça/)).toHaveValue('1');
+    expect(screen.getByLabelText(/^Quantidade/)).toHaveValue('8');
+    expect(screen.getByLabelText(/^Preço unitário/)).toHaveValue('');
+  });
+
+  it('fornecedor fora das opcoes carregadas (ex.: inativado) nao preenche o select e avisa', async () => {
+    estadoDeLocalizacao = { fornecedorId: 999, itens: [{ parte_peca_id: 1, quantidade: 8 }] };
+    renderizarComProvedores(<NovaCotacao />);
+    await screen.findByText('Componentes Silva Ltda');
+
+    expect(screen.getByLabelText(/^Fornecedor/)).toHaveValue('');
+    expect(screen.getByLabelText(/^Parte\/peça/)).toHaveValue('1');
+    await waitFor(() =>
+      expect(useToasts.getState().itens[0]?.mensagem).toContain('não puderam ser pré-preenchidos'),
+    );
+  });
+
+  it('peca fora das opcoes carregadas nao substitui o item padrao e avisa', async () => {
+    estadoDeLocalizacao = { fornecedorId: 1, itens: [{ parte_peca_id: 999, quantidade: 8 }] };
+    renderizarComProvedores(<NovaCotacao />);
+    await screen.findByText('Componentes Silva Ltda');
+
+    expect(screen.getByLabelText(/^Fornecedor/)).toHaveValue('1');
+    // item invalido descartado -- fica o item padrao (quantidade 1, nao 8)
+    expect(screen.getByLabelText(/^Quantidade/)).toHaveValue('1');
+    await waitFor(() =>
+      expect(useToasts.getState().itens[0]?.mensagem).toContain('não puderam ser pré-preenchidos'),
+    );
   });
 });
