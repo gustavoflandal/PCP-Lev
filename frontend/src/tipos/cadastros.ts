@@ -37,12 +37,19 @@ export interface RegistroCadastro {
   updated_at: string;
 }
 
+export interface EstruturaResumo {
+  versao: number;
+  data_vigencia_inicio: string;
+}
+
 export interface ProdutoAcabado extends RegistroCadastro {
   codigo: string;
   descricao: string;
   unidade_medida: string;
   preco_venda: number;
   lead_time_producao: number;
+  /** Ausente quando o produto ainda nao tem BOM cadastrada. */
+  estrutura_ativa?: EstruturaResumo;
 }
 
 export interface PartePeca extends RegistroCadastro {
