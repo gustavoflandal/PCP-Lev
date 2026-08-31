@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Badge, type TomBadge } from '@/componentes/ui/Badge';
 import { Botao } from '@/componentes/ui/Botao';
@@ -96,7 +97,12 @@ export function Estoque() {
     <div className="mx-auto flex max-w-[1400px] flex-col gap-4">
       <div>
         <h1 className="text-title text-texto-primary">Estoque</h1>
-        <p className="text-body text-texto-secondary">Saldo de partes e peças em armazém.</p>
+        <p className="text-body text-texto-secondary">
+          Saldo de partes e peças em armazém.{' '}
+          <Link to="/movimentacoes" className="text-brand hover:underline">
+            Ver histórico de movimentações
+          </Link>
+        </p>
       </div>
 
       <div className="w-[200px]">

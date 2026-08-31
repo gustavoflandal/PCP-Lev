@@ -338,3 +338,28 @@ lint/tsc e fechou o commit diretamente, sem redigitar a correcao.
 
 Frontend da Sprint 4 fechado (Tasks F1-F6). Falta so a Task 21 (documentacao/entrega).
 
+## Fechamento final da Sprint 4 (pos-revisao de branch completa)
+
+Revisao final do branch inteiro (36 commits) encontrou 3 Importantes: (1) pagina
+/movimentacoes ausente -- backend (GET /movimentacoes, listarMovimentacoes) pronto desde
+a Task B3/F1 mas sem tela; (2) referencias supostamente quebradas no cronograma; (3)
+commits de planejamento (roteiro v2.0 + spec/plano do BOM) no mesmo branch/PR da Sprint 4.
+
+Resolucoes: (1) Criada pagina minima `frontend/src/paginas/estoque/Movimentacoes.tsx`
+(so leitura, sem busca/filtro -- o backend so aceita paginacao) + rota /movimentacoes em
+App.tsx + link "Ver historico de movimentacoes" em Estoque.tsx + 3 testes em
+Movimentacoes.test.tsx. Suite completa 303/303, lint/tsc/build limpos. (2) Nao era bug:
+`docs/0_SUMARIO_EXECUTIVO.md` tinha 534 linhas editadas direto no disco pelo usuario (v1.1
+completo) nunca commitadas -- commit `924878b` fechou a lacuna, cronograma nao precisou
+mudar. (3) Usuario confirmou via AskUserQuestion manter tudo no mesmo PR (Recomendado) --
+sem acao necessaria.
+
+Dados de teste de exercicios anteriores (F6-*/ITEM TESTE*/PC-B6-*) limpos do Postgres
+compartilhado antes do fechamento (DELETE transacional, FKs verificadas antes).
+Screenshots 24 (estoque) e 28 (painel/estoque critico) recapturados via Playwright contra
+o frontend do Docker (localhost:3010) apos a limpeza.
+
+Sprint 4 (Recebimento e Estoque) fechada. Proximo passo (confirmado pelo usuario): Fase
+2.1 -- Estrutura de Produto/BOM, branch `feat/estrutura-produto-bom` empilhada sobre esta,
+plano ja escrito em `docs/superpowers/plans/2026-08-30-estrutura-produto-bom.md`.
+
