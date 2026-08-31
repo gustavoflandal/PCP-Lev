@@ -48,6 +48,14 @@ func TestListarAuditoriaComoGestorResponde403(t *testing.T) {
 	assert.Equal(t, http.StatusForbidden, rec.Code)
 }
 
+func TestListarAuditoriaComoOperadorResponde403(t *testing.T) {
+	api := apiAuditoria(t)
+
+	rec := api.chamar(http.MethodGet, "/api/v1/auditoria", "", usuario.PerfilOperador)
+
+	assert.Equal(t, http.StatusForbidden, rec.Code)
+}
+
 func TestListarAuditoriaComoAdminResponde200ComPaginacao(t *testing.T) {
 	api := apiAuditoria(t)
 
@@ -93,6 +101,22 @@ func TestExportarAuditoriaCSVSemTokenResponde401(t *testing.T) {
 	rec := api.semToken(http.MethodGet, "/api/v1/auditoria/exportar")
 
 	assert.Equal(t, http.StatusUnauthorized, rec.Code)
+}
+
+func TestExportarAuditoriaCSVComoGestorResponde403(t *testing.T) {
+	api := apiAuditoria(t)
+
+	rec := api.chamar(http.MethodGet, "/api/v1/auditoria/exportar", "", usuario.PerfilGestor)
+
+	assert.Equal(t, http.StatusForbidden, rec.Code)
+}
+
+func TestExportarAuditoriaCSVComoOperadorResponde403(t *testing.T) {
+	api := apiAuditoria(t)
+
+	rec := api.chamar(http.MethodGet, "/api/v1/auditoria/exportar", "", usuario.PerfilOperador)
+
+	assert.Equal(t, http.StatusForbidden, rec.Code)
 }
 
 func TestExportarAuditoriaCSVComoAdminRespondeArquivo(t *testing.T) {
