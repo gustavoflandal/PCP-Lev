@@ -48,6 +48,11 @@ Este conjunto de documentos fornece todas as especificações necessárias para 
    - Paleta de cores e tipografia
    - Layouts de telas principais
 
+8. **[8_MANUAL_OPERACAO.md](8_MANUAL_OPERACAO.md)**
+   - Guia de uso das telas implementadas, com capturas de tela
+   - Passo a passo de cadastro, edição, inativação e reativação
+   - Perguntas frequentes de quem opera o sistema
+
 ---
 
 ## 🎯 Como Usar Estes Documentos
@@ -72,6 +77,12 @@ Este conjunto de documentos fornece todas as especificações necessárias para 
 1. Baseie casos de teste em **1_ESPECIFICACAO_REQUISITOS.md**
 2. Use **4_FLUXOS_PROCESSO.md** para teste de fluxo end-to-end
 3. Valide responses com **3_ESPECIFICACAO_APIS.md**
+
+### Para Operadores do Sistema
+
+1. Use **8_MANUAL_OPERACAO.md** para aprender a usar as telas já
+   implementadas, com capturas de tela de cada uma
+2. Cada tela tem um botão **Ajuda** no cabeçalho com um lembrete rápido
 
 ---
 

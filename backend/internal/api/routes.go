@@ -8,8 +8,11 @@ import (
 	"github.com/gustavoflandal/pcp-lev/backend/internal/api/middleware"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/config"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/auth"
+	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/cotacao"
+	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/estoque"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/fornecedor"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/peca"
+	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/pedidocompra"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/produto"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/infra/repository"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/platform/httpx"
@@ -57,6 +60,8 @@ func NovoRoteador(dep Dependencias) *echo.Echo {
 
 	registrarAutenticacao(v1, dep)
 	registrarCadastros(v1, dep, autenticacao)
+	estoqueServico := registrarEstoque(v1, dep, autenticacao)
+	registrarCompras(v1, dep, autenticacao, estoqueServico)
 
 	return e
 }
@@ -84,6 +89,25 @@ func registrarCadastros(v1 *echo.Group, dep Dependencias, autenticacao echo.Midd
 	handlers.NovoFornecedorHandler(
 		fornecedor.NovoServico(repository.NovoFornecedorRepositorio(dep.Pool)),
 	).Registrar(v1, autenticacao)
+}
+
+// registrarEstoque publica o modulo de estoque (RF6) e devolve o servico
+// montado para ser reaproveitado por outros modulos (ex.: recebimento de PC).
+func registrarEstoque(v1 *echo.Group, dep Dependencias, autenticacao echo.MiddlewareFunc) *estoque.Servico {
+	estoqueServico := estoque.NovoServico(repository.NovoEstoqueRepositorio(dep.Pool))
+	handlers.NovoEstoqueHandler(estoqueServico).Registrar(v1, autenticacao)
+	return estoqueServico
+}
+
+// registrarCompras publica os modulos de cotacoes e pedidos de compra (RF3).
+// Recebe o estoqueServico ja montado por registrarEstoque para que exista
+// apenas uma instancia de estoque.Servico compartilhada por requisicao de boot.
+func registrarCompras(v1 *echo.Group, dep Dependencias, autenticacao echo.MiddlewareFunc, estoqueServico *estoque.Servico) {
+	pedidoServico := pedidocompra.NovoServico(repository.NovoPedidoCompraRepositorio(dep.Pool), estoqueServico)
+	cotacaoServico := cotacao.NovoServico(repository.NovoCotacaoRepositorio(dep.Pool))
+
+	handlers.NovoCotacaoHandler(cotacaoServico, pedidoServico).Registrar(v1, autenticacao)
+	handlers.NovoPedidoCompraHandler(pedidoServico).Registrar(v1, autenticacao)
 }
 
 // tratarErro garante que qualquer erro nao tratado saia no envelope do doc 3,

@@ -93,6 +93,45 @@ func TestAnalisarIgnoraEspacosNaBusca(t *testing.T) {
 	assert.Equal(t, "conector", p.Busca)
 }
 
+var statusPermitidos = []string{"Rascunho", "Enviada", "Respondida", "Cancelada"}
+
+func analisarComStatus(t *testing.T, query string) (consulta.Parametros, error) {
+	t.Helper()
+	valores, err := url.ParseQuery(query)
+	require.NoError(t, err)
+	return consulta.AnalisarComStatus(valores, colunas, "codigo", statusPermitidos)
+}
+
+func TestAnalisarComStatusSemStatusNaoFiltra(t *testing.T) {
+	p, err := analisarComStatus(t, "")
+
+	require.NoError(t, err)
+	assert.Nil(t, p.FiltroStatus, "sem status a listagem traz todos")
+}
+
+func TestAnalisarComStatusAceitaStatusValido(t *testing.T) {
+	p, err := analisarComStatus(t, "status=Enviada")
+
+	require.NoError(t, err)
+	require.NotNil(t, p.FiltroStatus)
+	assert.Equal(t, "Enviada", *p.FiltroStatus)
+}
+
+func TestAnalisarComStatusRejeitaStatusDesconhecido(t *testing.T) {
+	_, err := analisarComStatus(t, "status=Aprovada")
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "status")
+}
+
+func TestAnalisarComStatusContinuaAplicandoOsPadroesComuns(t *testing.T) {
+	p, err := analisarComStatus(t, "pagina=2&ordem=desc")
+
+	require.NoError(t, err)
+	assert.Equal(t, 2, p.Pagina)
+	assert.Equal(t, consulta.Decrescente, p.Ordem)
+}
+
 func TestOrdemSQLDevolveApenasPalavrasChaveSeguras(t *testing.T) {
 	crescente, err := analisar(t, "ordem=asc")
 	require.NoError(t, err)

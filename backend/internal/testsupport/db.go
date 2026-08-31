@@ -57,6 +57,15 @@ func PoolLimpo(t *testing.T) *pgxpool.Pool {
 	}
 	// Toda conexao do pool passa a enxergar apenas o schema do teste.
 	cfg.ConnConfig.RuntimeParams["search_path"] = schema
+	// db.Aplicar mantem uma conexao presa durante todo o lock de migracao e
+	// ainda precisa de uma segunda para rodar cada migration (ver
+	// migrator.go) — testes que sobem varias goroutines concorrentes
+	// (TestAplicarSuportaDuasInstanciasSubindoAoMesmoTempo) esgotam um pool
+	// pequeno e travam em deadlock. O tamanho padrao do pgxpool e
+	// proporcional a runtime.NumCPU(), que em runners de CI com poucos
+	// nucleos fica pequeno demais; fixar um teto generoso remove essa
+	// dependencia do hardware do executor.
+	cfg.MaxConns = 20
 
 	pool, err := pgxpool.NewWithConfig(ctx, cfg)
 	if err != nil {

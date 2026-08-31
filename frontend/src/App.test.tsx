@@ -52,7 +52,7 @@ describe('App', () => {
     renderizarEm('/');
 
     expect(screen.getByRole('banner')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Início' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Painel' })).toBeInTheDocument();
   });
 
   it('rota desconhecida volta para a raiz em vez de mostrar tela em branco', () => {
@@ -68,7 +68,7 @@ describe('App', () => {
     await userEvent.type(screen.getByLabelText('Senha'), 'Admin@123');
     await userEvent.click(screen.getByRole('button', { name: 'Entrar' }));
 
-    expect(await screen.findByRole('heading', { name: 'Início' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Painel' })).toBeInTheDocument();
   });
 
   it('com sessao aberta, a tela de login redireciona para a inicial', () => {
@@ -81,7 +81,7 @@ describe('App', () => {
 
     renderizarEm('/login');
 
-    expect(screen.getByRole('heading', { name: 'Início' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Painel' })).toBeInTheDocument();
   });
 
   it('leva o usuario de volta a rota que ele tentou abrir antes do login', async () => {
@@ -92,6 +92,6 @@ describe('App', () => {
     await userEvent.type(screen.getByLabelText('Senha'), 'Admin@123');
     await userEvent.click(screen.getByRole('button', { name: 'Entrar' }));
 
-    expect(await screen.findByRole('heading', { name: 'Início' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Painel' })).toBeInTheDocument();
   });
 });

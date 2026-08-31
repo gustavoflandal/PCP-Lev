@@ -2,8 +2,19 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { RotaProtegida } from '@/componentes/layout/RotaProtegida';
 import { Shell } from '@/componentes/layout/Shell';
-import { Inicio } from '@/paginas/Inicio';
+import { Fornecedores } from '@/paginas/cadastros/Fornecedores';
+import { PartesPecas } from '@/paginas/cadastros/PartesPecas';
+import { ProdutosAcabados } from '@/paginas/cadastros/ProdutosAcabados';
+import { Cotacoes } from '@/paginas/compras/Cotacoes';
+import { DetalheCotacao } from '@/paginas/compras/DetalheCotacao';
+import { DetalhePedidoCompra } from '@/paginas/compras/DetalhePedidoCompra';
+import { NovaCotacao } from '@/paginas/compras/NovaCotacao';
+import { NovoPedidoCompra } from '@/paginas/compras/NovoPedidoCompra';
+import { PedidosCompra } from '@/paginas/compras/PedidosCompra';
+import { Estoque } from '@/paginas/estoque/Estoque';
+import { Movimentacoes } from '@/paginas/estoque/Movimentacoes';
 import { Login } from '@/paginas/Login';
+import { Painel } from '@/paginas/Painel';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -25,7 +36,18 @@ export function App() {
 
         <Route element={<RotaProtegida />}>
           <Route element={<Shell />}>
-            <Route path="/" element={<Inicio />} />
+            <Route path="/" element={<Painel />} />
+            <Route path="/fornecedores" element={<Fornecedores />} />
+            <Route path="/partes-pecas" element={<PartesPecas />} />
+            <Route path="/produtos-acabados" element={<ProdutosAcabados />} />
+            <Route path="/cotacoes" element={<Cotacoes />} />
+            <Route path="/cotacoes/nova" element={<NovaCotacao />} />
+            <Route path="/cotacoes/:id" element={<DetalheCotacao />} />
+            <Route path="/pedidos-compra" element={<PedidosCompra />} />
+            <Route path="/pedidos-compra/novo" element={<NovoPedidoCompra />} />
+            <Route path="/pedidos-compra/:id" element={<DetalhePedidoCompra />} />
+            <Route path="/estoque" element={<Estoque />} />
+            <Route path="/movimentacoes" element={<Movimentacoes />} />
           </Route>
         </Route>
 

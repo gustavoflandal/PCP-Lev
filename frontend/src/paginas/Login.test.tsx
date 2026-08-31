@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { api } from '@/servicos/api';
 import { useAutenticacao } from '@/store/autenticacao';
-import { renderizarComProvedores } from '@/testes/utilitarios';
+import { instalarServidorFalso, renderizarComProvedores, type ServidorFalso } from '@/testes/utilitarios';
 import { Login } from './Login';
 
 const respostaLogin = {
@@ -13,22 +13,6 @@ const respostaLogin = {
   usuario: { id: 1, username: 'admin', nome: 'Administrador do Sistema', perfil: 'ADMIN' },
 };
 
-/** Substitui apenas o transporte: servico, store e formulario seguem reais. */
-function responderApi(status: number, data: unknown) {
-  api.defaults.adapter = async (config) => {
-    if (status >= 400) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const erro: any = new Error('erro http');
-      erro.isAxiosError = true;
-      erro.config = config;
-      erro.response = { status, data, headers: {}, config };
-      throw erro;
-    }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return { status, data, headers: {}, config } as any;
-  };
-}
-
 async function preencherEEnviar(usuario = 'admin', senha = 'Admin@123') {
   await userEvent.type(screen.getByLabelText('Usuário'), usuario);
   await userEvent.type(screen.getByLabelText('Senha'), senha);
@@ -36,9 +20,12 @@ async function preencherEEnviar(usuario = 'admin', senha = 'Admin@123') {
 }
 
 describe('Login', () => {
+  let servidor: ServidorFalso;
+
   beforeEach(() => {
     sessionStorage.clear();
     useAutenticacao.getState().sair();
+    servidor = instalarServidorFalso();
   });
 
   afterEach(() => {
@@ -53,7 +40,7 @@ describe('Login', () => {
   });
 
   it('autentica e abre a sessao', async () => {
-    responderApi(200, respostaLogin);
+    servidor.responder([{ metodo: 'post', url: '/auth/login', status: 200, corpo: respostaLogin }]);
     renderizarComProvedores(<Login />);
 
     await preencherEEnviar();
@@ -82,10 +69,14 @@ describe('Login', () => {
   });
 
   it('mostra a mensagem da API quando as credenciais estao erradas', async () => {
-    responderApi(401, {
-      sucesso: false,
-      erro: { codigo: 'NAO_AUTORIZADO', mensagem: 'Usuario ou senha invalidos' },
-    });
+    servidor.responder([
+      {
+        metodo: 'post',
+        url: '/auth/login',
+        status: 401,
+        corpo: { sucesso: false, erro: { codigo: 'NAO_AUTORIZADO', mensagem: 'Usuario ou senha invalidos' } },
+      },
+    ]);
     renderizarComProvedores(<Login />);
 
     await preencherEEnviar('admin', 'senha_errada');
