@@ -14,7 +14,7 @@ import (
 )
 
 const colunasUsuario = `id, username, nome, email, senha_hash, perfil, ativo,
-	ultimo_login, created_at, updated_at`
+	ultimo_login, created_at, updated_at, tema, alto_contraste, densidade, tamanho_fonte`
 
 // UsuarioRepositorio implementa usuario.Repositorio.
 type UsuarioRepositorio struct {
@@ -64,11 +64,26 @@ func (r *UsuarioRepositorio) AtualizarSenha(ctx context.Context, id int64, senha
 	return nil
 }
 
+// AtualizarPreferencias grava as preferencias de aparencia do usuario.
+func (r *UsuarioRepositorio) AtualizarPreferencias(ctx context.Context, id int64, p usuario.Preferencias) error {
+	etiqueta, err := r.pool.Exec(ctx,
+		`UPDATE usuarios SET tema = $2, alto_contraste = $3, densidade = $4, tamanho_fonte = $5 WHERE id = $1`,
+		id, p.Tema, p.AltoContraste, p.Densidade, p.TamanhoFonte)
+	if err != nil {
+		return fmt.Errorf("atualizar preferencias: %w", err)
+	}
+	if etiqueta.RowsAffected() == 0 {
+		return usuario.ErrNaoEncontrado
+	}
+	return nil
+}
+
 func (r *UsuarioRepositorio) buscarUm(ctx context.Context, sql string, arg any) (*usuario.Usuario, error) {
 	var u usuario.Usuario
 	err := r.pool.QueryRow(ctx, sql, arg).Scan(
 		&u.ID, &u.Username, &u.Nome, &u.Email, &u.SenhaHash, &u.Perfil,
 		&u.Ativo, &u.UltimoLogin, &u.CreatedAt, &u.UpdatedAt,
+		&u.Tema, &u.AltoContraste, &u.Densidade, &u.TamanhoFonte,
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {

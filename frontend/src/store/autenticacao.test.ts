@@ -5,7 +5,10 @@ const respostaLogin: RespostaLogin = {
   access_token: 'token-abc',
   token_type: 'Bearer',
   expires_in: 28800,
-  usuario: { id: 1, username: 'admin', nome: 'Administrador do Sistema', perfil: 'ADMIN' },
+  usuario: {
+    id: 1, username: 'admin', nome: 'Administrador do Sistema', perfil: 'ADMIN',
+    tema: 'automatico', alto_contraste: false, densidade: 'confortavel', tamanho_fonte: 'padrao',
+  },
 };
 
 describe('store de autenticacao', () => {
@@ -80,5 +83,27 @@ describe('store de autenticacao', () => {
     sessionStorage.setItem('pcp.sessao', JSON.stringify({ usuario: respostaLogin.usuario }));
 
     expect(lerSessaoSalva()).toBeNull();
+  });
+
+  it('atualizarPreferenciasSessao grava a nova preferencia no usuario e na sessao salva', () => {
+    useAutenticacao.getState().entrar(respostaLogin);
+
+    useAutenticacao.getState().atualizarPreferenciasSessao({
+      tema: 'escuro', alto_contraste: true, densidade: 'compacta', tamanho_fonte: 'grande',
+    });
+
+    // Sem isto, um F5 apos salvar preferencias re-semeia o <html> com o
+    // valor de login (ver `sessaoInicial` em autenticacao.ts), revertendo a
+    // troca que acabou de ser confirmada pelo servidor.
+    expect(useAutenticacao.getState().usuario?.tema).toBe('escuro');
+    expect(lerSessaoSalva()?.usuario.densidade).toBe('compacta');
+  });
+
+  it('atualizarPreferenciasSessao sem sessao ativa nao quebra', () => {
+    expect(() =>
+      useAutenticacao.getState().atualizarPreferenciasSessao({
+        tema: 'escuro', alto_contraste: false, densidade: 'compacta', tamanho_fonte: 'padrao',
+      }),
+    ).not.toThrow();
   });
 });

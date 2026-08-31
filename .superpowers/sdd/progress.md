@@ -657,3 +657,101 @@ Fase 2.4 (Necessidade de Compra e Relatorios) completa: backend (397 testes) + f
 corrigidos (mais 6 achados Medios/Baixos), verificacao de navegador real via Playwright
 (13/13) incluindo confirmacao byte-a-byte do formato CSV, documentacao e capturas de
 tela entregues.
+
+---
+
+# Ledger — Fase 4.1: Aparencia e Preferencias (feat/aparencia-preferencias)
+
+Plano: docs/superpowers/plans/2026-08-31-aparencia-preferencias.md
+Decisoes de pre-voo: branch empilhada sobre feat/necessidade-compra-relatorios (PR ainda
+aberto). Escopo confirmado com o usuario: Tema (claro/escuro/automatico) + Alto
+Contraste + Densidade + Tamanho de Fonte, persistidos no backend por usuario (nao so
+localStorage). Fora de escopo: Cor de Destaque (conflita com a marca fixa do design
+system), Modo Quiosque/TV (sem Kanban ainda -- Fase 3), preparacao de i18n (sem segundo
+idioma real). `GET /auth/eu` deixa de so ecoar claims do JWT e passa a consultar o
+banco -- greenfield seguro, nao era consumido por nenhuma tela do frontend ate agora.
+
+Base do branch: 67b2410 (topo de feat/necessidade-compra-relatorios).
+
+## Progresso
+
+Task B1: complete (commit f1a8c2d, gofmt/vet limpos, 11/11 testes no dominio usuario).
+Migration 009 (4 colunas + CHECK constraints em `usuarios`); `usuario.Preferencias` +
+`Validar()` (conjunto fechado por campo, para 400 explicito em vez de estourar o CHECK
+do banco como 500).
+Task B2: complete (commit cb35cd8, 6/6 testes novos no repositorio). `Repositorio.
+AtualizarPreferencias` + `colunasUsuario`/`buscarUm` ganham os 4 campos novos.
+Task B3: complete (commit 2c428d9). `ServicoAutenticacao.AtualizarPreferencias` +
+`BuscarUsuarioAtual`; `AuthHandler.Eu` reescrito para consultar o banco em vez de ecoar
+claims; rota nova `PUT /auth/preferencias`. Efeito colateral mecanico corrigido: 3
+testes de `migrator_test.go` tinham a contagem de migrations hardcoded em 8, atualizados
+para 9.
+Task B4: verificacao manual via curl dentro da rede do compose -- login -> `GET
+/auth/eu` mostra os defaults (`automatico`/`false`/`confortavel`/`padrao`) -> `PUT
+/auth/preferencias` -> `GET /auth/eu` reflete os 4 campos sem novo login -> tema
+invalido responde 400 -> revertido para os defaults. Suite completa: 408/408 testes em
+22 pacotes (397 anteriores + 11 novos), go build/vet/gofmt limpos -- tudo via Docker.
+
+Backend da Fase 4.1 fechado (Tasks B1-B4). Frontend (Tasks F1-F5) a seguir.
+
+Task F1: complete. Tokens de tema escuro, alto contraste, densidade e fonte em
+`tokens.css`; `tailwind.config.js` convertido de px para rem (`fontSize`, `spacing`,
+`minHeight`).
+Task F2: complete. Script sincrono em `index.html` (aplica antes do React montar, sem
+flash); `usePreferencias` (Zustand) com `aplicar()`/`resolverTema()`; listener de
+`prefers-color-scheme` para tema "automatico".
+Task F3: complete. Tela `Preferencias.tsx` (4 controles independentes, aplicacao
+otimista com reversao em erro); `atualizarPreferencias` em `autenticacaoServico.ts`.
+Task F4: complete. Rota `/preferencias`; botao "Preferencias" no cabecalho, ao lado de
+Ajuda/Sair; ajuda contextual da tela.
+Task F5: verificacao inicial -- 346/346 testes, lint/tsc/build limpos.
+
+Revisao de codigo (agente `code-reviewer`, background): 12 achados. Aplicados todos:
+- **Critico -- default de densidade**: a migration 009 gravava `DEFAULT 'confortavel'`,
+  mudando a altura de linha de 40px para 48px para todo usuario existente sem escolha
+  deles (antes da Fase 4.1 a altura era um valor fixo de 40px). Corrigido para
+  `DEFAULT 'compacta'` na migration, no teste do repositorio
+  (`TestUsuarioSemeadoTemPreferenciasPadrao`), no CSS (`tokens.css`), no script inline
+  (`index.html`) e no store (`preferencias.ts`) -- os 5 lugares tinham que concordar.
+- **Backend**: `AuthHandler.Eu` tratava erro de forma menos explicita que o padrao do
+  projeto (`mapaDeErros`) -- reescrito com `switch`/`errors.Is` e log estruturado;
+  validacao de tema/densidade/fonte duplicada entre handler e dominio -- removida do
+  handler (`validate:"required"` nas tags), dominio vira fonte unica via `slices.Contains`
+  sobre variaveis de pacote.
+- **Frontend -- alturas fixas em px nao escalavam com Tamanho de Fonte**: `Badge`,
+  `Botao`, `Campo`, `Selecao` e `Cabecalho` tinham `h-[Npx]` hardcoded; convertidos para
+  `h-[Nrem]` (40px->2.5rem, 48px->3rem, 22px->1.375rem, 56px->3.5rem) para escalar com o
+  `font-size` da raiz.
+- **Frontend -- sincronizacao de preferencias**: listener de mudanca de tema do SO
+  reaplicava mesmo com tema explicito (nao so "automatico"); sessao nao era re-semeada
+  ao entrar/sair; tela de Preferencias nao reconciliava com a resposta do servidor apos
+  salvar; parsing do localStorage no script inline abortava a normalizacao de
+  densidade/fonte em caso de JSON invalido; faltava `--surface-sunken` explicito na
+  combinacao escuro+alto-contraste. Todos corrigidos com testes de regressao.
+- 8 arquivos de teste precisaram de `tema`/`alto_contraste`/`densidade`/`tamanho_fonte`
+  nos mocks de `UsuarioSessao` apos os 4 campos virarem obrigatorios no tipo; `jsdom` nao
+  implementa `matchMedia` -- polyfill global em `testes/setup.ts`.
+
+**Bug adicional encontrado na verificacao manual via Playwright** (nao estava nos 12
+achados da revisao): salvar uma preferencia atualizava a store `usePreferencias` e o
+cache em `localStorage`, mas nao o `usuario` guardado em `sessionStorage` pela sessao de
+autenticacao. Um F5 depois de mudar o tema/densidade re-semeava o `<html>` com o valor
+de login (`sessaoInicial` em `autenticacao.ts`), revertendo silenciosamente a troca ja
+confirmada pelo servidor. Corrigido com `atualizarPreferenciasSessao` em
+`useAutenticacao`, chamado no `onSuccess` da mutacao de `Preferencias.tsx`; testes de
+regressao em `autenticacao.test.ts` e `Preferencias.test.tsx`.
+
+Suite final (apos todas as correcoes, tudo via Docker): backend 408/408 testes,
+build/vet/gofmt limpos; frontend 349/349 testes, eslint/tsc/build limpos.
+
+Verificacao manual via Playwright (`mcr.microsoft.com/playwright:v1.49.0-noble`, rede
+`pcp-lev_default`): 12/12 passos OK -- login, tema escuro aplicado na hora e sobrevive a
+F5 sem flash, alto contraste, densidade compacta menor que confortavel (confirma a
+correcao do default), fonte extra-grande sem quebrar layout em 800px, defaults
+revertidos e sobrevivem a F5. Screenshots capturados em docs/screenshots/34 a 37
+(tema claro, tema escuro, alto contraste, fonte extra-grande). Manual de operacao
+atualizado com a secao 12 "Aparencia e preferencias", renumerando Ajuda contextual
+(12->13) e Perguntas frequentes (13->14).
+
+Fase 4.1 (Aparencia e Preferencias) fechada -- backend e frontend, 12 achados de revisao
+mais 1 bug de verificacao manual, todos corrigidos e com teste de regressao.

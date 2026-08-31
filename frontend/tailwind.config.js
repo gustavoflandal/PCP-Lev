@@ -1,19 +1,25 @@
 /** @type {import('tailwindcss').Config} */
 // Os valores vem dos tokens definidos em src/estilos/tokens.css.
 // Nenhum componente deve usar hex solto — sempre a classe do token.
+//
+// fontSize/spacing/minHeight (exceto `px`, um hairline que nao deve
+// escalar) estao em `rem`, nao `px` -- e o que permite Tamanho de Fonte
+// (Fase 4.1) escalar tudo proporcionalmente via `font-size` no <html>,
+// sem tocar nenhum componente. 1rem = 16px, entao os valores em 100%
+// (tamanho padrao) sao identicos aos que existiam antes desta fase.
 export default {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
   theme: {
     // Escala de 4px do sistema de design. Nada fora disso.
     spacing: {
       0: '0',
-      1: '4px',
-      2: '8px',
-      3: '12px',
-      4: '16px',
-      6: '24px',
-      8: '32px',
-      12: '48px',
+      1: '0.25rem',
+      2: '0.5rem',
+      3: '0.75rem',
+      4: '1rem',
+      6: '1.5rem',
+      8: '2rem',
+      12: '3rem',
       px: '1px',
     },
     borderRadius: {
@@ -66,18 +72,19 @@ export default {
         mono: ['JetBrains Mono Variable', 'JetBrains Mono', 'ui-monospace', 'monospace'],
       },
       fontSize: {
-        display: ['28px', { lineHeight: '34px', fontWeight: '600' }],
-        title: ['20px', { lineHeight: '28px', fontWeight: '600' }],
-        subtitle: ['16px', { lineHeight: '24px', fontWeight: '600' }],
-        body: ['14px', { lineHeight: '20px', fontWeight: '400' }],
-        label: ['12px', { lineHeight: '16px', fontWeight: '500', letterSpacing: '.02em' }],
-        dado: ['14px', { lineHeight: '20px', fontWeight: '500' }],
-        'dado-lg': ['18px', { lineHeight: '24px', fontWeight: '600' }],
+        display: ['1.75rem', { lineHeight: '2.125rem', fontWeight: '600' }],
+        title: ['1.25rem', { lineHeight: '1.75rem', fontWeight: '600' }],
+        subtitle: ['1rem', { lineHeight: '1.5rem', fontWeight: '600' }],
+        body: ['0.875rem', { lineHeight: '1.25rem', fontWeight: '400' }],
+        label: ['0.75rem', { lineHeight: '1rem', fontWeight: '500', letterSpacing: '.02em' }],
+        dado: ['0.875rem', { lineHeight: '1.25rem', fontWeight: '500' }],
+        'dado-lg': ['1.125rem', { lineHeight: '1.5rem', fontWeight: '600' }],
       },
       minHeight: {
-        linha: '40px',
-        'linha-confortavel': '48px',
-        toque: '44px',
+        // Densidade (Fase 4.1): compacta/confortavel trocam --altura-linha
+        // em tokens.css, nao esta classe -- um so lugar decide a altura.
+        linha: 'var(--altura-linha)',
+        toque: '2.75rem',
       },
     },
   },

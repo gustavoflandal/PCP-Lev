@@ -31,7 +31,7 @@ export function Badge({ tom, icone, children, className }: BadgeProps) {
   return (
     <span
       className={cn(
-        'inline-flex h-[22px] items-center gap-1 rounded-full px-2 text-label',
+        'inline-flex h-[1.375rem] items-center gap-1 rounded-full px-2 text-label',
         tons[tom],
         className,
       )}

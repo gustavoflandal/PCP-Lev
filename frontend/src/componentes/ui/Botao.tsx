@@ -24,9 +24,9 @@ const estilos = cva(
       },
       tamanho: {
         // Densidade de gestao (desktop).
-        padrao: 'h-[40px] px-4',
+        padrao: 'h-[2.5rem] px-4',
         // Densidade confortavel: tablet e telas de execucao, alvo de toque 44px+.
-        confortavel: 'min-h-toque h-[48px] px-6 text-subtitle',
+        confortavel: 'min-h-toque h-[3rem] px-6 text-subtitle',
       },
     },
     defaultVariants: { variante: 'primaria', tamanho: 'padrao' },

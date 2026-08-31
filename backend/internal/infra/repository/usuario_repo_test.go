@@ -103,3 +103,45 @@ func TestAtualizarSenhaDeUsuarioInexistente(t *testing.T) {
 
 	require.ErrorIs(t, err, usuario.ErrNaoEncontrado)
 }
+
+func TestUsuarioSemeadoTemPreferenciasPadrao(t *testing.T) {
+	ctx := context.Background()
+	repo := repository.NovoUsuarioRepositorio(testsupport.BancoMigrado(t))
+
+	admin, err := repo.BuscarPorUsername(ctx, "admin")
+
+	require.NoError(t, err)
+	assert.Equal(t, usuario.TemaAutomatico, admin.Tema)
+	assert.False(t, admin.AltoContraste)
+	assert.Equal(t, usuario.DensidadeCompacta, admin.Densidade)
+	assert.Equal(t, usuario.FontePadrao, admin.TamanhoFonte)
+}
+
+func TestAtualizarPreferenciasGravaEBuscarPorIDReflete(t *testing.T) {
+	ctx := context.Background()
+	repo := repository.NovoUsuarioRepositorio(testsupport.BancoMigrado(t))
+	admin, err := repo.BuscarPorUsername(ctx, "admin")
+	require.NoError(t, err)
+
+	require.NoError(t, repo.AtualizarPreferencias(ctx, admin.ID, usuario.Preferencias{
+		Tema: usuario.TemaEscuro, AltoContraste: true, Densidade: usuario.DensidadeCompacta, TamanhoFonte: usuario.FonteGrande,
+	}))
+
+	atualizado, err := repo.BuscarPorID(ctx, admin.ID)
+	require.NoError(t, err)
+	assert.Equal(t, usuario.TemaEscuro, atualizado.Tema)
+	assert.True(t, atualizado.AltoContraste)
+	assert.Equal(t, usuario.DensidadeCompacta, atualizado.Densidade)
+	assert.Equal(t, usuario.FonteGrande, atualizado.TamanhoFonte)
+}
+
+func TestAtualizarPreferenciasDeUsuarioInexistente(t *testing.T) {
+	ctx := context.Background()
+	repo := repository.NovoUsuarioRepositorio(testsupport.BancoMigrado(t))
+
+	err := repo.AtualizarPreferencias(ctx, 999999, usuario.Preferencias{
+		Tema: usuario.TemaClaro, Densidade: usuario.DensidadeCompacta, TamanhoFonte: usuario.FontePadrao,
+	})
+
+	require.ErrorIs(t, err, usuario.ErrNaoEncontrado)
+}

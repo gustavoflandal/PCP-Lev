@@ -101,17 +101,72 @@ func (h *AuthHandler) TrocarSenha(c echo.Context) error {
 	}
 }
 
-// Eu devolve os dados do usuario da sessao corrente.
+// Eu devolve os dados do usuario da sessao corrente. Consulta o banco (nao
+// so ecoa as claims do JWT) para refletir mudancas -- como preferencias de
+// aparencia -- sem exigir um novo login.
 func (h *AuthHandler) Eu(c echo.Context) error {
 	claims := middleware.ClaimsDoContexto(c)
 	if claims == nil {
 		return httpx.NaoAutorizado(c, "Token de acesso ausente")
 	}
 
-	return httpx.OK(c, map[string]any{
-		"id":       claims.UsuarioID,
-		"username": claims.Username,
-		"nome":     claims.Nome,
-		"perfil":   claims.Perfil,
+	u, err := h.servico.BuscarUsuarioAtual(c.Request().Context(), claims.UsuarioID)
+	switch {
+	case err == nil:
+		return httpx.OK(c, u)
+	case errors.Is(err, usuario.ErrNaoEncontrado):
+		return httpx.NaoAutorizado(c, "Usuario nao encontrado")
+	default:
+		// Uma falha transitoria de banco nao pode deslogar o usuario -- o
+		// interceptador do frontend trata todo 401 fora de /auth/login como
+		// sessao expirada (api.ts). 500 aqui e o mesmo tratamento que
+		// TrocarSenha ja da para erros nao mapeados.
+		slog.Error("falha ao buscar usuario atual", "usuario_id", claims.UsuarioID, "erro", err)
+		return httpx.ErroInterno(c)
+	}
+}
+
+// preferenciasRequest e o corpo de PUT /auth/preferencias. Sem tags
+// `validate:"required"` -- usuario.Preferencias.Validar() ja rejeita string
+// vazia (fora do conjunto fechado por campo); duplicar a checagem aqui so
+// fazia a mesma falha chegar ao cliente em dois formatos diferentes
+// (com/sem `detalhes` por campo).
+type preferenciasRequest struct {
+	Tema          string `json:"tema"`
+	AltoContraste bool   `json:"alto_contraste"`
+	Densidade     string `json:"densidade"`
+	TamanhoFonte  string `json:"tamanho_fonte"`
+}
+
+// AtualizarPreferencias grava as preferencias de aparencia do usuario da
+// sessao corrente.
+func (h *AuthHandler) AtualizarPreferencias(c echo.Context) error {
+	claims := middleware.ClaimsDoContexto(c)
+	if claims == nil {
+		return httpx.NaoAutorizado(c, "Token de acesso ausente")
+	}
+
+	var req preferenciasRequest
+	if err := c.Bind(&req); err != nil {
+		return httpx.Erro(c, http.StatusBadRequest, httpx.CodigoRequisicaoInvalida, "Corpo da requisicao invalido")
+	}
+	if problemas := httpx.Validar(req); problemas != nil {
+		return httpx.ErroValidacao(c, problemas)
+	}
+
+	atualizado, err := h.servico.AtualizarPreferencias(c.Request().Context(), claims.UsuarioID, usuario.Preferencias{
+		Tema: req.Tema, AltoContraste: req.AltoContraste, Densidade: req.Densidade, TamanhoFonte: req.TamanhoFonte,
 	})
+	if err != nil {
+		switch {
+		case errors.Is(err, usuario.ErrPreferenciaInvalida):
+			return httpx.Erro(c, http.StatusBadRequest, httpx.CodigoErroValidacao, err.Error())
+		case errors.Is(err, usuario.ErrNaoEncontrado):
+			return httpx.NaoEncontrado(c, "Usuario nao encontrado")
+		default:
+			slog.Error("falha ao atualizar preferencias", "usuario_id", claims.UsuarioID, "erro", err)
+			return httpx.ErroInterno(c)
+		}
+	}
+	return httpx.OK(c, atualizado)
 }

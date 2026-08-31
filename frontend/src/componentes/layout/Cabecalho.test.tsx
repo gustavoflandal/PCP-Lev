@@ -1,15 +1,24 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useAutenticacao } from '@/store/autenticacao';
 import { Cabecalho } from './Cabecalho';
+
+const navegar = vi.fn();
+vi.mock('react-router-dom', async (importarOriginal) => {
+  const original = await importarOriginal<typeof import('react-router-dom')>();
+  return { ...original, useNavigate: () => navegar };
+});
 
 const respostaLogin = {
   access_token: 'token-abc',
   token_type: 'Bearer',
   expires_in: 28800,
-  usuario: { id: 1, username: 'admin', nome: 'Gustavo Landal', perfil: 'GESTOR' as const },
+  usuario: {
+    id: 1, username: 'admin', nome: 'Gustavo Landal', perfil: 'GESTOR' as const,
+    tema: 'automatico' as const, alto_contraste: false, densidade: 'confortavel' as const, tamanho_fonte: 'padrao' as const,
+  },
 };
 
 function renderizar() {
@@ -22,6 +31,7 @@ function renderizar() {
 
 describe('Cabecalho', () => {
   beforeEach(() => {
+    navegar.mockClear();
     sessionStorage.clear();
     useAutenticacao.getState().entrar(respostaLogin);
   });
@@ -58,5 +68,13 @@ describe('Cabecalho', () => {
     renderizar();
 
     expect(screen.getByRole('banner')).toBeInTheDocument();
+  });
+
+  it('Preferencias navega para a tela de preferencias', async () => {
+    renderizar();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Preferências' }));
+
+    expect(navegar).toHaveBeenCalledWith('/preferencias');
   });
 });

@@ -13,4 +13,6 @@ type Repositorio interface {
 	RegistrarLogin(ctx context.Context, id int64) error
 	// AtualizarSenha grava o novo hash da senha.
 	AtualizarSenha(ctx context.Context, id int64, senhaHash, autor string) error
+	// AtualizarPreferencias grava as preferencias de aparencia do usuario.
+	AtualizarPreferencias(ctx context.Context, id int64, p Preferencias) error
 }

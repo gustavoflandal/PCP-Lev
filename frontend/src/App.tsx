@@ -19,6 +19,7 @@ import { EstruturaProdutos } from '@/paginas/estrutura/EstruturaProdutos';
 import { NovaEstruturaProduto } from '@/paginas/estrutura/NovaEstruturaProduto';
 import { Login } from '@/paginas/Login';
 import { Painel } from '@/paginas/Painel';
+import { PreferenciasPagina } from '@/paginas/Preferencias';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -56,6 +57,7 @@ export function App() {
             <Route path="/necessidade-compra" element={<NecessidadeCompra />} />
             <Route path="/estoque" element={<Estoque />} />
             <Route path="/movimentacoes" element={<Movimentacoes />} />
+            <Route path="/preferencias" element={<PreferenciasPagina />} />
           </Route>
         </Route>
 
