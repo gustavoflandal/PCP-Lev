@@ -30,21 +30,32 @@ export async function atualizarFavicon(corpo: CorpoAtualizarImagemEmpresa): Prom
   return data.dados;
 }
 
-/** Monta a URL absoluta das imagens publicas -- usadas direto em <img src> e
- * <link rel="icon">, nunca via axios (nao sao JSON). */
-function urlBinaria(caminho: string): string {
+/**
+ * Monta a URL absoluta das imagens publicas -- usadas direto em <img src> e
+ * <link rel="icon">, nunca via axios (nao sao JSON).
+ *
+ * `versao` (o `updated_at` da empresa) vira query string: a URL em si nunca
+ * muda quando o admin troca o logo, entao sem isso o navegador manteria a
+ * imagem antiga em cache (o <img> so refaz a requisicao quando o `src`
+ * muda de valor). Omitir `versao` serve para o unico caso em que o valor
+ * ainda nao chegou (primeiro paint, antes do GET /configuracoes/empresa
+ * responder) -- o proprio hook de dados so libera a URL quando ja tem
+ * `tem_logo_*`, entao a falta de versao nesse instante e inofensiva.
+ */
+function urlBinaria(caminho: string, versao?: string): string {
   const base = api.defaults.baseURL ?? '/api/v1';
-  return `${base}${caminho}`;
+  const query = versao ? `?v=${encodeURIComponent(versao)}` : '';
+  return `${base}${caminho}${query}`;
 }
 
-export function urlLogoClaro(): string {
-  return urlBinaria('/configuracoes/empresa/logotipo/claro');
+export function urlLogoClaro(versao?: string): string {
+  return urlBinaria('/configuracoes/empresa/logotipo/claro', versao);
 }
 
-export function urlLogoEscuro(): string {
-  return urlBinaria('/configuracoes/empresa/logotipo/escuro');
+export function urlLogoEscuro(versao?: string): string {
+  return urlBinaria('/configuracoes/empresa/logotipo/escuro', versao);
 }
 
-export function urlFavicon(): string {
-  return urlBinaria('/configuracoes/empresa/favicon');
+export function urlFavicon(versao?: string): string {
+  return urlBinaria('/configuracoes/empresa/favicon', versao);
 }

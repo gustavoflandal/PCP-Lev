@@ -37,7 +37,7 @@ export function Login() {
   const { data: empresa } = useDadosEmpresa();
   const temaResolvido = useTemaResolvido();
   const temLogo = temaResolvido === 'escuro' ? empresa?.tem_logo_escuro : empresa?.tem_logo_claro;
-  const urlLogo = temaResolvido === 'escuro' ? urlLogoEscuro() : urlLogoClaro();
+  const urlLogo = temaResolvido === 'escuro' ? urlLogoEscuro(empresa?.updated_at) : urlLogoClaro(empresa?.updated_at);
 
   const navegar = useNavigate();
   const local = useLocation();

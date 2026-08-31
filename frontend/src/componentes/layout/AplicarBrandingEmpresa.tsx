@@ -26,8 +26,8 @@ export function AplicarBrandingEmpresa() {
       link.rel = 'icon';
       document.head.appendChild(link);
     }
-    link.href = urlFavicon();
-  }, [empresa?.tem_favicon]);
+    link.href = urlFavicon(empresa?.updated_at);
+  }, [empresa?.tem_favicon, empresa?.updated_at]);
 
   return null;
 }
