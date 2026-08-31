@@ -14,11 +14,12 @@
 4. [Fornecedores](#4-fornecedores)
 5. [Partes e peças](#5-partes-e-peças)
 6. [Produtos acabados](#6-produtos-acabados)
-7. [Cotações](#7-cotações)
-8. [Pedidos de compra](#8-pedidos-de-compra)
-9. [Estoque e recebimento](#9-estoque-e-recebimento)
-10. [Ajuda contextual](#10-ajuda-contextual)
-11. [Perguntas frequentes](#11-perguntas-frequentes)
+7. [Estrutura de produtos (BOM)](#7-estrutura-de-produtos-bom)
+8. [Cotações](#8-cotações)
+9. [Pedidos de compra](#9-pedidos-de-compra)
+10. [Estoque e recebimento](#10-estoque-e-recebimento)
+11. [Ajuda contextual](#11-ajuda-contextual)
+12. [Perguntas frequentes](#12-perguntas-frequentes)
 
 ---
 
@@ -37,7 +38,7 @@ administrador.
   depois de um tempo sem uso) ou expirar, o sistema volta para esta tela e
   avisa o motivo. Basta entrar de novo — nada do que já foi salvo se perde.
 - Todas as telas, inclusive esta, têm um botão **Ajuda** no canto superior
-  direito. Veja a seção [10](#10-ajuda-contextual).
+  direito. Veja a seção [11](#11-ajuda-contextual).
 
 ---
 
@@ -52,9 +53,9 @@ tela atual à direita.
 - **Cabeçalho**: nome e perfil de quem está operando, o botão **Ajuda** e o
   botão **Sair**.
 - **Navegação lateral**: acesso ao Painel, aos cadastros (Fornecedores,
-  Partes e peças, Produtos acabados) e a Compras (Cotações, Pedidos de
-  compra). O item em cinza, com "Próxima sprint" (Produção), ainda não foi
-  implementado.
+  Partes e peças, Produtos acabados), à Estrutura de produtos e a Compras
+  (Cotações, Pedidos de compra). O item em cinza, com "Próxima sprint"
+  (Produção), ainda não foi implementado.
 - **Sair**: encerra a sessão imediatamente e volta para o login.
 
 ---
@@ -72,9 +73,9 @@ Ele mostra:
   de mostrar um número inventado.
 - **Pedidos de compra em atraso**: indicador real, calculado a partir dos
   pedidos de compra emitidos cuja data de entrega prevista já passou (veja a
-  seção [8](#8-pedidos-de-compra)). Vazio quando não há nenhum atraso.
+  seção [9](#9-pedidos-de-compra)). Vazio quando não há nenhum atraso.
 - **Insumos em nível crítico**: também um indicador real — conta quantas
-  partes/peças estão em [situação Crítico](#9-estoque-e-recebimento) no
+  partes/peças estão em [situação Crítico](#10-estoque-e-recebimento) no
   módulo de Estoque. Vazio quando não há nenhuma peça crítica.
 
 ![Painel com o widget de estoque crítico](screenshots/28-painel-estoque-critico.png)
@@ -154,7 +155,7 @@ para o passo a passo). O que muda é o formulário de cadastro:
 
 - **Código**, **Unidade** e **Descrição** são obrigatórios.
 - **Estoque mínimo** e **Estoque máximo** definem a faixa de reposição usada
-  pelo módulo de Estoque (seção [9](#9-estoque-e-recebimento)) para decidir
+  pelo módulo de Estoque (seção [10](#10-estoque-e-recebimento)) para decidir
   quando repor.
 - **Lead time de compra** é o prazo esperado, em dias, entre pedir e receber
   a peça do fornecedor.
@@ -181,20 +182,65 @@ inativar/reativar da seção [4](#4-fornecedores). O formulário de cadastro:
 
 ---
 
-## 7. Cotações
+## 7. Estrutura de produtos (BOM)
+
+Tela que define do que é feito cada produto acabado: a lista de partes/peças
+e a quantidade de cada uma necessárias para montar **1 unidade**. É a "receita"
+que o módulo de produção (Sprint 6) vai seguir para calcular o consumo de
+insumos de uma ordem de produção.
+
+![Lista de estrutura de produtos](screenshots/29-estrutura-produtos-lista.png)
+
+A lista mostra todos os produtos acabados; a coluna **Estrutura** indica
+"Sem estrutura ativa" para quem ainda não tem BOM cadastrada, ou a versão e a
+data de vigência de quem já tem (por exemplo, "v.2 desde 01/09/2026").
+
+### 7.1 Criar a primeira versão
+
+Clique no código de um produto sem estrutura ativa para abrir o detalhe, e em
+**Criar estrutura**.
+
+![Formulário de nova estrutura](screenshots/31-estrutura-produtos-form-nova-versao.png)
+
+**Vigência a partir de** e ao menos **um item** (peça e quantidade) são
+obrigatórios. Use **Adicionar item** para incluir mais peças. Ao salvar, você
+volta para o detalhe do produto, já mostrando a versão recém-criada.
+
+### 7.2 Versionar (nova versão)
+
+Uma estrutura de produto **nunca é editada nem apagada** — RF1.3 exige
+preservar o que cada ordem de produção passada realmente usou. Para mudar a
+composição (trocar uma peça, ajustar uma quantidade), use **Nova versão**,
+disponível no detalhe do produto assim que ele já tem uma estrutura ativa.
+
+![Detalhe da estrutura com histórico](screenshots/30-estrutura-produtos-detalhe.png)
+
+O formulário de nova versão é igual ao de criação, mas exige uma
+**vigência posterior** à da versão atual. Ao salvar, a versão anterior é
+automaticamente encerrada (ganha uma data de fim de vigência) e cai para a
+seção **Histórico**, visível abaixo da versão ativa — nada se perde, só deixa
+de valer a partir daquela data.
+
+Só existe **uma versão ativa por produto de cada vez** — por isso o botão
+"Criar estrutura" só aparece para produtos que ainda não têm nenhuma; a partir
+da primeira versão, o caminho é sempre "Nova versão".
+
+---
+
+## 8. Cotações
 
 Tela de pedido de preço a um fornecedor, antes de qualquer compromisso de
 compra.
 
 ![Lista de cotações](screenshots/17-cotacoes-lista.png)
 
-### 7.1 Buscar, filtrar e ordenar
+### 8.1 Buscar, filtrar e ordenar
 
 Segue o mesmo padrão das telas de cadastro (seção [4.1](#41-buscar-filtrar-e-ordenar)),
 trocando "Situação" por status da cotação: Rascunho, Enviada, Respondida ou
 Cancelada.
 
-### 7.2 Cadastrar uma cotação
+### 8.2 Cadastrar uma cotação
 
 Clique em **Nova cotação**. Diferente dos cadastros, esta tela abre uma
 página inteira, não uma janela — uma cotação tem uma lista de itens que não
@@ -207,7 +253,7 @@ quantidade e preço unitário) são obrigatórios. Use **Adicionar item** para
 incluir mais peças; o total é recalculado a cada alteração. Ao salvar, você
 vai para a tela de detalhe da cotação recém-criada.
 
-### 7.3 O ciclo de vida de uma cotação
+### 8.3 O ciclo de vida de uma cotação
 
 A cotação nasce em **Rascunho** e segue uma trilha de três etapas, mostrada
 na tela de detalhe:
@@ -227,7 +273,7 @@ Com a cotação **Respondida**, aparece o botão **Converter em pedido de
 compra**: informe o número do novo PC, a data de entrega prevista e a
 condição de pagamento, e o sistema cria um pedido de compra com o
 fornecedor, as peças e os **preços já negociados** — sem digitar tudo de
-novo. Veja a seção [8](#8-pedidos-de-compra).
+novo. Veja a seção [9](#9-pedidos-de-compra).
 
 **Cancelar cotação** fica disponível em qualquer ponto antes do
 cancelamento; preserva o histórico e substitui a trilha por um aviso — uma
@@ -235,7 +281,7 @@ cotação cancelada não volta a nenhum status anterior.
 
 ---
 
-## 8. Pedidos de compra
+## 9. Pedidos de compra
 
 Tela do pedido de compra propriamente dito — o compromisso formal com o
 fornecedor.
@@ -247,7 +293,7 @@ Cotações. Quando existe algum pedido com a entrega vencida, um bloco
 **Pedidos em atraso** aparece no topo da lista (é o mesmo indicador do
 Painel — veja a seção [3](#3-painel)).
 
-### 8.1 Cadastrar um pedido de compra
+### 9.1 Cadastrar um pedido de compra
 
 Clique em **Novo pedido de compra**.
 
@@ -257,17 +303,17 @@ Assim como a cotação, é uma página inteira com uma lista de itens.
 **Número**, **Fornecedor**, **Entrega prevista** e ao menos um item são
 obrigatórios; **Condição de pagamento** é opcional. Um pedido também pode
 nascer de uma cotação respondida, pelo botão "Converter em pedido de
-compra" da seção [7.3](#73-o-ciclo-de-vida-de-uma-cotação) — nesse caso, o
+compra" da seção [8.3](#83-o-ciclo-de-vida-de-uma-cotação) — nesse caso, o
 pedido já sai vinculado à cotação de origem.
 
-### 8.2 O ciclo de vida de um pedido de compra
+### 9.2 O ciclo de vida de um pedido de compra
 
 ![Detalhe de um pedido de compra](screenshots/23-pedidos-compra-detalhe.png)
 
 A trilha aqui tem três etapas: **Criado** (sempre concluída), **Emitido**
 (clique para confirmar o envio ao fornecedor) e **Concluído** — esta última
 fica acionável assim que o pedido é emitido e é onde se registra o
-recebimento da mercadoria (seção [9.3](#93-registrar-o-recebimento-de-um-pedido-de-compra)).
+recebimento da mercadoria (seção [10.3](#103-registrar-o-recebimento-de-um-pedido-de-compra)).
 Se o pedido veio de uma cotação, um link **Ver cotação de origem** aparece
 abaixo do número.
 
@@ -276,7 +322,7 @@ Concluído nem já Cancelado; preserva o histórico.
 
 ---
 
-## 9. Estoque e recebimento
+## 10. Estoque e recebimento
 
 Tela que mostra o saldo de cada parte/peça em armazém e permite corrigir esse
 saldo manualmente. É também o destino do recebimento de mercadoria: cada
@@ -284,7 +330,7 @@ pedido de compra emitido dá entrada em estoque conforme o fornecedor entrega.
 
 ![Lista de estoque](screenshots/24-estoque-lista.png)
 
-### 9.1 Consultar o saldo
+### 10.1 Consultar o saldo
 
 - O seletor **Situação** filtra por OK, Crítico ou Bloqueado (o padrão mostra
   todos).
@@ -297,9 +343,9 @@ pedido de compra emitido dá entrada em estoque conforme o fornecedor entrega.
   ou abaixo do estoque mínimo cadastrado na peça (seção [5](#5-partes-e-peças)),
   **OK** quando está acima, ou **Bloqueado**. Uma peça recém-cadastrada nasce
   com saldo zero e por isso sempre começa em Crítico, mesmo que o estoque
-  mínimo cadastrado seja zero (veja a seção [11](#11-perguntas-frequentes)).
+  mínimo cadastrado seja zero (veja a seção [12](#12-perguntas-frequentes)).
 
-### 9.2 Ajustar o saldo manualmente
+### 10.2 Ajustar o saldo manualmente
 
 Clique em **Ajustar** na linha da peça.
 
@@ -314,9 +360,9 @@ de erro aparece no topo do formulário e o modal continua aberto para
 correção. Todo ajuste fica registrado no histórico de movimentação de
 estoque, com o motivo informado.
 
-### 9.3 Registrar o recebimento de um pedido de compra
+### 10.3 Registrar o recebimento de um pedido de compra
 
-Quando um pedido de compra é emitido (seção [8.2](#82-o-ciclo-de-vida-de-um-pedido-de-compra)),
+Quando um pedido de compra é emitido (seção [9.2](#92-o-ciclo-de-vida-de-um-pedido-de-compra)),
 ele já nasce em **Aguardando Entrega** — a etapa **Concluído** da trilha fica
 acionável desde já, esperando a mercadoria chegar.
 
@@ -338,7 +384,7 @@ recebido e o que ainda está pendente logo abaixo. A partir daí:
   nenhum item, o pedido muda para **Concluído** e a trilha se fecha.
 
 Cada recebimento registrado dá entrada automaticamente no saldo de estoque da
-peça (seção [9.1](#91-consultar-o-saldo)) — não é preciso lançar um ajuste
+peça (seção [10.1](#101-consultar-o-saldo)) — não é preciso lançar um ajuste
 manual para isso.
 
 Como **Aguardando Entrega** e **Recebido Parcial** parecem iguais na trilha
@@ -348,7 +394,7 @@ parcial" — sem precisar abrir o modal só para checar.
 
 ---
 
-## 10. Ajuda contextual
+## 11. Ajuda contextual
 
 Toda tela do sistema, inclusive o login, tem um botão **Ajuda** no
 cabeçalho. Ele abre uma janela com um lembrete rápido do que dá para fazer
@@ -363,7 +409,7 @@ telas se relacionam.
 
 ---
 
-## 11. Perguntas frequentes
+## 12. Perguntas frequentes
 
 **Inativei um cadastro por engano. Como desfaço?**
 Mude o filtro Situação para "Inativos" ou "Todos", clique em Editar no
@@ -403,13 +449,21 @@ combinado com o fornecedor.
 **Cadastrei uma peça agora mesmo e ela já aparece em situação Crítica na
 tela de Estoque — é um bug?**
 Não. Toda peça nasce com saldo zero, porque ainda não houve nenhuma entrada.
-A regra de classificação (seção [9.1](#91-consultar-o-saldo)) considera
+A regra de classificação (seção [10.1](#101-consultar-o-saldo)) considera
 crítico todo saldo **menor ou igual** ao estoque mínimo cadastrado, e isso
 vale mesmo quando o mínimo é zero (zero é menor ou igual a zero). Registre um
-ajuste de entrada (seção [9.2](#92-ajustar-o-saldo-manualmente)) ou receba um
-pedido de compra (seção [9.3](#93-registrar-o-recebimento-de-um-pedido-de-compra))
+ajuste de entrada (seção [10.2](#102-ajustar-o-saldo-manualmente)) ou receba um
+pedido de compra (seção [10.3](#103-registrar-o-recebimento-de-um-pedido-de-compra))
 para a peça sair dessa situação.
+
+**Por que não dá para editar uma estrutura de produto existente?**
+Por design (RF1.3): uma BOM não pode ser deletada nem editada, só
+**versionada**. Isso preserva exatamente o que cada ordem de produção
+passada consumiu — se fosse possível editar a versão 1 depois que ela já foi
+usada para produzir, o histórico de produção ficaria mentindo sobre o que
+realmente foi montado. Para mudar a composição, use "Nova versão" (seção
+[7.2](#72-versionar-nova-versão)) a partir de uma data de vigência futura.
 
 ---
 
-**Última atualização**: Agosto 2026 · Sprint 4 (estoque e recebimento).
+**Última atualização**: Agosto 2026 · Fase 2.1 (estrutura de produtos / BOM).
