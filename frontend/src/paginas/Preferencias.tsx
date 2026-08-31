@@ -3,6 +3,7 @@ import { Selecao } from '@/componentes/ui/Selecao';
 import { useToasts } from '@/componentes/ui/Toast';
 import { separarErro } from '@/lib/errosDeFormulario';
 import { atualizarPreferencias } from '@/servicos/autenticacaoServico';
+import { useAutenticacao } from '@/store/autenticacao';
 import { usePreferencias, type Preferencias } from '@/store/preferencias';
 
 const OPCOES_TEMA = [
@@ -24,6 +25,7 @@ const OPCOES_FONTE = [
 
 export function PreferenciasPagina() {
   const { preferencias, aplicar } = usePreferencias();
+  const atualizarPreferenciasSessao = useAutenticacao((estado) => estado.atualizarPreferenciasSessao);
   const mostrarToast = useToasts((estado) => estado.mostrar);
 
   const mutacao = useMutation({
@@ -33,12 +35,17 @@ export function PreferenciasPagina() {
     // tempo (a segunda poderia terminar antes da primeira, e um "onError"
     // da primeira reverteria por cima do que a segunda ja tinha confirmado).
     onSuccess: (usuarioAtualizado) => {
-      aplicar({
+      const novas = {
         tema: usuarioAtualizado.tema,
         alto_contraste: usuarioAtualizado.alto_contraste,
         densidade: usuarioAtualizado.densidade,
         tamanho_fonte: usuarioAtualizado.tamanho_fonte,
-      });
+      };
+      aplicar(novas);
+      // Sem isto, o usuario da sessao (sessionStorage) fica com a preferencia
+      // de login: um F5 re-semearia o <html> com o valor antigo (ver
+      // `sessaoInicial` em store/autenticacao.ts) revertendo esta troca.
+      atualizarPreferenciasSessao(novas);
       mostrarToast('Preferências salvas');
     },
   });

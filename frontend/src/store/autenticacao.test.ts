@@ -84,4 +84,26 @@ describe('store de autenticacao', () => {
 
     expect(lerSessaoSalva()).toBeNull();
   });
+
+  it('atualizarPreferenciasSessao grava a nova preferencia no usuario e na sessao salva', () => {
+    useAutenticacao.getState().entrar(respostaLogin);
+
+    useAutenticacao.getState().atualizarPreferenciasSessao({
+      tema: 'escuro', alto_contraste: true, densidade: 'compacta', tamanho_fonte: 'grande',
+    });
+
+    // Sem isto, um F5 apos salvar preferencias re-semeia o <html> com o
+    // valor de login (ver `sessaoInicial` em autenticacao.ts), revertendo a
+    // troca que acabou de ser confirmada pelo servidor.
+    expect(useAutenticacao.getState().usuario?.tema).toBe('escuro');
+    expect(lerSessaoSalva()?.usuario.densidade).toBe('compacta');
+  });
+
+  it('atualizarPreferenciasSessao sem sessao ativa nao quebra', () => {
+    expect(() =>
+      useAutenticacao.getState().atualizarPreferenciasSessao({
+        tema: 'escuro', alto_contraste: false, densidade: 'compacta', tamanho_fonte: 'padrao',
+      }),
+    ).not.toThrow();
+  });
 });

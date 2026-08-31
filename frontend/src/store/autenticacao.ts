@@ -71,6 +71,11 @@ interface EstadoAutenticacao {
   motivoSaida: MotivoSaida;
   entrar: (resposta: RespostaLogin) => void;
   sair: (motivo?: MotivoSaida) => void;
+  /** Mantem o usuario da sessao (e o sessionStorage) em dia com a ultima
+   * preferencia salva -- sem isso, um F5 apos mudar preferencias re-semeia
+   * o <html> com o valor de login (ver `sessaoInicial` abaixo), revertendo
+   * a troca que acabou de ser confirmada pelo servidor. */
+  atualizarPreferenciasSessao: (preferencias: Preferencias) => void;
 }
 
 function preferenciasDoUsuario(usuario: UsuarioSessao): Preferencias {
@@ -114,6 +119,15 @@ export const useAutenticacao = create<EstadoAutenticacao>((set) => ({
     // fonte do operador anterior na tela de login do proximo.
     usePreferencias.getState().aplicar(PREFERENCIAS_PADRAO);
     set({ token: null, usuario: null, autenticado: false, motivoSaida: motivo });
+  },
+
+  atualizarPreferenciasSessao: (preferencias) => {
+    set((estado) => {
+      if (!estado.usuario || !estado.token) return estado;
+      const usuario: UsuarioSessao = { ...estado.usuario, ...preferencias };
+      salvarSessao({ token: estado.token, usuario });
+      return { usuario };
+    });
   },
 }));
 
