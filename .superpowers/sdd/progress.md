@@ -534,3 +534,44 @@ Docker (containers `golang:1.25-alpine`/`node:22-alpine` com bind-mount do codig
 real, conectados a rede `pcp-lev_default`, `PCP_TEST_DSN` apontando para o servico
 `postgres` pelo nome interno), nunca via `go`/`npm` resolvidos no PATH do host.
 
+
+---
+
+# Ledger — Fase 2.4: Necessidade de Compra e Relatorios (feat/necessidade-compra-relatorios)
+
+Plano: docs/superpowers/plans/2026-08-31-necessidade-compra-relatorios.md
+Decisoes de pre-voo: branch empilhada sobre feat/estrutura-produto-bom (PR ainda aberto).
+Fase 2.2 (RBAC) e 2.3 (Clientes/Centros de Trabalho) ficaram de fora por dependerem de
+uma decisao de stakeholder (sessao com o Gestor de Operacoes para a matriz de permissoes)
+que ainda nao aconteceu -- usuario confirmou seguir com a 2.4, que so depende da 2.1 (BOM,
+ja fechada). PDF fora de escopo (so CSV, stdlib, sem dependencia nova) -- o proprio
+cronograma ja marca relatorios como adiavel. "Gerar cotacao" a partir da necessidade nao
+cria Cotacao direto no backend (RF3.1 exige preco_unitario > 0, que ainda nao se sabe
+nesse ponto) -- vira pre-preenchimento do formulario existente no frontend.
+
+Base do branch: 0eb0274 (topo de feat/estrutura-produto-bom).
+
+## Progresso
+
+Task B1+B2: complete (commit 400cd23, gofmt/vet limpos, 4/4 testes). Dominio
+`necessidadecompra` (so leitura, sem Dados/Validar/sentinelas -- o calculo mora na query)
++ repositorio (`estoque_minimo - saldo_atual`, so pecas ativas, LEFT JOIN fornecedores
+para o atalho de "gerar cotacao" no frontend).
+Task B3: complete (commit 85f279f, 3/3 testes). Handler HTTP `GET /necessidade-compra`,
+aberto a qualquer perfil autenticado (mesmo padrao de `GET /estoque/criticos`).
+Task B4: complete (commit c012d12, 2/2 testes novos). Exportacao CSV
+(`GET /estoque/relatorio.csv`, `GET /pedidos-compra/relatorio.csv`) via helper
+`responderCSV` compartilhado. Ajuste necessario do plano: o dominio `pedidocompra` so
+guarda `FornecedorID`, nunca o nome (resolvido no frontend via hook) -- um CSV precisa
+ser legivel sozinho, entao ganhou `pedidocompra.LinhaRelatorio` + `Repositorio.
+ListarParaRelatorio` (JOIN com fornecedores, so para o relatorio, sem tocar a query de
+listagem paginada existente).
+Task B5: complete (commit 2de807d). `registrarCompras` em routes.go ganha o handler de
+necessidade de compra. Suite completa do backend: 397/397 testes em 22 pacotes (392
+anteriores + 5 novos), go build/vet/gofmt limpos -- tudo via Docker. Fluxo manual via
+curl dentro da rede do compose: peca criada com estoque_minimo=8 e fornecedor padrao
+aparece em `/necessidade-compra` com `necessidade=8` e o nome do fornecedor resolvido;
+CSV de estoque e de pedidos de compra abrem com o cabecalho certo. Dados de verificacao
+removidos do Postgres do compose apos o teste.
+
+Backend da Fase 2.4 fechado (Tasks B1-B5). Frontend (Tasks F1-F6) a seguir.
