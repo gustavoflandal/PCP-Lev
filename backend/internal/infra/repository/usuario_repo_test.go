@@ -113,7 +113,7 @@ func TestUsuarioSemeadoTemPreferenciasPadrao(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, usuario.TemaAutomatico, admin.Tema)
 	assert.False(t, admin.AltoContraste)
-	assert.Equal(t, usuario.DensidadeConfortavel, admin.Densidade)
+	assert.Equal(t, usuario.DensidadeCompacta, admin.Densidade)
 	assert.Equal(t, usuario.FontePadrao, admin.TamanhoFonte)
 }
 
