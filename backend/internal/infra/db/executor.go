@@ -33,6 +33,16 @@ func ComExecutor(ctx context.Context, executor Executor) context.Context {
 // mudanca. Testes, jobs em segundo plano e qualquer chamada fora do ciclo
 // de uma requisicao HTTP real nunca tem valor no contexto, entao caem
 // sempre no fallback sem precisar de nenhum ajuste.
+//
+// Invariante de composicao introduzida pelo pinning: como todos os
+// repositorios de uma mesma requisicao recebem A MESMA conexao, um
+// repositorio que chame outro de dentro de uma transacao aberta com
+// Begin(ctx) faz a chamada interna rodar DENTRO dessa transacao -- antes do
+// pinning ela pegaria uma conexao separada do pool e rodaria isolada. Na
+// pratica: se o `tx` externo ja abortou, a chamada interna falha com
+// "current transaction is aborted" em vez de ter sucesso por fora, e o que
+// ela gravar entra no mesmo commit/rollback. Hoje nenhum repositorio faz
+// essa composicao; quem for introduzir a primeira precisa contar com isso.
 func DoContexto(ctx context.Context, padrao Executor) Executor {
 	if executor, ok := ctx.Value(chaveExecutor{}).(Executor); ok {
 		return executor

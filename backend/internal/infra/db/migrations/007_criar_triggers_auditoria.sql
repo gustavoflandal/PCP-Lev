@@ -48,8 +48,14 @@ END $$;
 
 -- ---------------------------------------------------------------------------
 -- Trilha de auditoria
--- O usuario responsavel chega pela variavel de sessao `pcp.usuario_id`,
--- definida pelo middleware de autenticacao a cada transacao.
+-- O usuario responsavel e o IP chegam pelas variaveis de sessao
+-- `pcp.usuario_id` e `pcp.endereco_ip`, definidas por
+-- middleware.ConexaoDeAuditoria (internal/api/middleware/auditoria.go) uma
+-- vez por REQUISICAO HTTP, numa conexao fixada do pool que todos os
+-- repositorios daquela requisicao reaproveitam -- nao por transacao, e nao
+-- pelo middleware de autenticacao. Requisicoes de leitura, jobs e migrations
+-- nao definem as variaveis: nesses casos a linha fica com usuario_id/
+-- endereco_ip NULL, que e o comportamento esperado ("sem sessao associada").
 -- ---------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION fn_registrar_auditoria()
 RETURNS TRIGGER AS $$

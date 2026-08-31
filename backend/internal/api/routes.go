@@ -37,6 +37,20 @@ func NovoRoteador(dep Dependencias) *echo.Echo {
 	e := echo.New()
 	e.HideBanner = true
 	e.HTTPErrorHandler = tratarErro
+	// O extrator padrao do Echo le X-Forwarded-For/X-Real-IP de qualquer
+	// origem -- qualquer cliente forjaria o cabecalho e a auditoria gravaria
+	// um IP falso. Aqui, o XFF so e aceito quando o hop imediato (RemoteAddr)
+	// e loopback, link-local ou rede privada: cobre o nginx do
+	// docker-compose.yml, que fala com a API pela rede Docker (172.x/RFC1918),
+	// e ignora o cabecalho quando a requisicao chega direto da internet.
+	// Vale para toda a aplicacao -- c.RealIP() e usado tanto pela auditoria
+	// (middleware.ConexaoDeAuditoria) quanto pelo log estruturado
+	// (middleware.Log).
+	e.IPExtractor = echo.ExtractIPFromXFFHeader(
+		echo.TrustLoopback(true),
+		echo.TrustLinkLocal(true),
+		echo.TrustPrivateNet(true),
+	)
 
 	e.Use(echomw.Recover())
 	e.Use(echomw.RequestID())
