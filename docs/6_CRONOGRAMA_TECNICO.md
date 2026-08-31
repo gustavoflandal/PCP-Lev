@@ -1,11 +1,32 @@
 # Cronograma Técnico - Sistema PCP 3PL
 
-**Versão**: 2.0 (revisado)
-**Data**: 30 de agosto de 2026
+**Versão**: 2.1 (revisado)
+**Data**: 31 de agosto de 2026
 **Modelo**: Agile (Sprints de 2 semanas, mas o texto abaixo reflete o real avanço por
 funcionalidade entregue, não por calendário)
 
 ---
+
+## Nota de revisão (versão 2.1)
+
+Com a Fase 2.1 (BOM), a Fase 2.4 (Necessidade de Compra) e as duas primeiras
+sub-entregas da Fase 4 (Aparência/Preferências e Dados da Empresa) já entregues, o
+Proprietário do projeto decidiu, em 31/08/2026, **priorizar o fechamento completo da
+Fase 4 (Restante do Módulo de Configurações) antes de abrir a Fase 2.3 (Clientes/
+Centros de Trabalho) ou qualquer trabalho novo de Produção**. Esta revisão:
+
+1. Promove a Fase 4 de "paralela, baixa urgência" (v2.0) para **próxima fase a fechar**,
+   antes de 2.3/3/3.1.
+2. Detalha o fatiamento da Fase 4 em 5 sub-entregas sequenciais (ver seção da Fase 4),
+   pela ordem de valor entregue e risco de retrabalho — a auditoria (§4.6.9) entra
+   primeiro porque a trilha já existe no banco desde a migration 007 (achado da análise
+   da Fase 2.2); a fatia de Produção do §4.6.5 fica de fora por não ter onde pendurar
+   (a Fase 3 ainda não existe).
+3. **Não** muda o bloqueio da Fase 2.2 (RBAC): continua dependendo da sessão com o
+   Gestor de Operações (§12.4 do `0_SUMARIO_EXECUTIVO.md`). A decisão explícita aqui é
+   não esperar essa sessão para avançar o resto da Fase 4 — as duas frentes correm em
+   paralelo, e o ideal é que a sessão de RBAC aconteça durante a janela da Fase 4 para
+   não virar gargalo depois dela.
 
 ## Nota de revisão (versão 2.0)
 
@@ -60,13 +81,19 @@ simples que funciona. Em vez de parar tudo para uma reconstrução completa, est
 ```
 Entregue:        Fundação -> Cadastros base -> Cotacoes/PC -> Recebimento/Estoque
                                                                         │
-Próximo:         Estrutura de Produto (BOM) -> RBAC/Permissões -> Clientes/Centros
+Entregue:        Estrutura de Produto (BOM) -> Necessidade de Compra + Relatórios
                                                                         │
-Retomada v1.0:   Necessidade de Compra + Relatórios
+Entregue (4/6):  Restante da Configuração -- Aparência/Preferências, Dados da Empresa
                                                                         │
-Ampliado v1.1:   Produção (OPs, Kanban, Apontamento, série, metrologia, custo real)
+Atual (v2.1):    Restante da Configuração -- Auditoria, Parâmetros Regionais,
+                 fatias de Segurança/Negócio/Integrações (nesta ordem)
                                                                         │
-Novo v1.1:       Anexos técnicos  ⇄  Restante da Configuração (paralelo, baixa urgência)
+                 (em paralelo: sessão de RBAC com o Gestor de Operações)
+                                                                        │
+Próximo:         RBAC/Permissões -> Clientes/Centros de Trabalho
+                                                                        │
+Depois:          Produção (OPs, Kanban, Apontamento, série, metrologia, custo real)
+                 ⇄ Anexos técnicos
                                                                         │
 Final:           Testes, UAT, Deploy
 ```
@@ -131,7 +158,10 @@ Referências: `docs/superpowers/specs/2026-08-30-estrutura-produto-bom-design.md
 
 ## Fase 2.2: RBAC e Permissões (novo, do v1.1)
 
-**Status**: 🔵 Não iniciada — precisa de brainstorm/spec próprios antes de virar plano.
+**Status**: 🔴 Bloqueada — precisa da sessão de levantamento com o Gestor de Operações
+(§12.4 do `0_SUMARIO_EXECUTIVO.md`) antes de virar spec. Decisão v2.1: não é motivo para
+parar o resto do cronograma — corre em paralelo à Fase 4, idealmente concluindo durante
+a janela dela para não virar gargalo na sequência (Fase 2.3 depende desta fase).
 **Depende de**: nada tecnicamente, mas executada depois da Fase 2.1 para não retrabalhar
 o handler de Estrutura de Produto duas vezes.
 **Bloqueia**: nenhum módulo de negócio novo — é uma substituição da camada de
@@ -164,7 +194,8 @@ Escopo esperado (a detalhar em spec própria):
 
 ## Fase 2.3: Cadastros de Clientes e Centros de Trabalho (novo)
 
-**Status**: 🔵 Não iniciada.
+**Status**: 🔵 Não iniciada. Adiada pela decisão v2.1: a Fase 4 (Restante da
+Configuração) tem prioridade sobre esta fase enquanto a sessão de RBAC não acontece.
 **Depende de**: Fase 2.2 (nasce já com o RBAC novo, sem retrabalho).
 **Bloqueia**: Pedidos de Venda (precisa de Cliente) e Produção/Kanban (Ordem de Produção
 referencia um Centro de Trabalho/Bancada).
@@ -234,30 +265,54 @@ ficam) que ainda não foi tomada.
 
 ## Fase 4: Restante do Módulo de Configurações (novo do v1.1)
 
-**Status**: 🔵 Não iniciada. Pode rodar em paralelo com as Fases 2.3-3.1 se houver
-capacidade — nada nelas depende funcionalmente desta fase.
+**Status**: 🟡 Em andamento — **prioridade sobre a Fase 2.3 e qualquer trabalho novo de
+Produção** (decisão v2.1, 31/08/2026). Tudo do `0_SUMARIO_EXECUTIVO.md` §4.6 que não é
+RBAC/permissões (isso ficou na Fase 2.2, que segue bloqueada pela sessão com o Gestor
+de Operações e corre **em paralelo** a esta fase, não depois dela).
 
-Tudo do `0_SUMARIO_EXECUTIVO.md` §4.6 que não é RBAC/permissões (isso já foi para a Fase
-2.2). Sugestão de fatiamento em sub-entregas independentes, pela ordem de valor/esforço:
+**Sub-entregas já fechadas:**
+1. ✅ **Aparência e preferências** (§4.6.1) — `feat/aparencia-preferencias`. Tema
+   claro/escuro/automático, alto contraste, densidade, tamanho de fonte, persistidos
+   por usuário. Fora do escopo entregue: Cor de Destaque (conflita com a marca fixa do
+   design system) e Modo Quiosque/TV (depende do Kanban, Fase 3).
+2. ✅ **Dados da empresa** (§4.6.2) — `feat/dados-empresa`. Identificação, endereço
+   (com Buscar CEP via ViaCEP), contato, logotipo claro/escuro/favicon (`bytea` no
+   Postgres, leitura pública para cabeçalho/login). Fora do escopo entregue: aplicação
+   em documentos impressos (nenhum template de impressão existe ainda) e numeração
+   automática de documentos (muda comportamento de telas já entregues, decisão de
+   stakeholder pendente).
 
-1. **Aparência e preferências** (§4.6.1): tema claro/escuro/automático, alto contraste,
-   densidade, tamanho de fonte — puramente frontend, design tokens já existem em
-   `7_PADROES_DESIGN.md`, esforço baixo.
-2. **Dados da empresa** (§4.6.2) + **numeração de documentos** (§4.6.5): cadastro único
-   (razão social, CNPJ, logo com variante clara/escura, aplicação em cabeçalho e
-   documentos impressos) e máscara configurável de numeração — hoje `numero_cotacao`/
-   `numero_pc` são digitados à mão; essa fase pode (opcionalmente) automatizar a
-   sequência, mas isso é uma mudança de comportamento em telas já entregues, não
-   silenciosa — decidir com o stakeholder antes.
-3. **Parâmetros regionais e de negócio** (§4.6.4, §4.6.5 restante): formatos de
-   data/hora/moeda, casas decimais, método de custeio (**usado pela Fase 3, item
-   5.1.D** — se esta sub-fase andar em paralelo com a Fase 3, coordenar para não
-   duplicar a definição do método de custeio nos dois lugares).
-4. **Segurança avançada, integrações, backup, notificações** (§4.6.6-§4.6.8, §4.6.10):
-   maior parte já é operação de infraestrutura (gestão de segredos fora da aplicação,
-   backup automatizado) mais do que código de aplicação — a tela administrativa é
-   somente leitura para os dados sensíveis (§4.6.6 já deixa isso explícito). Menor
-   prioridade de código novo, mais prioridade de decisão operacional/DevOps.
+**Sequência das próximas sub-entregas** (decisão v2.1 — ordem por valor entregue e
+risco de retrabalho, revisada e aprovada pelo Proprietário do projeto):
+
+3. 🔵 **Auditoria** (§4.6.9): tela de consulta/exportação (filtros por período, usuário,
+   módulo, tipo de ação) sobre a trilha `log_auditoria` já gravada, append-only, pela
+   migration 007 — achado da análise da Fase 2.2, esforço baixo por já ter os dados.
+4. 🔵 **Parâmetros regionais** (§4.6.4): formato de data/hora/moeda, casas decimais,
+   fuso horário, primeiro dia da semana. Zero dependência de outro módulo, esforço
+   baixo-médio.
+5. 🔵 **Fatia de Segurança/Banco de Dados** (§4.6.6, parcial): tela somente-leitura de
+   status do banco (conexão, tamanho, último backup, botão Testar Conexão) + headers
+   de segurança (HSTS/CSP/X-Frame-Options) + rate limiting por endpoint. Fora desta
+   fatia: gestão de segredos via Vault, rotação de credenciais — decisão de
+   infraestrutura, não código de aplicação.
+6. 🔵 **Fatia de Parâmetros de Negócio** (§4.6.5, parcial): só Estoque (método de
+   custeio, tolerância de recebimento, saldo negativo) e Compras (alçadas, lead time
+   padrão, mínimo de cotações). **Fora desta fatia**: parâmetros de Produção
+   (Kanban, backflushing, calendário) — não tem onde pendurar antes da Fase 3 existir;
+   e numeração automática de documentos — decisão de stakeholder pendente (item 2).
+   Método de custeio é **usado pela Fase 3, item 5.1.D** — coordenar para não duplicar
+   a definição se as duas fases andarem próximas no tempo.
+7. 🔵 **Fatia de Integrações** (§4.6.7, parcial): só SMTP (host/porta/criptografia,
+   teste de envio) — base para a matriz de notificações futura. Fora desta fatia:
+   WhatsApp/Telegram, webhooks de saída, chaves de API para integração externa,
+   NF-e (o próprio `0_SUMARIO_EXECUTIVO.md` já marca isso como "fase 2").
+
+**Adiado para depois da Fase 4** (não faz parte da rodada atual):
+- **Backup e Manutenção** (§4.6.8): majoritariamente operação de infraestrutura
+  (agendamento, teste de restauração) mais do que código de aplicação.
+- **Notificações e Alertas** (§4.6.10): boa parte dos eventos da matriz ("OP com prazo
+  em risco") depende de a Produção (Fase 3) existir.
 
 ---
 
@@ -304,3 +359,7 @@ cobrir o RBAC novo da Fase 2.2, não o modelo simples original.
   Fases 2.1 (BOM), 2.2 (RBAC), 2.3 (Clientes/Centros de Trabalho), 3.1 (Anexos) e 4
   (restante da Configuração); Fase 3 (Produção) ampliada com rastreabilidade, metrologia
   e custo real.
+- v2.1 (31/08/2026): Fase 4 promovida a prioridade sobre a Fase 2.3 e sobre qualquer
+  trabalho novo de Produção, com fatiamento detalhado em 5 sub-entregas (Auditoria,
+  Parâmetros Regionais, fatias de Segurança/Negócio/Integrações); RBAC (Fase 2.2)
+  confirmado como faixa paralela, não sequencial, à Fase 4.
