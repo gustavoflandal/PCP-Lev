@@ -1,5 +1,6 @@
+import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { PREFERENCIAS_PADRAO, resolverTema, usePreferencias } from './preferencias';
+import { PREFERENCIAS_PADRAO, resolverTema, useTemaResolvido, usePreferencias } from './preferencias';
 
 describe('resolverTema', () => {
   it('devolve claro/escuro diretamente, ignorando a preferencia do SO', () => {
@@ -58,5 +59,35 @@ describe('usePreferencias', () => {
     usePreferencias.getState().aplicar({ ...PREFERENCIAS_PADRAO, tamanho_fonte: 'extra-grande' });
 
     expect(usePreferencias.getState().preferencias.tamanho_fonte).toBe('extra-grande');
+  });
+});
+
+describe('useTemaResolvido', () => {
+  beforeEach(() => {
+    usePreferencias.setState({ preferencias: PREFERENCIAS_PADRAO });
+    vi.spyOn(window, 'matchMedia').mockReturnValue({
+      matches: false, media: '', onchange: null,
+      addEventListener: () => {}, removeEventListener: () => {},
+      addListener: () => {}, removeListener: () => {}, dispatchEvent: () => false,
+    } as unknown as MediaQueryList);
+  });
+
+  it('reflete o tema explicito salvo', () => {
+    usePreferencias.getState().aplicar({ ...PREFERENCIAS_PADRAO, tema: 'escuro' });
+
+    const { result } = renderHook(() => useTemaResolvido());
+
+    expect(result.current).toBe('escuro');
+  });
+
+  it('reage a uma mudanca de preferencia depois de montado', () => {
+    const { result } = renderHook(() => useTemaResolvido());
+    expect(result.current).toBe('claro');
+
+    act(() => {
+      usePreferencias.getState().aplicar({ ...PREFERENCIAS_PADRAO, tema: 'escuro' });
+    });
+
+    expect(result.current).toBe('escuro');
   });
 });

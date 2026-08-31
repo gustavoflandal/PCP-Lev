@@ -8,6 +8,7 @@ import { Ajuda } from '@/componentes/layout/Ajuda';
 import { Botao } from '@/componentes/ui/Botao';
 import { Campo } from '@/componentes/ui/Campo';
 import { icones } from '@/componentes/ui/icones';
+import { useLogoEmpresa } from '@/hooks/useLogoEmpresa';
 import { ErroApi } from '@/servicos/api';
 import { autenticar } from '@/servicos/autenticacaoServico';
 import { MINUTOS_INATIVIDADE } from '@/hooks/useInatividade';
@@ -31,6 +32,7 @@ export function Login() {
   const autenticado = useAutenticacao((estado) => estado.autenticado);
   const motivoSaida = useAutenticacao((estado) => estado.motivoSaida);
   const [senhaVisivel, setSenhaVisivel] = useState(false);
+  const { temLogo, url: urlLogo, nomeExibido } = useLogoEmpresa();
 
   const navegar = useNavigate();
   const local = useLocation();
@@ -79,7 +81,8 @@ export function Login() {
 
       <div className="w-full max-w-[400px]">
         <header className="mb-6">
-          <h1 className="text-display text-texto-primary">Sistema PCP</h1>
+          {temLogo && <img src={urlLogo} alt="" className="mb-2 h-10 w-auto" />}
+          <h1 className="text-display text-texto-primary">{nomeExibido}</h1>
           <p className="text-body text-texto-secondary">
             Planejamento e controle da produção
           </p>

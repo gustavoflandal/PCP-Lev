@@ -9,6 +9,7 @@ import (
 	"github.com/gustavoflandal/pcp-lev/backend/internal/config"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/auth"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/cotacao"
+	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/empresa"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/estoque"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/estrutura"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/fornecedor"
@@ -39,6 +40,13 @@ func NovoRoteador(dep Dependencias) *echo.Echo {
 	e.Use(echomw.Recover())
 	e.Use(echomw.RequestID())
 	e.Use(middleware.Log())
+	// O upload de logotipo/favicon (base64 no corpo JSON) e o unico endpoint
+	// hoje que aceita um payload potencialmente grande -- sem um limite, um
+	// arquivo enorme e lido inteiro para memoria (aqui e no navegador, via
+	// FileReader) antes de qualquer validacao de tamanho rodar. 2 MiB cobre
+	// folgado o maior upload valido (1 MiB de imagem em base64 fica ~1.4 MiB)
+	// e nao aperta nenhum outro endpoint, que so trafega JSON de formulario.
+	e.Use(echomw.BodyLimit("2M"))
 	e.Use(echomw.CORSWithConfig(echomw.CORSConfig{
 		AllowOrigins: dep.Cfg.CorsOrigens,
 		AllowMethods: []string{http.MethodGet, http.MethodPost, http.MethodPut,
@@ -64,6 +72,7 @@ func NovoRoteador(dep Dependencias) *echo.Echo {
 	registrarCadastros(v1, dep, autenticacao)
 	estoqueServico := registrarEstoque(v1, dep, autenticacao)
 	registrarCompras(v1, dep, autenticacao, estoqueServico)
+	registrarConfiguracoes(v1, dep, autenticacao)
 
 	return e
 }
@@ -121,6 +130,16 @@ func registrarCompras(v1 *echo.Group, dep Dependencias, autenticacao echo.Middle
 	).Registrar(v1, autenticacao)
 }
 
+// registrarConfiguracoes publica o modulo de configuracoes do sistema (doc 0,
+// secao 4.6). A leitura de /configuracoes/empresa fica publica dentro do
+// proprio handler -- a tela de login e o favicon do navegador precisam dela
+// antes de qualquer sessao existir.
+func registrarConfiguracoes(v1 *echo.Group, dep Dependencias, autenticacao echo.MiddlewareFunc) {
+	handlers.NovoEmpresaHandler(
+		empresa.NovoServico(repository.NovoEmpresaRepositorio(dep.Pool)),
+	).Registrar(v1, autenticacao)
+}
+
 // tratarErro garante que qualquer erro nao tratado saia no envelope do doc 3,
 // e nao no formato padrao do Echo.
 func tratarErro(err error, c echo.Context) {
@@ -141,6 +160,12 @@ func tratarErro(err error, c echo.Context) {
 			codigo, mensagem = httpx.CodigoRequisicaoInvalida, "Metodo nao permitido"
 		case http.StatusBadRequest:
 			codigo, mensagem = httpx.CodigoRequisicaoInvalida, "Requisicao invalida"
+		case http.StatusRequestEntityTooLarge:
+			// Devolvido pelo middleware BodyLimit (ver NovoRoteador) antes de
+			// qualquer handler rodar -- sem este caso, o cliente veria
+			// "Erro interno do servidor" para o que e, na verdade, um corpo
+			// grande demais.
+			codigo, mensagem = httpx.CodigoRequisicaoInvalida, "Requisicao excede o tamanho maximo permitido"
 		}
 	}
 

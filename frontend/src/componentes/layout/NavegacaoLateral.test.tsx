@@ -1,7 +1,16 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { useAutenticacao } from '@/store/autenticacao';
 import { NavegacaoLateral } from './NavegacaoLateral';
+
+const respostaLogin = (perfil: 'ADMIN' | 'GESTOR' | 'OPERADOR') => ({
+  access_token: 'token-abc', token_type: 'Bearer', expires_in: 28800,
+  usuario: {
+    id: 1, username: 'usuario', nome: 'Usuario', perfil,
+    tema: 'automatico' as const, alto_contraste: false, densidade: 'compacta' as const, tamanho_fonte: 'padrao' as const,
+  },
+});
 
 function renderizarEm(rota: string) {
   return render(
@@ -12,6 +21,11 @@ function renderizarEm(rota: string) {
 }
 
 describe('NavegacaoLateral', () => {
+  beforeEach(() => {
+    sessionStorage.clear();
+    useAutenticacao.getState().sair();
+  });
+
   it('lista os cadastros disponiveis', () => {
     renderizarEm('/');
 
@@ -74,5 +88,24 @@ describe('NavegacaoLateral', () => {
       'href',
       '/estrutura-produtos',
     );
+  });
+
+  it('Administrador ve o link de Dados da empresa', () => {
+    useAutenticacao.getState().entrar(respostaLogin('ADMIN'));
+
+    renderizarEm('/');
+
+    expect(screen.getByRole('link', { name: 'Dados da empresa' })).toHaveAttribute(
+      'href',
+      '/configuracoes/empresa',
+    );
+  });
+
+  it('quem nao e Administrador nao ve o link de Dados da empresa', () => {
+    useAutenticacao.getState().entrar(respostaLogin('GESTOR'));
+
+    renderizarEm('/');
+
+    expect(screen.queryByRole('link', { name: 'Dados da empresa' })).not.toBeInTheDocument();
   });
 });

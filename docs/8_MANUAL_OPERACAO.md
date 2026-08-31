@@ -20,8 +20,9 @@
 10. [Estoque e recebimento](#10-estoque-e-recebimento)
 11. [Necessidade de compra e relatórios](#11-necessidade-de-compra-e-relatórios)
 12. [Aparência e preferências](#12-aparência-e-preferências)
-13. [Ajuda contextual](#13-ajuda-contextual)
-14. [Perguntas frequentes](#14-perguntas-frequentes)
+13. [Dados da empresa](#13-dados-da-empresa)
+14. [Ajuda contextual](#14-ajuda-contextual)
+15. [Perguntas frequentes](#15-perguntas-frequentes)
 
 ---
 
@@ -40,7 +41,7 @@ administrador.
   depois de um tempo sem uso) ou expirar, o sistema volta para esta tela e
   avisa o motivo. Basta entrar de novo — nada do que já foi salvo se perde.
 - Todas as telas, inclusive esta, têm um botão **Ajuda** no canto superior
-  direito. Veja a seção [13](#13-ajuda-contextual).
+  direito. Veja a seção [14](#14-ajuda-contextual).
 
 ---
 
@@ -357,7 +358,7 @@ O botão **Exportar CSV** baixa o saldo completo, sem filtro — veja a seção
   ou abaixo do estoque mínimo cadastrado na peça (seção [5](#5-partes-e-peças)),
   **OK** quando está acima, ou **Bloqueado**. Uma peça recém-cadastrada nasce
   com saldo zero e por isso sempre começa em Crítico, mesmo que o estoque
-  mínimo cadastrado seja zero (veja a seção [14](#14-perguntas-frequentes)).
+  mínimo cadastrado seja zero (veja a seção [15](#15-perguntas-frequentes)).
 
 ### 10.2 Ajustar o saldo manualmente
 
@@ -481,7 +482,40 @@ falhar, o sistema volta para o valor anterior e avisa por quê.
 
 ---
 
-## 13. Ajuda contextual
+## 13. Dados da empresa
+
+Clique em **Dados da empresa**, na seção "Configurações" da navegação
+lateral (só aparece para o perfil Administrador), para cadastrar a
+identificação, o endereço, o contato e o logotipo da empresa. Esses dados
+aparecem no cabeçalho e na tela de login de todo mundo que usa o sistema —
+inclusive antes de entrar, já que o nome e o logotipo precisam aparecer na
+tela de login.
+
+![Tela de Dados da empresa preenchida](screenshots/38-dados-empresa-formulario.png)
+
+- **Identificação**: só a Razão social é obrigatória. CNPJ é opcional, mas
+  quando informado precisa ter um dígito verificador válido.
+- **Endereço**: informe o CEP e clique em **Buscar CEP** para preencher
+  logradouro, bairro, cidade e UF automaticamente; se a consulta falhar (ex.:
+  sem conexão), preencha manualmente.
+- **Contato**: telefone, e-mail institucional e site, todos opcionais.
+- **Documentos**: texto de rodapé padrão, condições gerais de compra e
+  responsável técnico — usados em documentos impressos quando esses modelos
+  existirem.
+- **Logotipo**: envie uma variante para o tema claro e outra para o tema
+  escuro (PNG ou SVG, até 1 MB), e um favicon (só PNG, até 200 KB). Cada
+  logotipo pode ser trocado ou removido a qualquer momento; a mudança aparece
+  no cabeçalho imediatamente, sem precisar recarregar a página.
+
+![Cabeçalho e tela de login com o nome e o logotipo da empresa aplicados](screenshots/39-dados-empresa-marca-no-login.png)
+
+Quem não é Administrador não vê o link "Dados da empresa" na navegação e não
+consegue salvar alterações aqui — a tela mostra "Acesso restrito a
+administradores" para quem tentar abri-la diretamente pela URL.
+
+---
+
+## 14. Ajuda contextual
 
 Toda tela do sistema, inclusive o login, tem um botão **Ajuda** no
 cabeçalho. Ele abre uma janela com um lembrete rápido do que dá para fazer
@@ -496,7 +530,7 @@ telas se relacionam.
 
 ---
 
-## 14. Perguntas frequentes
+## 15. Perguntas frequentes
 
 **Inativei um cadastro por engano. Como desfaço?**
 Mude o filtro Situação para "Inativos" ou "Todos", clique em Editar no

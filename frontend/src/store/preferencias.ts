@@ -1,3 +1,4 @@
+import { useSyncExternalStore } from 'react';
 import { create } from 'zustand';
 
 export type Tema = 'claro' | 'escuro' | 'automatico';
@@ -111,4 +112,34 @@ try {
   // matchMedia ou addEventListener indisponivel (ambiente de teste sem o
   // polyfill, navegador muito antigo) -- tema automatico so atualiza no
   // proximo F5/login, degradacao aceitavel.
+}
+
+/**
+ * Tema efetivo (claro/escuro), ja com "automatico" resolvido contra o SO --
+ * para quem precisa saber qual variante visual esta ativa agora (ex.:
+ * escolher o logo claro ou escuro da empresa no cabecalho e no login).
+ */
+export function useTemaResolvido(): 'claro' | 'escuro' {
+  return useSyncExternalStore(inscreverEmMudancasDeTema, temaResolvidoAtual);
+}
+
+function temaResolvidoAtual(): 'claro' | 'escuro' {
+  return resolverTema(usePreferencias.getState().preferencias.tema, prefereEscuroAgora());
+}
+
+function inscreverEmMudancasDeTema(notificar: () => void): () => void {
+  const desinscreverStore = usePreferencias.subscribe(notificar);
+  let desinscreverMedia = () => {};
+  try {
+    const media = window.matchMedia('(prefers-color-scheme: dark)');
+    media.addEventListener('change', notificar);
+    desinscreverMedia = () => media.removeEventListener('change', notificar);
+  } catch {
+    // Sem matchMedia (testes sem o polyfill): so a store notifica, e o tema
+    // "automatico" nunca vai bater com uma troca do SO nesse ambiente mesmo.
+  }
+  return () => {
+    desinscreverStore();
+    desinscreverMedia();
+  };
 }

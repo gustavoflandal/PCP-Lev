@@ -106,6 +106,14 @@ describe('Ajuda', () => {
     expect(screen.getByRole('dialog', { name: /Necessidade de compra/ })).toBeInTheDocument();
   });
 
+  it('o conteudo muda conforme a tela: dados da empresa', async () => {
+    renderizar('/configuracoes/empresa');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Ajuda' }));
+
+    expect(screen.getByRole('dialog', { name: /Dados da empresa/ })).toBeInTheDocument();
+  });
+
   it('o conteudo muda conforme a tela: estrutura de produtos', async () => {
     renderizar('/estrutura-produtos');
 

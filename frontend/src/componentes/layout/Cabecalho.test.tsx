@@ -1,8 +1,10 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useAutenticacao } from '@/store/autenticacao';
+import { instalarServidorFalso, type ServidorFalso } from '@/testes/utilitarios';
 import { Cabecalho } from './Cabecalho';
 
 const navegar = vi.fn();
@@ -22,18 +24,27 @@ const respostaLogin = {
 };
 
 function renderizar() {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
-    <MemoryRouter>
-      <Cabecalho />
-    </MemoryRouter>,
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter>
+        <Cabecalho />
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
 }
 
 describe('Cabecalho', () => {
+  let servidor: ServidorFalso;
+
   beforeEach(() => {
     navegar.mockClear();
     sessionStorage.clear();
     useAutenticacao.getState().entrar(respostaLogin);
+    servidor = instalarServidorFalso();
+    servidor.responder([
+      { metodo: 'get', url: '/configuracoes/empresa', status: 200, corpo: { dados: { tem_logo_claro: false, tem_logo_escuro: false, nome_fantasia: '' } } },
+    ]);
   });
 
   it('identifica quem esta operando o sistema', () => {
@@ -76,5 +87,21 @@ describe('Cabecalho', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Preferências' }));
 
     expect(navegar).toHaveBeenCalledWith('/preferencias');
+  });
+
+  it('mostra o nome padrao quando a empresa nao tem nome fantasia configurado', () => {
+    renderizar();
+
+    expect(screen.getByText('Sistema PCP')).toBeInTheDocument();
+  });
+
+  it('mostra o nome fantasia da empresa quando configurado', async () => {
+    servidor.responder([
+      { metodo: 'get', url: '/configuracoes/empresa', status: 200, corpo: { dados: { tem_logo_claro: false, tem_logo_escuro: false, nome_fantasia: 'Industria VMS' } } },
+    ]);
+
+    renderizar();
+
+    expect(await screen.findByText('Industria VMS')).toBeInTheDocument();
   });
 });

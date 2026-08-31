@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Navigate, Route, Routes } from 'react-router-dom';
+import { AplicarBrandingEmpresa } from '@/componentes/layout/AplicarBrandingEmpresa';
 import { RotaProtegida } from '@/componentes/layout/RotaProtegida';
 import { Shell } from '@/componentes/layout/Shell';
 import { Fornecedores } from '@/paginas/cadastros/Fornecedores';
@@ -12,6 +13,7 @@ import { NecessidadeCompra } from '@/paginas/compras/NecessidadeCompra';
 import { NovaCotacao } from '@/paginas/compras/NovaCotacao';
 import { NovoPedidoCompra } from '@/paginas/compras/NovoPedidoCompra';
 import { PedidosCompra } from '@/paginas/compras/PedidosCompra';
+import { DadosEmpresaPagina } from '@/paginas/configuracoes/DadosEmpresa';
 import { Estoque } from '@/paginas/estoque/Estoque';
 import { Movimentacoes } from '@/paginas/estoque/Movimentacoes';
 import { DetalheEstruturaProduto } from '@/paginas/estrutura/DetalheEstruturaProduto';
@@ -36,6 +38,7 @@ const queryClient = new QueryClient({
 export function App() {
   return (
     <QueryClientProvider client={queryClient}>
+      <AplicarBrandingEmpresa />
       <Routes>
         <Route path="/login" element={<Login />} />
 
@@ -58,6 +61,7 @@ export function App() {
             <Route path="/estoque" element={<Estoque />} />
             <Route path="/movimentacoes" element={<Movimentacoes />} />
             <Route path="/preferencias" element={<PreferenciasPagina />} />
+            <Route path="/configuracoes/empresa" element={<DadosEmpresaPagina />} />
           </Route>
         </Route>
 
