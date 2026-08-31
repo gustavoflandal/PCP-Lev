@@ -10,6 +10,7 @@ import (
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/auth"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/cotacao"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/estoque"
+	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/estrutura"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/fornecedor"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/peca"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/pedidocompra"
@@ -88,6 +89,10 @@ func registrarCadastros(v1 *echo.Group, dep Dependencias, autenticacao echo.Midd
 
 	handlers.NovoFornecedorHandler(
 		fornecedor.NovoServico(repository.NovoFornecedorRepositorio(dep.Pool)),
+	).Registrar(v1, autenticacao)
+
+	handlers.NovoEstruturaHandler(
+		estrutura.NovoServico(repository.NovoEstruturaRepositorio(dep.Pool)),
 	).Registrar(v1, autenticacao)
 }
 

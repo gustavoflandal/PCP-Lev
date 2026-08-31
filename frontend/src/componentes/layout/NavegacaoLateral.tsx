@@ -21,6 +21,8 @@ const CADASTROS: ItemNavegacao[] = [
   { rota: '/fornecedores', rotulo: 'Fornecedores', icone: 'users' },
 ];
 
+const ESTRUTURA: ItemNavegacao[] = [{ rota: '/estrutura-produtos', rotulo: 'Estrutura de produtos', icone: 'settings' }];
+
 const COMPRAS: ItemNavegacao[] = [
   { rota: '/cotacoes', rotulo: 'Cotações', icone: 'clipboard-list' },
   { rota: '/pedidos-compra', rotulo: 'Pedidos de compra', icone: 'shopping-cart' },
@@ -64,6 +66,15 @@ export function NavegacaoLateral() {
       <p className="mb-1 mt-6 px-3 text-label text-texto-disabled">Cadastros</p>
       <ul className="flex flex-col gap-1">
         {CADASTROS.map((item) => (
+          <li key={item.rota}>
+            <Link item={item} />
+          </li>
+        ))}
+      </ul>
+
+      <p className="mb-1 mt-6 px-3 text-label text-texto-disabled">Estrutura de produtos</p>
+      <ul className="flex flex-col gap-1">
+        {ESTRUTURA.map((item) => (
           <li key={item.rota}>
             <Link item={item} />
           </li>

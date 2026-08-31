@@ -57,4 +57,13 @@ describe('NavegacaoLateral', () => {
 
     expect(screen.getByRole('link', { name: 'Estoque' })).toHaveAttribute('href', '/estoque');
   });
+
+  it('estrutura de produtos ja e um link real', () => {
+    renderizarEm('/');
+
+    expect(screen.getByRole('link', { name: /Estrutura de produtos/ })).toHaveAttribute(
+      'href',
+      '/estrutura-produtos',
+    );
+  });
 });

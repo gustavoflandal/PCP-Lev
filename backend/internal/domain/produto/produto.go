@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gustavoflandal/pcp-lev/backend/internal/platform/dinheiro"
+	"github.com/gustavoflandal/pcp-lev/backend/internal/platform/tempo"
 )
 
 const tamanhoMinimoDescricao = 5
@@ -39,6 +40,15 @@ type ProdutoAcabado struct {
 	UpdatedAt        time.Time         `json:"updated_at"`
 	CreatedBy        *string           `json:"created_by,omitempty"`
 	UpdatedBy        *string           `json:"updated_by,omitempty"`
+	// EstruturaAtiva e nil quando o produto ainda nao tem BOM cadastrada.
+	EstruturaAtiva *EstruturaResumo `json:"estrutura_ativa,omitempty"`
+}
+
+// EstruturaResumo e o resumo da estrutura (BOM) ativa de um produto, usado
+// so na listagem — o detalhe completo (itens) vem do pacote estrutura.
+type EstruturaResumo struct {
+	Versao             int        `json:"versao"`
+	DataVigenciaInicio tempo.Data `json:"data_vigencia_inicio"`
 }
 
 // PrevisaoDeConclusao aplica o lead time de producao a partir de uma data

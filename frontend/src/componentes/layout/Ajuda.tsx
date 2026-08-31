@@ -55,6 +55,15 @@ const CONTEUDO_POR_ROTA: Record<string, ConteudoAjuda> = {
       '"Inativar" preserva o histórico; para reativar, edite o registro e mude a situação.',
     ],
   },
+  '/estrutura-produtos': {
+    titulo: 'Ajuda · Estrutura de produtos',
+    itens: [
+      'Cada produto acabado pode ter uma estrutura (BOM): a lista de partes/peças e a quantidade de cada uma para montar 1 unidade.',
+      'Uma estrutura nunca é editada nem apagada — mudanças viram uma "Nova versão", que substitui a anterior a partir de uma data de vigência.',
+      'A versão anterior fica no histórico, com a data em que deixou de valer — nada se perde.',
+      'Só existe uma versão ativa por produto de cada vez.',
+    ],
+  },
   '/cotacoes': {
     titulo: 'Ajuda · Cotações',
     itens: [

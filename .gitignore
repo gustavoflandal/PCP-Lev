@@ -31,5 +31,12 @@ Thumbs.db
 # Dados do Postgres (volume local)
 .docker-data/
 
+# Certificado CA local para builds Docker atras de inspecao TLS (antivirus/
+# proxy corporativo) -- especifico de cada maquina, nunca commitar
+backend/.docker-ca/*
+frontend/.docker-ca/*
+!backend/.docker-ca/.gitkeep
+!frontend/.docker-ca/.gitkeep
+
 # Build incremental do TypeScript
 *.tsbuildinfo

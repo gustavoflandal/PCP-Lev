@@ -363,3 +363,174 @@ Sprint 4 (Recebimento e Estoque) fechada. Proximo passo (confirmado pelo usuario
 2.1 -- Estrutura de Produto/BOM, branch `feat/estrutura-produto-bom` empilhada sobre esta,
 plano ja escrito em `docs/superpowers/plans/2026-08-30-estrutura-produto-bom.md`.
 
+---
+
+# Ledger — Fase 2.1: Estrutura de Produto / BOM (feat/estrutura-produto-bom)
+
+Plano: docs/superpowers/plans/2026-08-30-estrutura-produto-bom.md
+Spec: docs/superpowers/specs/2026-08-30-estrutura-produto-bom-design.md
+Decisoes de pre-voo: branch empilhada sobre feat/sprint4-recebimento-estoque -- que nesse
+meio-tempo ja foi mesclada na main (PR #4), entao a branch nasceu direto da main. BOM de
+um nivel so (Produto Acabado -> Partes/Pecas, sem submontagens aninhadas), decisao ja
+validada com o usuario. Sem endpoint de edicao in-place -- so `POST /boms` (1a versao) e
+`POST /boms/{id}/versionar`.
+
+Base do branch: 055a28b (topo da main, com Sprint 4 ja mesclada).
+
+## Pre-requisito: infraestrutura Docker corrigida
+
+Antes de retomar o desenvolvimento, o usuario pediu revisao da infraestrutura e subida do
+ambiente Docker completo. Dois problemas de maquina local encontrados e corrigidos
+(commit `0f1151a fix(infra)`, na main, herdado por esta branch):
+1. Sem `.env` local, `docker compose` cairia no default `DB_PORT=5432`, ja ocupado por um
+   Postgres de outro projeto rodando permanentemente no Docker desta maquina --
+   `.env.example` ja reserva a porta 5442, so faltava copia-lo para `.env`.
+2. Kaspersky Endpoint Security faz inspecao TLS (MITM) em todo trafego HTTPS da maquina,
+   inclusive do Docker -- containers Alpine/Go/Node nao confiam na CA raiz do Kaspersky,
+   causando falhas intermitentes em `go mod download`/`apk add` e falha consistente
+   (`SELF_SIGNED_CERT_IN_CHAIN`) em `npm ci`. Corrigido com um certificado CA local
+   opcional (`backend/.docker-ca/`, `frontend/.docker-ca/`, gitignored) instalado
+   condicionalmente nos dois Dockerfiles -- no-op em CI/outras maquinas. Node.js ignora o
+   CA store do SO (usa so o bundle Mozilla embutido), entao o frontend precisou de
+   `NODE_EXTRA_CA_CERTS` em vez da tecnica que resolveu Go/apk.
+
+Validado: `docker compose build --no-cache` + `docker compose up -d` limpos, os tres
+servicos (postgres, backend, backend) saudaveis.
+
+Decisao do usuario durante a sessao: **toda execucao de backend/frontend, inclusive
+testes (go test, npm test, go vet, gofmt), deve rodar via Docker** -- nao via
+toolchains locais no PATH do host, mesmo quando disponiveis. `go test` roda numa imagem
+`golang:1.25-alpine` com bind-mount do codigo-fonte real (o `.dockerignore` do backend
+exclui `*_test.go`, entao a imagem multi-stage normal nao serve para isso), conectada a
+rede `pcp-lev_default`, com `PCP_TEST_DSN` apontando para o servico `postgres` pelo nome
+interno (`postgres:5432`). Banco `pcp_db_test` criado manualmente no Postgres do compose
+(nao existia, so `pcp_db`).
+
+## Progresso
+
+Task B1: complete (commit 875ca84, gofmt/vet limpos, 6/6 testes). Dominio `estrutura`:
+Estrutura/Item/Dados/ItemDados, sentinelas de erro, Validar/ValidarProduto.
+Task B2: complete (commit fa45e0f, gofmt/vet limpos, 13/13 testes). `estrutura.Servico`
+(Criar/Versionar/BuscarPorID/ListarPorProduto) + `EstruturaRepositorio` transacional
+(header+itens). Bug do proprio plano encontrado e corrigido: `Criar` sempre grava
+`versao=1`, entao uma segunda chamada para o mesmo produto pode colidir tanto com o
+indice parcial `uk_estrutura_ativa_por_pa` quanto com `uk_pa_versao` (versao duplicada)
+-- o Postgres reportou `uk_pa_versao` no teste `TestCriarSegundaDiretoFalha`, nao o indice
+que o plano esperava. Corrigido checando os dois nomes de indice em `violouIndiceUnico`.
+Task B3: complete (commit 0565037, gofmt/vet limpos, 99/99 no pacote handlers -- 93
+anteriores + 6 novos). Handler HTTP `/boms` (POST, GET /:id, POST /:id/versionar) e
+`/produtos-acabados/:id/boms` (GET), registrados no mesmo grupo `v1` sem tocar em
+ProdutoHandler.
+Task B4: complete (commit 9424773, gofmt/vet limpos, 44/44 no pacote repository -- 42
+anteriores + 2 novos). `produto.ProdutoAcabado` ganha `EstruturaAtiva *EstruturaResumo`;
+`ProdutoRepositorio.Listar` traz a estrutura ativa via `LEFT JOIN` sobre um CTE
+(`filtrosDeCadastro` roda so contra `produtos_acabados`, evitando a ambiguidade de
+`ativo` entre as duas tabelas -- mesma armadilha corrigida no Sprint 4/Task B2).
+Task B5: complete (commit e182825). `registrarCadastros` em routes.go ganha
+`handlers.NovoEstruturaHandler`. Suite completa do backend: 392/392 testes em 22
+pacotes (371 anteriores + 21 novos), go build/vet/gofmt limpos -- tudo rodado dentro do
+Docker. Fluxo manual ponta a ponta verificado via curl dentro de um container na rede do
+compose (nao API local): criar produto sem BOM -> `estrutura_ativa: null` -> criar peca
+-> `POST /boms` v1 -> `estrutura_ativa` aparece na listagem -> historico com 1 versao ->
+`versionar` -> historico com 2 versoes (v1 com `data_vigencia_fim` preenchida) -> `POST
+/boms` de novo no mesmo produto -> 409 -- 8/8 passos. Dados de teste (BOM-E2E-01,
+PP-E2E-01) removidos do Postgres do compose apos a verificacao.
+
+Backend da Fase 2.1 fechado (Tasks B1-B5). Frontend (Tasks F1-F6) a seguir.
+
+Task F1: complete (commit 7488cac, lint/tsc limpos, 4/4 testes). tipos/estrutura.ts +
+servicos/estrutura.ts (criar/versionar/obter/listarPorProduto).
+Task F2: complete (commit e27c523, lint limpo, 2/2 testes). Campo aditivo
+`estrutura_ativa` em `tipos/cadastros.ts`; tela de listagem "Estrutura de produtos"
+reaproveitando `useListagem` sem nenhuma mudanca no hook.
+Task F3: complete (commit 96c96b6, lint limpo, 3/3 testes). Detalhe + historico:
+versao ativa com itens, "Nova versao"/"Criar estrutura" conforme o caso, historico de
+versoes superadas.
+Task F4: complete (commit d8634ae, lint limpo, 3/3 testes). Formulario unico
+(NovaEstruturaProduto) que decide criar vs versionar consultando o historico do produto.
+Task F5: complete (commit fe2b91f, lint/tsc limpos, 317/317 no total). Rotas em App.tsx,
+secao "Estrutura de produtos" na navegacao lateral (entre Cadastros e Compras, icone
+'settings'), entrada em Ajuda.tsx com lookup por prefixo ja existente cobrindo as
+sub-rotas /:produtoId e /:produtoId/nova.
+
+Task F6 (verificacao final): iniciada com `code-reviewer` (agente) sobre o diff inteiro
+da branch antes do roteiro de navegador -- decisao do usuario de usar os agentes/skills
+disponiveis em `.claude`. Achado critico real, confirmado de forma independente por um
+teste manual via Playwright que reproduziu o mesmo crash antes mesmo do relatorio do
+agente chegar:
+
+1. **P0 (bloqueante)**: `EstruturaRepositorio.ListarPorProduto` nunca carregava os itens
+   de cada versao (so o header) -- como `Estrutura.Itens` e `omitempty`, o campo sumia do
+   JSON de `GET /produtos-acabados/{id}/boms`, e a tela de detalhe quebrava (TypeError)
+   ao tentar renderizar `ativa.itens` de qualquer produto com BOM real. Os testes nao
+   pegavam porque o teste de frontend mockava a resposta ja com itens (um contrato que o
+   backend real nao entregava) e o teste de repositorio so checava versao/ordem, nunca
+   itens. Corrigido com uma query em lote (`WHERE estrutura_produto_id = ANY($1)`, evita
+   N+1) que carrega os itens de todo o historico de uma vez; teste de regressao
+   `TestListarPorProdutoTrazOsItensDeCadaVersao` adicionado.
+2. Peca duplicada nos itens de uma estrutura vazava um 500 generico (so o indice unico
+   `uk_estrutura_pp` barrava, sem sentinela de dominio) -- corrigido com
+   `estrutura.ErrItemDuplicado` (400) validado no dominio + rede de seguranca no
+   repositorio; formulario ganhou validacao zod (`superRefine`) equivalente, com teste.
+3. `NovaEstruturaProduto` nao tratava `historicoQuery.isError` (`DetalheEstruturaProduto`
+   ja tratava) -- se o historico falhasse ao carregar, a tela decidia silenciosamente
+   "criar" em vez de "versionar" para um produto que ja tinha BOM ativa. Corrigido com a
+   mesma mensagem de erro do detalhe; teste adicionado.
+4. Limpeza (P2): removido codigo morto (`Dados.Normalizar` no-op, `ColunasOrdenaveis` sem
+   consumidor) e `coalesce(max(versao), 0)` no repositorio (tira uma pre-condicao
+   implicita do metodo).
+
+Dois achados do agente foram registrados como Minor e conscientemente **nao** corrigidos
+nesta tarefa (mesmo padrao de achados nao bloqueantes documentados nas sprints
+anteriores): `Versionar` sempre recalcula `data_vigencia_fim` da versao anterior como
+`nova_inicio - 1 dia`, o que pode estender silenciosamente uma vigencia que tivesse sido
+explicitamente encurtada na criacao -- caso de borda sem cobertura de teste, e o proprio
+plano ja especificava esse calculo; e o formulario de "Nova versao" sempre comeca vazio
+em vez de pre-carregar os itens da versao ativa, obrigando redigitar a BOM inteira a cada
+versionamento -- friccao de UX real, mas fora do desenho de formulario que o plano
+especificou.
+
+Commit `4ee1f9b fix: corrige achados da revisao de codigo da Fase 2.1 (BOM)`. Suite
+completa apos as correcoes: 392/392 backend (21 novos desde a Task B5), 319/319 frontend
+(2 novos), go build/vet/gofmt e npm lint/tsc/build limpos -- tudo rodado dentro do Docker
+(decisao do usuario: nunca usar toolchain local no PATH do host neste projeto, ver nota
+abaixo).
+
+Roteiro de navegador real via Playwright (dentro de um container na rede do compose,
+apontando para `http://frontend:80`, nao API direta) apos as correcoes: 16/16 passos --
+login, criar produto sem BOM, criar peca, lista mostra "Sem estrutura ativa", detalhe
+oferece "Criar estrutura", criar 1a versao (toast + versao 1 visivel), "Nova versao"
+(versao 2 ativa, versao 1 no historico com `data_vigencia_fim` preenchida), lista mostra
+"v.2 desde ...", UI so oferece "Nova versao" quando ja ha uma ativa (sem caminho para o
+409 pela interface), informacao sobrevive em escala de cinza, 800px sem rolagem
+horizontal na lista e no formulario, Tab alcanca "Adicionar item" no formulario.
+
+Task 22 (documentacao/entrega): capturas 29-31 em `docs/screenshots/` (listagem com um
+produto com BOM e outro sem, detalhe com a versao ativa + botao "Nova versao" + historico
+na mesma tela, formulario de nova versao preenchido com 3 itens), dados de exemplo
+realistas do dominio (VMS-02 "Painel de mensagem variavel", R-210 "Radar movel de
+fiscalizacao", pecas PCB-VMS-01/LED-MOD-01/FONE-24V) via navegador real, nao API direta.
+`docs/8_MANUAL_OPERACAO.md` ganhou a secao 7 "Estrutura de produtos (BOM)" (inserida
+entre Produtos acabados e Cotacoes, espelhando a ordem da navegacao lateral), indice e
+todos os links cruzados internos renumerados (Cotacoes 7->8, Pedidos de compra 8->9,
+Estoque 9->10, Ajuda 10->11, FAQ 11->12), e uma entrada nova na FAQ para "por que nao da
+para editar uma estrutura existente".
+
+Fase 2.1 (Estrutura de Produto / BOM) completa: backend (392 testes) + frontend (319
+testes) verdes, revisao de codigo por agente com 1 bug critico real encontrado e
+corrigido, verificacao de navegador real via Playwright (16/16), documentacao e capturas
+de tela entregues.
+
+## Nota de infraestrutura (pre-requisito desta fase, corrigido na main antes de comecar)
+
+Antes de retomar o desenvolvimento desta fase, dois problemas de ambiente local foram
+corrigidos (commit `0f1151a` na main, herdado por esta branch -- ver secao "Pre-requisito"
+acima para o detalhe completo): falta de `.env` local causando conflito de porta do
+Postgres com outro projeto rodando no Docker da mesma maquina, e o Kaspersky Endpoint
+Security desta maquina fazendo inspecao TLS (MITM) que quebrava `go mod download`/`apk
+add`/`npm ci` dentro dos builds Docker. A partir dessa correcao, o usuario decidiu que
+toda execucao de backend/frontend nesta maquina -- inclusive testes -- deve rodar via
+Docker (containers `golang:1.25-alpine`/`node:22-alpine` com bind-mount do codigo-fonte
+real, conectados a rede `pcp-lev_default`, `PCP_TEST_DSN` apontando para o servico
+`postgres` pelo nome interno), nunca via `go`/`npm` resolvidos no PATH do host.
+
