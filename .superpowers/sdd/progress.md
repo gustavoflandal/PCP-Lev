@@ -1003,3 +1003,126 @@ hora"), o trabalho foi commitado e enviado (push) neste ponto, mas a Task F4
 atualizacao do manual de operacao, aplicacao de achados de revisao, commit final e
 link de PR) **ainda nao foi executada**. Retomar a partir da Task F4 do plano quando
 o usuario pedir -- B0-B3 e F1-F3 nao precisam ser repetidos.
+
+## Task F4 (verificacao final) -- retomada em 31/08/2026
+
+**Achado de processo**: ao retomar, o branch `feat/auditoria` ja tinha sido mesclado
+na `main` (PRs #9 e #10) **sem** a Task F4 ter rodado -- o merge aconteceu antes da
+verificacao final, fora da ordem usual deste projeto. Trabalho continuado direto
+sobre a `main` atual, num worktree novo (`chore/auditoria-verificacao-final`), com
+plano de entregar as correcoes/documentacao resultantes como um PR pequeno de
+acompanhamento (nao um novo `feat/auditoria`).
+
+Progresso desta sessao:
+- Suite completa via Docker antes de qualquer mudanca: backend 100% dos pacotes ok
+  (build/vet/gofmt limpos), frontend 393/393 testes (lint/tsc/build limpos).
+- **Achado de ambiente** (nao relacionado ao codigo): os containers `pcp_frontend`/
+  `pcp_backend` que ja estavam rodando tinham imagem de 30/08 -- um dia antes da
+  Auditoria (e ate da Fase 4.2) terem sido mescladas. Nem "Dados da empresa" nem
+  "Auditoria" apareciam na navegacao. Reconstruido via
+  `docker compose --project-directory D:/PCP-Lev -f D:/PCP-Lev/docker-compose.yml up
+  -d --build` a partir do checkout principal (nao deste worktree).
+- Agente `code-reviewer` (background, `opus`) sobre o diff completo da sub-entrega
+  (`a1001c0..d03926d`), com atencao especial ao pinning de conexao. Achou **1 Critico**
+  e **6 Altos** reais:
+  - CRITICO: middleware `ConexaoDeAuditoria` fixa uma conexao do pool para TODA
+    requisicao (inclusive GET/HEAD/404, sem autenticacao) -- com `DB_MAX_CONNS=20`
+    isso vira um teto de 20 requisicoes HTTP simultaneas na API inteira, e um DoS
+    trivial nao autenticado (bater em qualquer rota inexistente ~20x esgota o pool).
+  - ALTO: fallback do middleware (Acquire falhou / set_config falhou) pode atribuir
+    a auditoria ao usuario ERRADO (pior que NULL); panic no handler pula o RESET das
+    variaveis de sessao antes de devolver a conexao ao pool -- mesma causa raiz.
+  - ALTO: IP gravado na auditoria e forjavel (`c.RealIP()` sem `IPExtractor`
+    configurado, le `X-Forwarded-For` de qualquer cliente).
+  - ALTO: `senha_hash` de qualquer usuario vaza pela API/tela de auditoria (a tabela
+    `usuarios` e auditada, o trigger grava a linha inteira; todo login atualiza
+    `ultimo_login` e dispara o trigger).
+  - ALTO: `GET /auditoria/exportar` sem limite, e busca `dados_antigos`/`dados_novos`
+    (colunas pesadas) que o CSV nem usa.
+  - ALTO: data/hora da auditoria aparece 3h errada na tela (diverge do CSV, que esta
+    correto) -- bug de fuso horario no scan do pgx (timestamp sem tz lido como UTC,
+    quando na verdade e hora de parede de Sao Paulo).
+  - Relatorio completo com file:linha, causa e correcao sugerida em
+    `.superpowers/sdd/reviews/` (nao versionado, so local) e no historico da sessao.
+- Brief de correcao escrito (`.superpowers/sdd/reviews/task-f4-fix-brief.md`, tambem
+  local) cobrindo os 7 achados Critico/Alto (com a correcao exata pedida para cada
+  um) mais 3 itens baratos de Medio/Baixo (filtro `enabled` no frontend, testes de
+  403 faltando, comentario desatualizado na migration 007). Dispatchado um subagente
+  (`backend-architect`, `opus`, background) para implementar -- **em andamento**,
+  ainda sem relatorio final nesta sessao.
+- Roteiro manual via Playwright (`mcr.microsoft.com/playwright:v1.49.0-noble`, rede
+  `pcp-lev_default`, contra `http://frontend`) rodado ANTES das correcoes (contra o
+  codigo ja mesclado, sem os fixes do achado critico ainda): 9/9 passos -- login,
+  editar fornecedor autenticado, Auditoria mostra usuario/IP corretos, modal de diff
+  mostra o campo certo, exportar CSV funciona, login como usuario OPERADOR (criado
+  via SQL so para o teste, removido depois), link Auditoria some da navegacao, acesso
+  direto pela URL bloqueado (403 + mensagem de acesso restrito).
+- Screenshots `docs/screenshots/40-auditoria-lista.png` e
+  `41-auditoria-detalhe-diff.png` capturados via Playwright contra o app real.
+- `docs/8_MANUAL_OPERACAO.md` ganhou a secao 14 "Auditoria" (indice, links cruzados
+  de outras secoes e numeracao de Ajuda contextual/FAQ renumerados 14->15, 15->16;
+  FAQ nova sobre Usuario/IP em branco em linhas antigas).
+
+**Falta para fechar a Task F4**: aguardar o relatorio do subagente de correcao,
+revisar o diff, rodar a suite completa de novo, refazer o roteiro Playwright contra
+o codigo corrigido (o anterior validou o comportamento ainda SEM os fixes de
+seguranca/disponibilidade), e decidir o formato de entrega (commit direto vs PR novo
+a partir do worktree `chore/auditoria-verificacao-final`, ja que o `feat/auditoria`
+original ja foi mesclado).
+
+## Task F4 -- correcoes aplicadas e verificadas (mesmo dia, 31/08/2026)
+
+Subagente (`backend-architect`, background, `opus`) implementou os 10 itens do brief
+(`.superpowers/sdd/reviews/task-f4-fix-brief.md`, commitado): 4 commits em
+`chore/auditoria-verificacao-final` --
+`403973c fix(backend): protege o pool e a atribuicao de usuario na auditoria`,
+`d64a265 fix(backend): remove senha_hash, corrige o fuso e alivia a exportacao da
+auditoria`, `60b1d79 test(backend): cobre 403 da auditoria para gestor na exportacao
+e para operador`, `2433c44 fix(frontend): nao consulta a auditoria quando o perfil
+nao e ADMIN`. Relatorio completo em
+`.superpowers/sdd/reviews/task-f4-fix-report.md` (tambem commitado).
+
+Verificado de forma independente (nao so aceito o relatorio do subagente):
+- Li o diff dos 4 commits arquivo por arquivo -- a implementacao bate com o brief
+  (skip de pinning em GET/HEAD/OPTIONS + timeout de 3s no Acquire; RESET das
+  variaveis de sessao movido para `defer` registrado depois do `defer Release()`,
+  cobrindo retorno normal/erro/panic; `e.IPExtractor` com
+  `TrustLoopback/TrustLinkLocal/TrustPrivateNet`; `camposSensiveisPorTabela` +
+  `semCamposSensiveis` removendo `senha_hash` com fail-closed se o JSON nao
+  desserializar como objeto; `colunasAuditoriaExportacao` sem os dois JSONB pesados;
+  `normalizarRegistro` reetiquetando `data_hora` para `America/Sao_Paulo` fixo
+  -03:00, com o comentario documentando a premissa de `TZ` do Postgres).
+- Rodei a suite completa do backend de novo, do zero, via Docker: **build/vet/gofmt
+  limpos, todos os pacotes ok**.
+- **Achado de ambiente durante a verificacao**: os containers `pcp_frontend`/
+  `pcp_backend` continuavam com a imagem de antes dos fixes (nem o `docker compose
+  up -d --build` a partir de `D:/PCP-Lev` reconstroi o codigo do worktree -- sao
+  duas arvores de trabalho diferentes). Build das imagens direto do worktree
+  (`docker build ... backend/Dockerfile`, idem frontend) e troca dos containers
+  `pcp_backend`/`pcp_frontend` por essas imagens, mantendo o `pcp_postgres`
+  compartilhado -- **importante**: `docker run --network ... --name pcp_backend` NAO
+  registra o alias DNS curto `backend` que o `docker-compose.yml` cria automaticamente
+  a partir do nome do servico; precisa de `--network-alias backend`/`--network-alias
+  frontend` explicito, senao o nginx do frontend (que faz `proxy_pass
+  http://backend:8000`) e o roteiro de teste (que navega para `http://frontend`) 
+  falham com `ERR_NAME_NOT_RESOLVED`.
+- Roteiro Playwright completo refeito contra o codigo CORRIGIDO (o mesmo roteiro de
+  9 passos da rodada anterior): **9/9 OK**.
+- Confirmado via `curl` direto na API (`GET /auditoria?tabela=usuarios`) que
+  `senha_hash` nao aparece em nenhum `dados_antigos`/`dados_novos`, e que
+  `data_hora` sai com sufixo `-03:00` (timezone corrigido).
+- Dados de verificacao (usuario `operador_teste`) removidos do Postgres apos os
+  testes.
+
+Commit de documentacao/ledger feito (`docs: verificacao final da Auditoria (Task F4)
+e manual de operacao`, na mesma branch). Usuario escolheu "Push + PR" (mesmo padrao
+das sub-entregas anteriores) via `finishing-a-development-branch`. Branch enviada:
+https://github.com/gustavoflandal/PCP-Lev/pull/new/chore/auditoria-verificacao-final
+(PR ainda precisa ser aberto manualmente pelo usuario nesse link -- 5 commits: os 4
+de correcao mais o de documentacao). Containers `pcp_backend`/`pcp_frontend`
+devolvidos ao build a partir de `D:/PCP-Lev` (main) apos a verificacao, ja que este
+branch ainda nao foi mesclado.
+
+**Task F4 completa.** Falta so o usuario abrir o PR (link acima) e mesclar. Depois
+do merge, a Fase 4 segue para a proxima sub-entrega da ordem acordada na decisao de
+cronograma v2.1 (mais acima neste arquivo): Parametros regionais (secao 4.6.4).

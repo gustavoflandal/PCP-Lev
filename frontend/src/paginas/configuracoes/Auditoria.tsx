@@ -61,8 +61,9 @@ function rotuloDaTabela(tabela: string): string {
   return TABELAS_AUDITADAS.find((t) => t.valor === tabela)?.rotulo ?? tabela;
 }
 
-/** A API guarda em UTC (doc 0, secao 4.6.4); o navegador converte para o
- * fuso local ao ler o ISO string, entao so falta escolher o formato pt-BR. */
+/** A API manda o ISO 8601 com o offset em que o evento foi gravado
+ * (`...-03:00`); o navegador converte para o fuso local ao ler a string,
+ * entao so falta escolher o formato pt-BR. */
 function formatarDataHora(iso: string): string {
   const data = new Date(iso);
   const dia = String(data.getDate()).padStart(2, '0');
@@ -130,6 +131,10 @@ export function Auditoria() {
     queryKey: ['auditoria', filtros],
     queryFn: () => listarAuditoria(filtros),
     placeholderData: keepPreviousData,
+    // O backend ja rejeita quem nao e ADMIN com 403; sem isto, um nao-admin
+    // que abrisse a URL direto dispararia a requisicao mesmo caindo na
+    // mensagem de acesso restrito logo abaixo.
+    enabled: perfil === 'ADMIN',
   });
 
   const erro = consulta.error ? (separarErro(consulta.error).geral ?? 'Não foi possível carregar a auditoria.') : null;
