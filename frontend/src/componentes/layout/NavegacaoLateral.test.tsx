@@ -58,6 +58,15 @@ describe('NavegacaoLateral', () => {
     expect(screen.getByRole('link', { name: 'Estoque' })).toHaveAttribute('href', '/estoque');
   });
 
+  it('necessidade de compra ja e um link real', () => {
+    renderizarEm('/');
+
+    expect(screen.getByRole('link', { name: 'Necessidade de compra' })).toHaveAttribute(
+      'href',
+      '/necessidade-compra',
+    );
+  });
+
   it('estrutura de produtos ja e um link real', () => {
     renderizarEm('/');
 

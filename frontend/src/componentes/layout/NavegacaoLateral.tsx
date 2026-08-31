@@ -26,6 +26,7 @@ const ESTRUTURA: ItemNavegacao[] = [{ rota: '/estrutura-produtos', rotulo: 'Estr
 const COMPRAS: ItemNavegacao[] = [
   { rota: '/cotacoes', rotulo: 'Cotações', icone: 'clipboard-list' },
   { rota: '/pedidos-compra', rotulo: 'Pedidos de compra', icone: 'shopping-cart' },
+  { rota: '/necessidade-compra', rotulo: 'Necessidade de compra', icone: 'alert-triangle' },
 ];
 
 const ESTOQUE: ItemNavegacao[] = [{ rota: '/estoque', rotulo: 'Estoque', icone: 'boxes' }];

@@ -82,6 +82,15 @@ const CONTEUDO_POR_ROTA: Record<string, ConteudoAjuda> = {
       'Cancelar só é possível enquanto o pedido não estiver Concluído ou já Cancelado.',
     ],
   },
+  '/necessidade-compra': {
+    titulo: 'Ajuda · Necessidade de compra',
+    itens: [
+      'Lista as peças ativas cujo saldo está abaixo do estoque mínimo cadastrado, agrupadas pelo fornecedor padrão de cada uma.',
+      'A "Necessidade" é a quantidade sugerida para repor: estoque mínimo menos o saldo atual.',
+      '"Gerar cotação" leva para o formulário de nova cotação já com o fornecedor e os itens preenchidos — só falta informar o preço negociado.',
+      'Peças sem fornecedor padrão aparecem à parte, sem essa opção: cadastre um fornecedor padrão na peça primeiro.',
+    ],
+  },
   '/estoque': {
     titulo: 'Ajuda · Estoque',
     itens: [
