@@ -63,6 +63,18 @@ export interface ItemPedidoCompra {
   total: number;
 }
 
+export interface ItemNecessidadeCompra {
+  parte_peca_id: number;
+  codigo: string;
+  descricao: string;
+  saldo_atual: number;
+  estoque_minimo: number;
+  necessidade: number;
+  /** Ausentes quando a peca nao tem fornecedor padrao cadastrado. */
+  fornecedor_padrao_id?: number;
+  fornecedor_padrao_nome?: string;
+}
+
 export interface PedidoCompra {
   id: number;
   numero_pc: string;

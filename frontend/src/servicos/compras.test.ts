@@ -8,6 +8,7 @@ import {
   emitirPedidoCompra,
   enviarCotacao,
   listar,
+  listarNecessidadeCompra,
   listarPedidosEmAtraso,
   obterCompra,
   registrarRecebimentoPedidoCompra,
@@ -206,6 +207,26 @@ describe('servico de compras', () => {
 
     expect(emAtraso).toHaveLength(1);
     expect(emAtraso[0].numero_pc).toBe('PC-2026-001');
+  });
+
+  it('listarNecessidadeCompra desembrulha a lista sem paginacao', async () => {
+    servidor.responder([
+      {
+        metodo: 'get', url: '/necessidade-compra', status: 200,
+        corpo: {
+          sucesso: true,
+          dados: [
+            { parte_peca_id: 1, codigo: 'RES-10K', descricao: 'Resistor', saldo_atual: 2, estoque_minimo: 10, necessidade: 8, fornecedor_padrao_id: 5, fornecedor_padrao_nome: 'Fornecedor X' },
+          ],
+        },
+      },
+    ]);
+
+    const itens = await listarNecessidadeCompra();
+
+    expect(itens).toHaveLength(1);
+    expect(itens[0].necessidade).toBe(8);
+    expect(itens[0].fornecedor_padrao_nome).toBe('Fornecedor X');
   });
 
   it('erro da API chega normalizado como ErroApi', async () => {
