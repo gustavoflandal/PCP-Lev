@@ -575,3 +575,85 @@ CSV de estoque e de pedidos de compra abrem com o cabecalho certo. Dados de veri
 removidos do Postgres do compose apos o teste.
 
 Backend da Fase 2.4 fechado (Tasks B1-B5). Frontend (Tasks F1-F6) a seguir.
+
+Task F1: complete (commit 5624645, lint limpo, 15/15 testes). `ItemNecessidadeCompra` em
+tipos/compras.ts + `listarNecessidadeCompra` em servicos/compras.ts.
+Task F2: complete (commit e0dd85a, lint limpo, 4/4 testes). Tela "Necessidade de compra":
+agrupada por fornecedor padrao (ordenado alfabeticamente, grupo sem fornecedor por ultimo),
+botao "Gerar cotacao" por grupo navegando para `/cotacoes/nova` via `location.state`.
+Task F3: complete (commit 2f83927, lint limpo, 5/5 testes). `NovaCotacao` le
+`location.state` opcional e pre-preenche fornecedor/itens via `setValue`/`replace` -- nao
+via `defaultValues`, porque o `<select>` nativo so aceita um valor cujo `<option>` ja
+existe no DOM, e as opcoes de fornecedor/peca carregam async.
+Task F4: complete (commit ab14a5d, lint limpo, 2/2 testes novos). Helper `baixarArquivo`
+(fetch autenticado + blob + link temporario, porque `<a href>` puro nao carrega o header
+Authorization) e botao "Exportar CSV" em Estoque e Pedidos de compra.
+Task F5: complete (commit 0838855, lint/tsc limpos, 330/330 no total). Rota
+`/necessidade-compra`, item na secao "Compras" da navegacao lateral (icone
+'alert-triangle'), entrada em Ajuda.tsx.
+
+Task F6 (verificacao final): revisao por `code-reviewer` (agente) sobre o diff inteiro
+antes do roteiro de navegador, mesma disciplina da Fase 2.1. Dois achados Altos reais,
+mais uma serie de achados Medios/Baixos, todos corrigidos:
+
+1. **Alta**: o `LEFT JOIN fornecedores` da necessidade de compra nao filtrava por
+   `f.ativo` -- uma peca com fornecedor padrao inativado continuava aparecendo agrupada
+   sob o nome dele, com "Gerar cotacao" habilitado. Corrigido com `AND f.ativo` no JOIN;
+   teste de regressao adicionado.
+2. **Alta**: o `useEffect` de pre-preenchimento em `NovaCotacao` so esperava as opcoes de
+   fornecedor/peca carregarem (`length > 0`), nunca que o id especifico vindo da
+   necessidade de compra existisse nelas -- um fornecedor inativo (achado 1) ou uma peca
+   fora das 200 primeiras que `usePartesPecasAtivas` carrega virava um id "fantasma": o
+   `<select>` mostra em branco, mas o estado do formulario guarda o id invalido, e o
+   submit ia adiante sem erro nenhum. Corrigido checando presenca real contra o conjunto
+   de opcoes carregadas; o que nao existe fica de fora, com um toast avisando. Dois
+   testes de regressao adicionados (fornecedor e peca fora das opcoes).
+3. **Media**: exportacao CSV sem BOM UTF-8 e com virgula como separador -- abre torto no
+   Excel pt-BR (acentos viram mojibake; o separador de lista do locale e ";"). Corrigido
+   no helper compartilhado `responderCSV`; teste checando o BOM adicionado.
+4. **Media**: `RelatorioCSV` de estoque reaproveitava `ListarSaldo` com um limite de
+   100mil hardcoded, pre-alocando ~14MB por requisicao independente do tamanho real --
+   inconsistente com o padrao ja usado no CSV de pedidos de compra (metodo dedicado sem
+   paginacao). Estoque ganhou o mesmo metodo dedicado (`ListarParaRelatorio`).
+5. **Media**: as mutacoes de exportar CSV nao tinham `onError` -- falha na API deixava o
+   botao voltar ao normal sem nenhum aviso. Corrigido com o mesmo padrao de toast ja
+   usado no ajuste de estoque.
+6. **Baixa**: `responderCSV` comprometia a resposta (200 + BOM) antes de poder falhar,
+   deixando o erro subir para o tratador global tentar escrever sobre uma resposta ja
+   commitada -- agora so loga e devolve nil.
+7. **Baixa**: `NecessidadeCompraHandler` duplicava o bloco de log que
+   `mapaDeErros.responder` ja centraliza -- alinhado ao padrao dos demais handlers.
+8. Trivial: `URL.revokeObjectURL` adiado num `setTimeout(0)`; ordem alfabetica de import
+   corrigida em App.tsx.
+
+Commits `fix: corrige achados da revisao de codigo (backend) da Fase 2.4` e
+`fix: corrige achados da revisao de codigo (frontend) da Fase 2.4`. Suite completa apos
+as correcoes: 397/397 backend (2 testes de regressao novos),
+336/336 frontend (5 testes de regressao novos), go build/vet/gofmt e npm lint/tsc/build
+limpos -- tudo via Docker.
+
+Roteiro de navegador real via Playwright (dentro de um container na rede do compose,
+`http://frontend:80`, nao API direta) apos as correcoes: 13/13 passos -- login, criar
+fornecedor, criar peca com fornecedor padrao, peca abaixo do minimo aparece em
+Necessidade de compra agrupada pelo fornecedor, "Gerar cotacao" abre Nova Cotacao com
+fornecedor/peca/quantidade pre-preenchidos, preencher preco e salvar funciona
+normalmente, CSV de estoque e de pedidos de compra baixam (confirmado via
+`download.path()` do Playwright), escala de cinza legivel, 800px sem rolagem horizontal.
+Formato do CSV confirmado por byte via curl: `EF BB BF` (BOM) seguido de
+`codigo;descricao;...` (separador `;`). Dados de verificacao removidos do Postgres apos
+o teste.
+
+Task 23 (documentacao/entrega): capturas 32-33 em `docs/screenshots/` (lista de
+necessidade de compra agrupada por fornecedor, formulario de nova cotacao
+pre-preenchido), dados de exemplo realistas (LED-MOD-02 "Modulo de LED full-matrix
+(reposicao)", fornecedor "Componentes Eletronicos do Vale LTDA") via navegador real.
+`docs/8_MANUAL_OPERACAO.md` ganhou a secao 11 "Necessidade de compra e relatorios"
+(inserida depois de Estoque, porque a tela depende do saldo de estoque explicado la),
+indice e links cruzados renumerados (Ajuda 11->12, FAQ 12->13), e uma entrada nova na FAQ
+sobre saldo igual ao minimo nao aparecer na necessidade de compra.
+
+Fase 2.4 (Necessidade de Compra e Relatorios) completa: backend (397 testes) + frontend
+(336 testes) verdes, revisao de codigo por agente com 2 bugs Altos reais encontrados e
+corrigidos (mais 6 achados Medios/Baixos), verificacao de navegador real via Playwright
+(13/13) incluindo confirmacao byte-a-byte do formato CSV, documentacao e capturas de
+tela entregues.
