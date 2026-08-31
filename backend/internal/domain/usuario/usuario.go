@@ -4,6 +4,7 @@ package usuario
 
 import (
 	"errors"
+	"slices"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
@@ -26,6 +27,29 @@ var (
 	ErrUsuarioInativo = errors.New("usuario inativo")
 	// ErrNaoEncontrado indica usuario ausente no repositorio.
 	ErrNaoEncontrado = errors.New("usuario nao encontrado")
+	// ErrPreferenciaInvalida cobre tema/densidade/tamanho de fonte fora do
+	// conjunto permitido (§4.6.1).
+	ErrPreferenciaInvalida = errors.New("preferencia de aparencia invalida")
+)
+
+// Valores possiveis de Preferencias.Tema.
+const (
+	TemaClaro      = "claro"
+	TemaEscuro     = "escuro"
+	TemaAutomatico = "automatico"
+)
+
+// Valores possiveis de Preferencias.Densidade.
+const (
+	DensidadeCompacta    = "compacta"
+	DensidadeConfortavel = "confortavel"
+)
+
+// Valores possiveis de Preferencias.TamanhoFonte.
+const (
+	FontePadrao      = "padrao"
+	FonteGrande      = "grande"
+	FonteExtraGrande = "extra-grande"
 )
 
 // Perfil define o nivel de acesso (RNF3).
@@ -66,6 +90,36 @@ type Usuario struct {
 	UltimoLogin *time.Time `json:"ultimo_login,omitempty"`
 	CreatedAt   time.Time  `json:"created_at"`
 	UpdatedAt   time.Time  `json:"updated_at"`
+
+	// Preferencias de aparencia (§4.6.1) -- por usuario, aplicadas no
+	// frontend via CSS custom properties.
+	Tema          string `json:"tema"`
+	AltoContraste bool   `json:"alto_contraste"`
+	Densidade     string `json:"densidade"`
+	TamanhoFonte  string `json:"tamanho_fonte"`
+}
+
+// Preferencias sao os campos informados em PUT /auth/preferencias.
+type Preferencias struct {
+	Tema          string
+	AltoContraste bool
+	Densidade     string
+	TamanhoFonte  string
+}
+
+// Validar aplica o conjunto fechado de valores permitidos por campo -- um
+// valor fora da lista quebraria o CHECK constraint da migration com um 500
+// generico em vez de um 400 explicando o motivo.
+func (p Preferencias) Validar() error {
+	temas := []string{TemaClaro, TemaEscuro, TemaAutomatico}
+	densidades := []string{DensidadeCompacta, DensidadeConfortavel}
+	fontes := []string{FontePadrao, FonteGrande, FonteExtraGrande}
+	if !slices.Contains(temas, p.Tema) ||
+		!slices.Contains(densidades, p.Densidade) ||
+		!slices.Contains(fontes, p.TamanhoFonte) {
+		return ErrPreferenciaInvalida
+	}
+	return nil
 }
 
 // GerarHashSenha aplica a politica de senha e devolve o hash bcrypt.

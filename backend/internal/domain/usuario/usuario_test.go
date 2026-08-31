@@ -58,3 +58,25 @@ func TestPodeGerenciarCadastrosSomenteParaGestorEAdmin(t *testing.T) {
 	assert.True(t, usuario.PerfilGestor.PodeGerenciarCadastros())
 	assert.False(t, usuario.PerfilOperador.PodeGerenciarCadastros())
 }
+
+func TestPreferenciasValidarAceitaACombinacaoPadrao(t *testing.T) {
+	p := usuario.Preferencias{
+		Tema: usuario.TemaAutomatico, Densidade: usuario.DensidadeConfortavel, TamanhoFonte: usuario.FontePadrao,
+	}
+	assert.NoError(t, p.Validar())
+}
+
+func TestPreferenciasValidarRejeitaTemaForaDoConjunto(t *testing.T) {
+	p := usuario.Preferencias{Tema: "roxo", Densidade: usuario.DensidadeConfortavel, TamanhoFonte: usuario.FontePadrao}
+	assert.ErrorIs(t, p.Validar(), usuario.ErrPreferenciaInvalida)
+}
+
+func TestPreferenciasValidarRejeitaDensidadeForaDoConjunto(t *testing.T) {
+	p := usuario.Preferencias{Tema: usuario.TemaClaro, Densidade: "espacosa", TamanhoFonte: usuario.FontePadrao}
+	assert.ErrorIs(t, p.Validar(), usuario.ErrPreferenciaInvalida)
+}
+
+func TestPreferenciasValidarRejeitaTamanhoFonteForaDoConjunto(t *testing.T) {
+	p := usuario.Preferencias{Tema: usuario.TemaClaro, Densidade: usuario.DensidadeCompacta, TamanhoFonte: "gigante"}
+	assert.ErrorIs(t, p.Validar(), usuario.ErrPreferenciaInvalida)
+}
