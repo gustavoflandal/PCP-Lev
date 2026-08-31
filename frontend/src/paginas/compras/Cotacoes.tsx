@@ -80,7 +80,7 @@ export function Cotacoes() {
   ];
 
   return (
-    <div className="mx-auto flex max-w-[1100px] flex-col gap-4">
+    <div className="mx-auto flex max-w-[1400px] flex-col gap-4">
       <div>
         <h1 className="text-title text-texto-primary">Cotações</h1>
         <p className="text-body text-texto-secondary">Pedidos de preço enviados a fornecedores.</p>

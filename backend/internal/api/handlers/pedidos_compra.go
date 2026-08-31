@@ -30,6 +30,7 @@ var errosPedidoCompra = mapaDeErros{
 	{pedidocompra.ErrNumeroPCObrigatorio, http.StatusBadRequest, httpx.CodigoErroValidacao},
 	{pedidocompra.ErrFornecedorOuPecaInexistente, http.StatusBadRequest, httpx.CodigoErroValidacao},
 	{pedidocompra.ErrCotacaoInexistente, http.StatusBadRequest, httpx.CodigoErroValidacao},
+	{pedidocompra.ErrQuantidadeRecebidaExcedeSolicitada, http.StatusBadRequest, httpx.CodigoErroValidacao},
 }
 
 // PedidoCompraHandler atende /pedidos-compra (RF3.3).
@@ -56,6 +57,7 @@ func (h *PedidoCompraHandler) Registrar(grupo *echo.Group, autenticacao echo.Mid
 	rotas.PUT("/:id", h.Atualizar, gestao)
 	rotas.POST("/:id/emitir", h.Emitir, gestao)
 	rotas.POST("/:id/cancelar", h.Cancelar, gestao)
+	rotas.POST("/:id/registrar-recebimento", h.RegistrarRecebimento, gestao)
 }
 
 type itemPedidoCompraRequest struct {
@@ -203,6 +205,45 @@ func (h *PedidoCompraHandler) Cancelar(c echo.Context) error {
 		return errosPedidoCompra.responder(c, err)
 	}
 	atualizado, err := h.servico.BuscarPorID(c.Request().Context(), id)
+	if err != nil {
+		return errosPedidoCompra.responder(c, err)
+	}
+	return httpx.OK(c, atualizado)
+}
+
+// itemRecebimentoRequest e um item do corpo de registrar-recebimento.
+type itemRecebimentoRequest struct {
+	PartePecaID        int64 `json:"parte_peca_id" validate:"required"`
+	QuantidadeRecebida int   `json:"quantidade_recebida" validate:"required,gt=0"`
+}
+
+// registrarRecebimentoRequest e o corpo de POST /:id/registrar-recebimento.
+type registrarRecebimentoRequest struct {
+	Itens []itemRecebimentoRequest `json:"itens" validate:"required,min=1,dive"`
+}
+
+// RegistrarRecebimento registra o recebimento total ou parcial de um pedido,
+// dando entrada em estoque para cada item recebido.
+func (h *PedidoCompraHandler) RegistrarRecebimento(c echo.Context) error {
+	id, err := idDaRota(c)
+	if err != nil {
+		return erroRequisicaoInvalida(c, "O identificador do pedido de compra deve ser numerico")
+	}
+
+	var req registrarRecebimentoRequest
+	if err := c.Bind(&req); err != nil {
+		return erroRequisicaoInvalida(c, "Corpo da requisicao invalido")
+	}
+	if problemas := httpx.Validar(req); problemas != nil {
+		return httpx.ErroValidacao(c, problemas)
+	}
+
+	itens := make([]pedidocompra.ItemRecebimentoDados, len(req.Itens))
+	for i, item := range req.Itens {
+		itens[i] = pedidocompra.ItemRecebimentoDados{PartePecaID: item.PartePecaID, QuantidadeRecebida: item.QuantidadeRecebida}
+	}
+
+	atualizado, err := h.servico.RegistrarRecebimento(c.Request().Context(), id, itens, autorDaRequisicao(c))
 	if err != nil {
 		return errosPedidoCompra.responder(c, err)
 	}

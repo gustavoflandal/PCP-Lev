@@ -16,8 +16,9 @@
 6. [Produtos acabados](#6-produtos-acabados)
 7. [Cotações](#7-cotações)
 8. [Pedidos de compra](#8-pedidos-de-compra)
-9. [Ajuda contextual](#9-ajuda-contextual)
-10. [Perguntas frequentes](#10-perguntas-frequentes)
+9. [Estoque e recebimento](#9-estoque-e-recebimento)
+10. [Ajuda contextual](#10-ajuda-contextual)
+11. [Perguntas frequentes](#11-perguntas-frequentes)
 
 ---
 
@@ -36,7 +37,7 @@ administrador.
   depois de um tempo sem uso) ou expirar, o sistema volta para esta tela e
   avisa o motivo. Basta entrar de novo — nada do que já foi salvo se perde.
 - Todas as telas, inclusive esta, têm um botão **Ajuda** no canto superior
-  direito. Veja a seção [7](#7-ajuda-contextual).
+  direito. Veja a seção [10](#10-ajuda-contextual).
 
 ---
 
@@ -66,13 +67,18 @@ O Painel é a tela inicial.
 
 Ele mostra:
 
-- **Ordens de produção em atraso** e **Insumos em nível crítico**: os módulos
-  correspondentes ainda não existem, então cada cartão só explica quando vai
-  entrar em operação, em vez de mostrar um número inventado.
-- **Pedidos de compra em atraso**: este já é um indicador real, calculado a
-  partir dos pedidos de compra emitidos cuja data de entrega prevista já
-  passou (veja a seção [8](#8-pedidos-de-compra)). Vazio quando não há
-  nenhum atraso.
+- **Ordens de produção em atraso**: o módulo de produção ainda não existe,
+  então o cartão só explica quando vai entrar em operação (Sprint 6), em vez
+  de mostrar um número inventado.
+- **Pedidos de compra em atraso**: indicador real, calculado a partir dos
+  pedidos de compra emitidos cuja data de entrega prevista já passou (veja a
+  seção [8](#8-pedidos-de-compra)). Vazio quando não há nenhum atraso.
+- **Insumos em nível crítico**: também um indicador real — conta quantas
+  partes/peças estão em [situação Crítico](#9-estoque-e-recebimento) no
+  módulo de Estoque. Vazio quando não há nenhuma peça crítica.
+
+![Painel com o widget de estoque crítico](screenshots/28-painel-estoque-critico.png)
+
 - Um cartão de **Conexão com o servidor**, que avisa se a API está fora do
   ar. Se aparecer "Servidor indisponível", nenhuma tela de cadastro vai
   funcionar até a conexão voltar — não é necessário reportar como bug, espere
@@ -148,7 +154,8 @@ para o passo a passo). O que muda é o formulário de cadastro:
 
 - **Código**, **Unidade** e **Descrição** são obrigatórios.
 - **Estoque mínimo** e **Estoque máximo** definem a faixa de reposição usada
-  pelo módulo de estoque (Sprint 3) para decidir quando repor.
+  pelo módulo de Estoque (seção [9](#9-estoque-e-recebimento)) para decidir
+  quando repor.
 - **Lead time de compra** é o prazo esperado, em dias, entre pedir e receber
   a peça do fornecedor.
 - **Fornecedor padrão** é opcional — só lista fornecedores ativos.
@@ -259,16 +266,89 @@ pedido já sai vinculado à cotação de origem.
 
 A trilha aqui tem três etapas: **Criado** (sempre concluída), **Emitido**
 (clique para confirmar o envio ao fornecedor) e **Concluído** — esta última
-ainda não tem nenhuma ação nesta versão do sistema: ela vai se completar
-quando o recebimento dos itens for implementado. Se o pedido veio de uma
-cotação, um link **Ver cotação de origem** aparece abaixo do número.
+fica acionável assim que o pedido é emitido e é onde se registra o
+recebimento da mercadoria (seção [9.3](#93-registrar-o-recebimento-de-um-pedido-de-compra)).
+Se o pedido veio de uma cotação, um link **Ver cotação de origem** aparece
+abaixo do número.
 
 **Cancelar pedido** fica disponível enquanto o pedido não estiver
 Concluído nem já Cancelado; preserva o histórico.
 
 ---
 
-## 9. Ajuda contextual
+## 9. Estoque e recebimento
+
+Tela que mostra o saldo de cada parte/peça em armazém e permite corrigir esse
+saldo manualmente. É também o destino do recebimento de mercadoria: cada
+pedido de compra emitido dá entrada em estoque conforme o fornecedor entrega.
+
+![Lista de estoque](screenshots/24-estoque-lista.png)
+
+### 9.1 Consultar o saldo
+
+- O seletor **Situação** filtra por OK, Crítico ou Bloqueado (o padrão mostra
+  todos).
+- Clique no cabeçalho de **Código** ou **Saldo atual** para ordenar por essa
+  coluna; clique de novo para inverter a ordem.
+- **Disponível** é o saldo que já desconta o que estiver reservado para uma
+  ordem de produção — a reserva por OP só chega no módulo de produção
+  (Sprint 6), então hoje é sempre igual ao Saldo atual.
+- **Situação** resume o saldo num selo: **Crítico** quando o saldo está no
+  ou abaixo do estoque mínimo cadastrado na peça (seção [5](#5-partes-e-peças)),
+  **OK** quando está acima, ou **Bloqueado**. Uma peça recém-cadastrada nasce
+  com saldo zero e por isso sempre começa em Crítico, mesmo que o estoque
+  mínimo cadastrado seja zero (veja a seção [11](#11-perguntas-frequentes)).
+
+### 9.2 Ajustar o saldo manualmente
+
+Clique em **Ajustar** na linha da peça.
+
+![Modal de ajuste de saldo](screenshots/25-estoque-ajuste-modal.png)
+
+**Quantidade** e **Motivo** são obrigatórios; **Observações** é opcional. Use
+um número positivo para registrar entrada (por exemplo, uma contagem de
+inventário que encontrou mais peças do que o sistema registrava) e um número
+negativo para registrar saída (perda, avaria, consumo não rastreado). O
+sistema recusa um ajuste negativo maior que o saldo disponível — a mensagem
+de erro aparece no topo do formulário e o modal continua aberto para
+correção. Todo ajuste fica registrado no histórico de movimentação de
+estoque, com o motivo informado.
+
+### 9.3 Registrar o recebimento de um pedido de compra
+
+Quando um pedido de compra é emitido (seção [8.2](#82-o-ciclo-de-vida-de-um-pedido-de-compra)),
+ele já nasce em **Aguardando Entrega** — a etapa **Concluído** da trilha fica
+acionável desde já, esperando a mercadoria chegar.
+
+![Detalhe de um pedido de compra aguardando entrega](screenshots/26-pedidos-compra-detalhe-aguardando-entrega.png)
+
+Clique na etapa **Concluído** para abrir o registro de recebimento.
+
+![Modal de registrar recebimento](screenshots/27-pedidos-compra-modal-recebimento.png)
+
+Cada item do pedido tem um campo **— receber agora**, com o total já
+recebido e o que ainda está pendente logo abaixo. A partir daí:
+
+- **Receber parcialmente**: informe menos do que o pendente (no exemplo
+  acima, o fornecedor entregou 35 dos 60 gabinetes pedidos). O pedido muda
+  para **Recebido Parcial** e a etapa Concluído continua acionável — o
+  restante pode ser recebido depois, numa nova visita ao modal.
+- **Receber o total**: repita a operação informando o que ainda está
+  pendente (os 25 restantes, no mesmo exemplo). Quando não sobra pendente em
+  nenhum item, o pedido muda para **Concluído** e a trilha se fecha.
+
+Cada recebimento registrado dá entrada automaticamente no saldo de estoque da
+peça (seção [9.1](#91-consultar-o-saldo)) — não é preciso lançar um ajuste
+manual para isso.
+
+Como **Aguardando Entrega** e **Recebido Parcial** parecem iguais na trilha
+(mesma cor, mesmo "Pendente · iniciar"), um selo acima da trilha mostra qual
+dos dois é — "Aguardando entrega — nenhum item recebido ainda" ou "Recebido
+parcial" — sem precisar abrir o modal só para checar.
+
+---
+
+## 10. Ajuda contextual
 
 Toda tela do sistema, inclusive o login, tem um botão **Ajuda** no
 cabeçalho. Ele abre uma janela com um lembrete rápido do que dá para fazer
@@ -283,7 +363,7 @@ telas se relacionam.
 
 ---
 
-## 10. Perguntas frequentes
+## 11. Perguntas frequentes
 
 **Inativei um cadastro por engano. Como desfaço?**
 Mude o filtro Situação para "Inativos" ou "Todos", clique em Editar no
@@ -320,6 +400,16 @@ registrado em "Registrar resposta"), nunca um novo valor digitado na
 conversão — isso evita que o pedido saia com um preço diferente do que foi
 combinado com o fornecedor.
 
+**Cadastrei uma peça agora mesmo e ela já aparece em situação Crítica na
+tela de Estoque — é um bug?**
+Não. Toda peça nasce com saldo zero, porque ainda não houve nenhuma entrada.
+A regra de classificação (seção [9.1](#91-consultar-o-saldo)) considera
+crítico todo saldo **menor ou igual** ao estoque mínimo cadastrado, e isso
+vale mesmo quando o mínimo é zero (zero é menor ou igual a zero). Registre um
+ajuste de entrada (seção [9.2](#92-ajustar-o-saldo-manualmente)) ou receba um
+pedido de compra (seção [9.3](#93-registrar-o-recebimento-de-um-pedido-de-compra))
+para a peça sair dessa situação.
+
 ---
 
-**Última atualização**: Agosto 2026 · Sprint 3 (cotações e pedidos de compra).
+**Última atualização**: Agosto 2026 · Sprint 4 (estoque e recebimento).

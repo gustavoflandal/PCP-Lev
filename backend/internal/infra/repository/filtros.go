@@ -38,6 +38,16 @@ func filtrosDeCadastro(params consulta.Parametros, colunasBusca ...string) (stri
 	return "WHERE " + strings.Join(condicoes, " AND "), argumentos
 }
 
+// filtrosDeEstoque monta o WHERE da listagem de saldo: filtro por status
+// (OK/CRITICO/BLOQUEADO), sem busca textual nesta tela (a lista de estoque
+// nao tem campo de busca no design aprovado).
+func filtrosDeEstoque(params consulta.Parametros) (string, []any) {
+	if params.FiltroStatus == nil {
+		return "", nil
+	}
+	return "WHERE se.status = $1", []any{*params.FiltroStatus}
+}
+
 // filtrosDeCompras monta o WHERE das listagens de cotacao/pedido de compra:
 // filtro por status (nao por ativo — essas tabelas nao tem essa coluna) e
 // busca textual numa unica coluna (numero_cotacao / numero_pc).

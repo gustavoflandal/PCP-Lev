@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -143,5 +143,49 @@ describe('DetalhePedidoCompra', () => {
     await screen.findByText('PC-2026-001');
 
     expect(screen.queryByRole('button', { name: 'Cancelar pedido' })).not.toBeInTheDocument();
+  });
+
+  it('mostra a etapa Concluido como acionavel quando aguardando entrega', async () => {
+    servidor.responder([
+      { metodo: 'get', url: '/fornecedores', status: 200, corpo: paginaFornecedores },
+      { metodo: 'get', url: '/partes-pecas', status: 200, corpo: paginaPecas },
+      {
+        metodo: 'get',
+        url: '/pedidos-compra/1',
+        status: 200,
+        corpo: { sucesso: true, dados: pedidoBase('Aguardando Entrega') },
+      },
+    ]);
+    renderizar();
+
+    expect(await screen.findByRole('button', { name: /Concluído/ })).toHaveAttribute('aria-current', 'step');
+  });
+
+  it('registrar recebimento parcial envia o corpo certo e atualiza a tela', async () => {
+    const pedidoAguardandoEntrega = pedidoBase('Aguardando Entrega');
+    servidor.responder([
+      { metodo: 'get', url: '/fornecedores', status: 200, corpo: paginaFornecedores },
+      { metodo: 'get', url: '/partes-pecas', status: 200, corpo: paginaPecas },
+      { metodo: 'get', url: '/pedidos-compra/1', status: 200, corpo: { sucesso: true, dados: pedidoAguardandoEntrega } },
+      {
+        metodo: 'post',
+        url: '/pedidos-compra/1/registrar-recebimento',
+        status: 200,
+        corpo: { sucesso: true, dados: { ...pedidoAguardandoEntrega, status: 'Recebido Parcial' } },
+      },
+    ]);
+    renderizar();
+
+    await userEvent.click(await screen.findByRole('button', { name: /Concluído/ }));
+    const modal = screen.getByRole('dialog');
+    await userEvent.type(within(modal).getByLabelText(/receber agora/), '40');
+    await userEvent.click(within(modal).getByRole('button', { name: 'Registrar recebimento' }));
+
+    await waitFor(() =>
+      expect(servidor.requisicoes.find((r) => r.url === '/pedidos-compra/1/registrar-recebimento')?.corpo).toEqual({
+        itens: [{ parte_peca_id: pedidoAguardandoEntrega.itens[0].parte_peca_id, quantidade_recebida: 40 }],
+      }),
+    );
+    expect(useToasts.getState().itens[0]?.mensagem).toBe('Recebimento registrado');
   });
 });

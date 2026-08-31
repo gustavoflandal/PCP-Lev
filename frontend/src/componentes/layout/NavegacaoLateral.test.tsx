@@ -51,4 +51,10 @@ describe('NavegacaoLateral', () => {
 
     expect(screen.getByRole('navigation', { name: 'Módulos do sistema' })).toBeInTheDocument();
   });
+
+  it('estoque ja e um link real', () => {
+    renderizarEm('/');
+
+    expect(screen.getByRole('link', { name: 'Estoque' })).toHaveAttribute('href', '/estoque');
+  });
 });

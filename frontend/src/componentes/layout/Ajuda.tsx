@@ -73,6 +73,15 @@ const CONTEUDO_POR_ROTA: Record<string, ConteudoAjuda> = {
       'Cancelar só é possível enquanto o pedido não estiver Concluído ou já Cancelado.',
     ],
   },
+  '/estoque': {
+    titulo: 'Ajuda · Estoque',
+    itens: [
+      'O saldo de cada peça nasce em zero, sempre em situação Crítica, assim que ela é cadastrada.',
+      'Situação Crítica significa saldo menor ou igual ao estoque mínimo cadastrado na peça; filtre por situação para ver só o que precisa de atenção.',
+      '"Ajustar" registra uma entrada ou saída avulsa (use um número negativo para saída), com motivo obrigatório — útil para corrigir uma contagem física.',
+      'O recebimento de um pedido de compra também atualiza este saldo automaticamente — veja o detalhe do pedido em Pedidos de compra.',
+    ],
+  },
 };
 
 const CONTEUDO_GENERICO: ConteudoAjuda = {
