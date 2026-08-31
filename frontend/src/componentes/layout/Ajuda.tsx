@@ -100,6 +100,15 @@ const CONTEUDO_POR_ROTA: Record<string, ConteudoAjuda> = {
       'Peças sem fornecedor padrão aparecem à parte, sem essa opção: cadastre um fornecedor padrão na peça primeiro.',
     ],
   },
+  '/configuracoes/empresa': {
+    titulo: 'Ajuda · Dados da empresa',
+    itens: [
+      'Razão social é o único campo obrigatório; os demais podem ficar em branco até serem definidos.',
+      '"Buscar CEP" preenche logradouro, bairro, cidade e UF automaticamente a partir do CEP informado.',
+      'O logotipo aparece no cabeçalho e na tela de login de todo mundo que usa o sistema — escolha a variante clara e a escura para cada tema.',
+      'Só o Administrador acessa e edita esta tela.',
+    ],
+  },
   '/estoque': {
     titulo: 'Ajuda · Estoque',
     itens: [

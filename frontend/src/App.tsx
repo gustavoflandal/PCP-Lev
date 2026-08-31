@@ -13,6 +13,7 @@ import { NecessidadeCompra } from '@/paginas/compras/NecessidadeCompra';
 import { NovaCotacao } from '@/paginas/compras/NovaCotacao';
 import { NovoPedidoCompra } from '@/paginas/compras/NovoPedidoCompra';
 import { PedidosCompra } from '@/paginas/compras/PedidosCompra';
+import { DadosEmpresaPagina } from '@/paginas/configuracoes/DadosEmpresa';
 import { Estoque } from '@/paginas/estoque/Estoque';
 import { Movimentacoes } from '@/paginas/estoque/Movimentacoes';
 import { DetalheEstruturaProduto } from '@/paginas/estrutura/DetalheEstruturaProduto';
@@ -60,6 +61,7 @@ export function App() {
             <Route path="/estoque" element={<Estoque />} />
             <Route path="/movimentacoes" element={<Movimentacoes />} />
             <Route path="/preferencias" element={<PreferenciasPagina />} />
+            <Route path="/configuracoes/empresa" element={<DadosEmpresaPagina />} />
           </Route>
         </Route>
 

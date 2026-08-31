@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import { icones, type NomeIcone } from '@/componentes/ui/icones';
 import { cn } from '@/lib/cn';
+import { useAutenticacao } from '@/store/autenticacao';
 
 interface ItemNavegacao {
   rota: string;
@@ -31,6 +32,11 @@ const COMPRAS: ItemNavegacao[] = [
 
 const ESTOQUE: ItemNavegacao[] = [{ rota: '/estoque', rotulo: 'Estoque', icone: 'boxes' }];
 
+// So Administrador edita (o backend recusa PUT de outro perfil com 403) --
+// esconder o link evita levar quem nao pode editar a uma tela que so vai
+// mostrar "acesso restrito".
+const CONFIGURACOES: ItemNavegacao[] = [{ rota: '/configuracoes/empresa', rotulo: 'Dados da empresa', icone: 'building' }];
+
 // Ficam visiveis de proposito: quem usa o sistema precisa saber que estes
 // modulos vao existir, e em que ordem chegam.
 const FUTUROS: ItemFuturo[] = [{ rotulo: 'Produção', icone: 'factory' }];
@@ -53,6 +59,8 @@ function Link({ item }: { item: ItemNavegacao }) {
 }
 
 export function NavegacaoLateral() {
+  const perfil = useAutenticacao((estado) => estado.usuario?.perfil);
+
   return (
     <nav
       aria-label="Módulos do sistema"
@@ -99,6 +107,19 @@ export function NavegacaoLateral() {
           </li>
         ))}
       </ul>
+
+      {perfil === 'ADMIN' && (
+        <>
+          <p className="mb-1 mt-6 px-3 text-label text-texto-disabled">Configurações</p>
+          <ul className="flex flex-col gap-1">
+            {CONFIGURACOES.map((item) => (
+              <li key={item.rota}>
+                <Link item={item} />
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
 
       <p className="mb-1 mt-6 px-3 text-label text-texto-disabled">Em construção</p>
       <ul className="flex flex-col gap-1">
