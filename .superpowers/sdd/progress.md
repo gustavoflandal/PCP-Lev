@@ -693,3 +693,65 @@ invalido responde 400 -> revertido para os defaults. Suite completa: 408/408 tes
 22 pacotes (397 anteriores + 11 novos), go build/vet/gofmt limpos -- tudo via Docker.
 
 Backend da Fase 4.1 fechado (Tasks B1-B4). Frontend (Tasks F1-F5) a seguir.
+
+Task F1: complete. Tokens de tema escuro, alto contraste, densidade e fonte em
+`tokens.css`; `tailwind.config.js` convertido de px para rem (`fontSize`, `spacing`,
+`minHeight`).
+Task F2: complete. Script sincrono em `index.html` (aplica antes do React montar, sem
+flash); `usePreferencias` (Zustand) com `aplicar()`/`resolverTema()`; listener de
+`prefers-color-scheme` para tema "automatico".
+Task F3: complete. Tela `Preferencias.tsx` (4 controles independentes, aplicacao
+otimista com reversao em erro); `atualizarPreferencias` em `autenticacaoServico.ts`.
+Task F4: complete. Rota `/preferencias`; botao "Preferencias" no cabecalho, ao lado de
+Ajuda/Sair; ajuda contextual da tela.
+Task F5: verificacao inicial -- 346/346 testes, lint/tsc/build limpos.
+
+Revisao de codigo (agente `code-reviewer`, background): 12 achados. Aplicados todos:
+- **Critico -- default de densidade**: a migration 009 gravava `DEFAULT 'confortavel'`,
+  mudando a altura de linha de 40px para 48px para todo usuario existente sem escolha
+  deles (antes da Fase 4.1 a altura era um valor fixo de 40px). Corrigido para
+  `DEFAULT 'compacta'` na migration, no teste do repositorio
+  (`TestUsuarioSemeadoTemPreferenciasPadrao`), no CSS (`tokens.css`), no script inline
+  (`index.html`) e no store (`preferencias.ts`) -- os 5 lugares tinham que concordar.
+- **Backend**: `AuthHandler.Eu` tratava erro de forma menos explicita que o padrao do
+  projeto (`mapaDeErros`) -- reescrito com `switch`/`errors.Is` e log estruturado;
+  validacao de tema/densidade/fonte duplicada entre handler e dominio -- removida do
+  handler (`validate:"required"` nas tags), dominio vira fonte unica via `slices.Contains`
+  sobre variaveis de pacote.
+- **Frontend -- alturas fixas em px nao escalavam com Tamanho de Fonte**: `Badge`,
+  `Botao`, `Campo`, `Selecao` e `Cabecalho` tinham `h-[Npx]` hardcoded; convertidos para
+  `h-[Nrem]` (40px->2.5rem, 48px->3rem, 22px->1.375rem, 56px->3.5rem) para escalar com o
+  `font-size` da raiz.
+- **Frontend -- sincronizacao de preferencias**: listener de mudanca de tema do SO
+  reaplicava mesmo com tema explicito (nao so "automatico"); sessao nao era re-semeada
+  ao entrar/sair; tela de Preferencias nao reconciliava com a resposta do servidor apos
+  salvar; parsing do localStorage no script inline abortava a normalizacao de
+  densidade/fonte em caso de JSON invalido; faltava `--surface-sunken` explicito na
+  combinacao escuro+alto-contraste. Todos corrigidos com testes de regressao.
+- 8 arquivos de teste precisaram de `tema`/`alto_contraste`/`densidade`/`tamanho_fonte`
+  nos mocks de `UsuarioSessao` apos os 4 campos virarem obrigatorios no tipo; `jsdom` nao
+  implementa `matchMedia` -- polyfill global em `testes/setup.ts`.
+
+**Bug adicional encontrado na verificacao manual via Playwright** (nao estava nos 12
+achados da revisao): salvar uma preferencia atualizava a store `usePreferencias` e o
+cache em `localStorage`, mas nao o `usuario` guardado em `sessionStorage` pela sessao de
+autenticacao. Um F5 depois de mudar o tema/densidade re-semeava o `<html>` com o valor
+de login (`sessaoInicial` em `autenticacao.ts`), revertendo silenciosamente a troca ja
+confirmada pelo servidor. Corrigido com `atualizarPreferenciasSessao` em
+`useAutenticacao`, chamado no `onSuccess` da mutacao de `Preferencias.tsx`; testes de
+regressao em `autenticacao.test.ts` e `Preferencias.test.tsx`.
+
+Suite final (apos todas as correcoes, tudo via Docker): backend 408/408 testes,
+build/vet/gofmt limpos; frontend 349/349 testes, eslint/tsc/build limpos.
+
+Verificacao manual via Playwright (`mcr.microsoft.com/playwright:v1.49.0-noble`, rede
+`pcp-lev_default`): 12/12 passos OK -- login, tema escuro aplicado na hora e sobrevive a
+F5 sem flash, alto contraste, densidade compacta menor que confortavel (confirma a
+correcao do default), fonte extra-grande sem quebrar layout em 800px, defaults
+revertidos e sobrevivem a F5. Screenshots capturados em docs/screenshots/34 a 37
+(tema claro, tema escuro, alto contraste, fonte extra-grande). Manual de operacao
+atualizado com a secao 12 "Aparencia e preferencias", renumerando Ajuda contextual
+(12->13) e Perguntas frequentes (13->14).
+
+Fase 4.1 (Aparencia e Preferencias) fechada -- backend e frontend, 12 achados de revisao
+mais 1 bug de verificacao manual, todos corrigidos e com teste de regressao.
