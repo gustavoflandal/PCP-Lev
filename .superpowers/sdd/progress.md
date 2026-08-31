@@ -363,3 +363,78 @@ Sprint 4 (Recebimento e Estoque) fechada. Proximo passo (confirmado pelo usuario
 2.1 -- Estrutura de Produto/BOM, branch `feat/estrutura-produto-bom` empilhada sobre esta,
 plano ja escrito em `docs/superpowers/plans/2026-08-30-estrutura-produto-bom.md`.
 
+---
+
+# Ledger — Fase 2.1: Estrutura de Produto / BOM (feat/estrutura-produto-bom)
+
+Plano: docs/superpowers/plans/2026-08-30-estrutura-produto-bom.md
+Spec: docs/superpowers/specs/2026-08-30-estrutura-produto-bom-design.md
+Decisoes de pre-voo: branch empilhada sobre feat/sprint4-recebimento-estoque -- que nesse
+meio-tempo ja foi mesclada na main (PR #4), entao a branch nasceu direto da main. BOM de
+um nivel so (Produto Acabado -> Partes/Pecas, sem submontagens aninhadas), decisao ja
+validada com o usuario. Sem endpoint de edicao in-place -- so `POST /boms` (1a versao) e
+`POST /boms/{id}/versionar`.
+
+Base do branch: 055a28b (topo da main, com Sprint 4 ja mesclada).
+
+## Pre-requisito: infraestrutura Docker corrigida
+
+Antes de retomar o desenvolvimento, o usuario pediu revisao da infraestrutura e subida do
+ambiente Docker completo. Dois problemas de maquina local encontrados e corrigidos
+(commit `0f1151a fix(infra)`, na main, herdado por esta branch):
+1. Sem `.env` local, `docker compose` cairia no default `DB_PORT=5432`, ja ocupado por um
+   Postgres de outro projeto rodando permanentemente no Docker desta maquina --
+   `.env.example` ja reserva a porta 5442, so faltava copia-lo para `.env`.
+2. Kaspersky Endpoint Security faz inspecao TLS (MITM) em todo trafego HTTPS da maquina,
+   inclusive do Docker -- containers Alpine/Go/Node nao confiam na CA raiz do Kaspersky,
+   causando falhas intermitentes em `go mod download`/`apk add` e falha consistente
+   (`SELF_SIGNED_CERT_IN_CHAIN`) em `npm ci`. Corrigido com um certificado CA local
+   opcional (`backend/.docker-ca/`, `frontend/.docker-ca/`, gitignored) instalado
+   condicionalmente nos dois Dockerfiles -- no-op em CI/outras maquinas. Node.js ignora o
+   CA store do SO (usa so o bundle Mozilla embutido), entao o frontend precisou de
+   `NODE_EXTRA_CA_CERTS` em vez da tecnica que resolveu Go/apk.
+
+Validado: `docker compose build --no-cache` + `docker compose up -d` limpos, os tres
+servicos (postgres, backend, backend) saudaveis.
+
+Decisao do usuario durante a sessao: **toda execucao de backend/frontend, inclusive
+testes (go test, npm test, go vet, gofmt), deve rodar via Docker** -- nao via
+toolchains locais no PATH do host, mesmo quando disponiveis. `go test` roda numa imagem
+`golang:1.25-alpine` com bind-mount do codigo-fonte real (o `.dockerignore` do backend
+exclui `*_test.go`, entao a imagem multi-stage normal nao serve para isso), conectada a
+rede `pcp-lev_default`, com `PCP_TEST_DSN` apontando para o servico `postgres` pelo nome
+interno (`postgres:5432`). Banco `pcp_db_test` criado manualmente no Postgres do compose
+(nao existia, so `pcp_db`).
+
+## Progresso
+
+Task B1: complete (commit 875ca84, gofmt/vet limpos, 6/6 testes). Dominio `estrutura`:
+Estrutura/Item/Dados/ItemDados, sentinelas de erro, Validar/ValidarProduto.
+Task B2: complete (commit fa45e0f, gofmt/vet limpos, 13/13 testes). `estrutura.Servico`
+(Criar/Versionar/BuscarPorID/ListarPorProduto) + `EstruturaRepositorio` transacional
+(header+itens). Bug do proprio plano encontrado e corrigido: `Criar` sempre grava
+`versao=1`, entao uma segunda chamada para o mesmo produto pode colidir tanto com o
+indice parcial `uk_estrutura_ativa_por_pa` quanto com `uk_pa_versao` (versao duplicada)
+-- o Postgres reportou `uk_pa_versao` no teste `TestCriarSegundaDiretoFalha`, nao o indice
+que o plano esperava. Corrigido checando os dois nomes de indice em `violouIndiceUnico`.
+Task B3: complete (commit 0565037, gofmt/vet limpos, 99/99 no pacote handlers -- 93
+anteriores + 6 novos). Handler HTTP `/boms` (POST, GET /:id, POST /:id/versionar) e
+`/produtos-acabados/:id/boms` (GET), registrados no mesmo grupo `v1` sem tocar em
+ProdutoHandler.
+Task B4: complete (commit 9424773, gofmt/vet limpos, 44/44 no pacote repository -- 42
+anteriores + 2 novos). `produto.ProdutoAcabado` ganha `EstruturaAtiva *EstruturaResumo`;
+`ProdutoRepositorio.Listar` traz a estrutura ativa via `LEFT JOIN` sobre um CTE
+(`filtrosDeCadastro` roda so contra `produtos_acabados`, evitando a ambiguidade de
+`ativo` entre as duas tabelas -- mesma armadilha corrigida no Sprint 4/Task B2).
+Task B5: complete (commit e182825). `registrarCadastros` em routes.go ganha
+`handlers.NovoEstruturaHandler`. Suite completa do backend: 392/392 testes em 22
+pacotes (371 anteriores + 21 novos), go build/vet/gofmt limpos -- tudo rodado dentro do
+Docker. Fluxo manual ponta a ponta verificado via curl dentro de um container na rede do
+compose (nao API local): criar produto sem BOM -> `estrutura_ativa: null` -> criar peca
+-> `POST /boms` v1 -> `estrutura_ativa` aparece na listagem -> historico com 1 versao ->
+`versionar` -> historico com 2 versoes (v1 com `data_vigencia_fim` preenchida) -> `POST
+/boms` de novo no mesmo produto -> 409 -- 8/8 passos. Dados de teste (BOM-E2E-01,
+PP-E2E-01) removidos do Postgres do compose apos a verificacao.
+
+Backend da Fase 2.1 fechado (Tasks B1-B5). Frontend (Tasks F1-F6) a seguir.
+
