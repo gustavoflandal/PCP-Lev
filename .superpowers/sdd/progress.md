@@ -1123,6 +1123,21 @@ de correcao mais o de documentacao). Containers `pcp_backend`/`pcp_frontend`
 devolvidos ao build a partir de `D:/PCP-Lev` (main) apos a verificacao, ja que este
 branch ainda nao foi mesclado.
 
-**Task F4 completa.** Falta so o usuario abrir o PR (link acima) e mesclar. Depois
-do merge, a Fase 4 segue para a proxima sub-entrega da ordem acordada na decisao de
-cronograma v2.1 (mais acima neste arquivo): Parametros regionais (secao 4.6.4).
+## Fechamento -- PR #11 mesclado (31/08/2026)
+
+Usuario abriu e mesclou o PR #11 (`chore/auditoria-verificacao-final` -> `main`,
+commit de merge `f288b12`). Worktree removido apos a confirmacao de que nao havia
+commits nem trabalho pendente (so os 3 arquivos de diff bruto, descartaveis, ja
+listados como "nao versionado" acima).
+
+**Fase 4, sub-entrega 1 (Auditoria) completa**: backend (dominio + repositorio +
+endpoints, com o pinning de conexao corrigido) e frontend (tela de consulta com
+filtros, diff campo a campo, exportacao CSV) mesclados; revisao de codigo com 1
+Critico + 6 Altos, todos corrigidos com teste de regressao e verificados de forma
+independente; roteiro Playwright de 9 passos duas vezes (antes e depois das
+correcoes); documentacao (secao 14 do manual, 2 screenshots) e ledger atualizados a
+cada etapa da sessao, nao so no fechamento.
+
+Proxima sub-entrega da Fase 4, na ordem acordada na decisao de cronograma v2.1 (mais
+acima neste arquivo): **Parametros regionais** (secao 4.6.4) -- ainda sem spec/plano
+escritos nesta data.
