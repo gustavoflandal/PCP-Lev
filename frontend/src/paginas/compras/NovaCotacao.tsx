@@ -79,25 +79,43 @@ export function NovaCotacao() {
   // preenchimento nos defaultValues do useForm nao funciona (o <select>
   // nasce sem nenhum <option> ainda). Aplicado via setValue/replace so
   // depois que as duas listas de opcoes chegarem, uma unica vez.
+  //
+  // O gate so espera as listas carregarem (length > 0), nao que os ids que
+  // interessam estejam nelas -- por isso todo id e checado contra o
+  // conjunto real antes de aplicar: um fornecedor inativado depois do
+  // cadastro da peca, ou uma peca fora das 200 primeiras que
+  // usePartesPecasAtivas carrega, nao pode virar um id "fantasma" preso no
+  // estado do formulario enquanto o <select> mostra em branco.
   const preenchimentoAplicado = useRef(false);
   useEffect(() => {
     if (!preenchimento || preenchimentoAplicado.current) return;
     if (opcoesFornecedor.length === 0 || opcoesPeca.length === 0) return;
     preenchimentoAplicado.current = true;
 
-    if (preenchimento.fornecedorId) {
+    const idsFornecedor = new Set(opcoesFornecedor.map((o) => o.valor));
+    const idsPeca = new Set(opcoesPeca.map((o) => o.valor));
+
+    const fornecedorValido =
+      preenchimento.fornecedorId !== null && idsFornecedor.has(String(preenchimento.fornecedorId));
+    if (fornecedorValido) {
       setValue('fornecedor_id', String(preenchimento.fornecedorId));
     }
-    if (preenchimento.itens.length > 0) {
+
+    const itensValidos = preenchimento.itens.filter((item) => idsPeca.has(String(item.parte_peca_id)));
+    if (itensValidos.length > 0) {
       replace(
-        preenchimento.itens.map((item) => ({
+        itensValidos.map((item) => ({
           parte_peca_id: String(item.parte_peca_id),
           quantidade: String(item.quantidade),
           preco_unitario: '',
         })),
       );
     }
-  }, [preenchimento, opcoesFornecedor, opcoesPeca, setValue, replace]);
+
+    if (!fornecedorValido || itensValidos.length < preenchimento.itens.length) {
+      mostrarToast('Alguns dados não puderam ser pré-preenchidos automaticamente — confira o formulário antes de salvar.');
+    }
+  }, [preenchimento, opcoesFornecedor, opcoesPeca, setValue, replace, mostrarToast]);
 
   const mutacao = useMutation({
     mutationFn: (valores: Formulario) =>

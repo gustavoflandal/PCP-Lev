@@ -101,4 +101,19 @@ describe('Estoque', () => {
     await waitFor(() => expect(cliqueEspiao).toHaveBeenCalledTimes(1));
     cliqueEspiao.mockRestore();
   });
+
+  it('exportar CSV com falha na API mostra toast de erro', async () => {
+    servidor.responder([
+      { metodo: 'get', url: '/estoque', status: 200, corpo: { dados: [ITEM], paginacao: { pagina: 1, limite: 20, total: 1, total_paginas: 1 } } },
+      { metodo: 'get', url: '/estoque/relatorio.csv', status: 500, corpo: { sucesso: false, erro: { codigo: 'ERRO_INTERNO', mensagem: 'Erro interno do servidor' } } },
+    ]);
+    renderizarComProvedores(<Estoque />);
+    await screen.findByText('CON-001');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Exportar CSV' }));
+
+    await waitFor(() =>
+      expect(useToasts.getState().itens[0]?.mensagem).toBe('Erro interno do servidor'),
+    );
+  });
 });

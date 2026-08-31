@@ -14,5 +14,8 @@ export async function baixarArquivo(url: string, nomeArquivo: string): Promise<v
   document.body.appendChild(link);
   link.click();
   link.remove();
-  URL.revokeObjectURL(urlObjeto);
+  // setTimeout, nao revogar na hora: alguns navegadores iniciam o download
+  // de forma assincrona apos o click, e revogar cedo demais cancela o
+  // download nesses casos.
+  setTimeout(() => URL.revokeObjectURL(urlObjeto), 0);
 }

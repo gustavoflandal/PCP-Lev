@@ -39,6 +39,7 @@ export function Estoque() {
 
   const mutacaoExportar = useMutation({
     mutationFn: () => baixarArquivo('/estoque/relatorio.csv', 'estoque.csv'),
+    onError: (erro) => mostrarToast(separarErro(erro).geral ?? 'Não foi possível exportar o relatório de estoque.'),
   });
 
   const mutacaoAjuste = useMutation({

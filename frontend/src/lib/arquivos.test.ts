@@ -2,6 +2,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { instalarServidorFalso, type ServidorFalso } from '@/testes/utilitarios';
 import { baixarArquivo } from './arquivos';
 
+/** baixarArquivo adia URL.revokeObjectURL num setTimeout(0) -- espera a fila
+ * de macrotasks esvaziar antes de checar essa chamada. */
+function aguardarProximoTick() {
+  return new Promise((resolve) => setTimeout(resolve, 0));
+}
+
 describe('baixarArquivo', () => {
   let servidor: ServidorFalso;
 
@@ -21,6 +27,7 @@ describe('baixarArquivo', () => {
     expect(servidor.requisicoes[0].url).toBe('/estoque/relatorio.csv');
     expect(URL.createObjectURL).toHaveBeenCalledWith(conteudo);
     expect(cliqueEspiao).toHaveBeenCalledTimes(1);
+    await aguardarProximoTick();
     expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:teste');
 
     cliqueEspiao.mockRestore();

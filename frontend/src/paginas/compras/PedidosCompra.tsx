@@ -6,10 +6,12 @@ import { Campo } from '@/componentes/ui/Campo';
 import { Paginacao } from '@/componentes/ui/Paginacao';
 import { Selecao } from '@/componentes/ui/Selecao';
 import { Tabela, type Coluna } from '@/componentes/ui/Tabela';
+import { useToasts } from '@/componentes/ui/Toast';
 import type { NomeIcone } from '@/componentes/ui/icones';
 import { useFornecedoresAtivos } from '@/hooks/useFornecedoresAtivos';
 import { useListagemCompras } from '@/hooks/useListagemCompras';
 import { baixarArquivo } from '@/lib/arquivos';
+import { separarErro } from '@/lib/errosDeFormulario';
 import { formatarData, formatarMoeda } from '@/lib/formato';
 import { listarPedidosEmAtraso } from '@/servicos/compras';
 import type { PedidoCompra, StatusPedidoCompra } from '@/tipos/compras';
@@ -45,8 +47,11 @@ export function PedidosCompra() {
   const lista = useListagemCompras<PedidoCompra>('pedidos-compra', 'numero_pc');
   const { porId: fornecedorPorId } = useFornecedoresAtivos();
   const emAtraso = useQuery({ queryKey: ['pedidos-compra', 'em-atraso'], queryFn: listarPedidosEmAtraso });
+  const mostrarToast = useToasts((estado) => estado.mostrar);
   const mutacaoExportar = useMutation({
     mutationFn: () => baixarArquivo('/pedidos-compra/relatorio.csv', 'pedidos-compra.csv'),
+    onError: (erro) =>
+      mostrarToast(separarErro(erro).geral ?? 'Não foi possível exportar o relatório de pedidos de compra.'),
   });
 
   const colunas: Coluna<PedidoCompra>[] = [
