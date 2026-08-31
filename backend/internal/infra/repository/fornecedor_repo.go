@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/fornecedor"
+	"github.com/gustavoflandal/pcp-lev/backend/internal/infra/db"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/platform/consulta"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -44,7 +45,7 @@ func (r *FornecedorRepositorio) Criar(ctx context.Context, f *fornecedor.Fornece
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $10)
 		RETURNING id, created_at, updated_at`
 
-	err := r.pool.QueryRow(ctx, sql,
+	err := db.DoContexto(ctx, r.pool).QueryRow(ctx, sql,
 		f.RazaoSocial, f.CNPJ, f.ContatoNome, f.ContatoEmail, f.ContatoTelefone,
 		f.Endereco, f.LeadTimeMedio, f.CondicaoPagamento, f.Ativo, autor,
 	).Scan(&f.ID, &f.CreatedAt, &f.UpdatedAt)
@@ -67,7 +68,7 @@ func (r *FornecedorRepositorio) Atualizar(ctx context.Context, f *fornecedor.For
 		WHERE id = $1
 		RETURNING updated_at`
 
-	err := r.pool.QueryRow(ctx, sql,
+	err := db.DoContexto(ctx, r.pool).QueryRow(ctx, sql,
 		f.ID, f.RazaoSocial, f.CNPJ, f.ContatoNome, f.ContatoEmail, f.ContatoTelefone,
 		f.Endereco, f.LeadTimeMedio, f.CondicaoPagamento, f.Ativo, autor,
 	).Scan(&f.UpdatedAt)
@@ -88,7 +89,7 @@ func (r *FornecedorRepositorio) Atualizar(ctx context.Context, f *fornecedor.For
 func (r *FornecedorRepositorio) BuscarPorID(ctx context.Context, id int64) (*fornecedor.Fornecedor, error) {
 	sql := `SELECT ` + colunasFornecedor + ` FROM fornecedores WHERE id = $1`
 
-	f, err := lerFornecedor(r.pool.QueryRow(ctx, sql, id))
+	f, err := lerFornecedor(db.DoContexto(ctx, r.pool).QueryRow(ctx, sql, id))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, fornecedor.ErrNaoEncontrado
@@ -102,7 +103,7 @@ func (r *FornecedorRepositorio) Listar(ctx context.Context, params consulta.Para
 	filtros, argumentos := filtrosDeCadastro(params, "razao_social", "cnpj", "contato_nome")
 
 	var total int
-	if err := r.pool.QueryRow(ctx,
+	if err := db.DoContexto(ctx, r.pool).QueryRow(ctx,
 		`SELECT count(*) FROM fornecedores `+filtros, argumentos...).Scan(&total); err != nil {
 		return nil, 0, fmt.Errorf("contar fornecedores: %w", err)
 	}
@@ -112,7 +113,7 @@ func (r *FornecedorRepositorio) Listar(ctx context.Context, params consulta.Para
 		len(argumentos)+1, len(argumentos)+2)
 	argumentos = append(argumentos, params.Limite, params.Offset())
 
-	linhas, err := r.pool.Query(ctx, sql, argumentos...)
+	linhas, err := db.DoContexto(ctx, r.pool).Query(ctx, sql, argumentos...)
 	if err != nil {
 		return nil, 0, fmt.Errorf("listar fornecedores: %w", err)
 	}
@@ -130,7 +131,7 @@ func (r *FornecedorRepositorio) Listar(ctx context.Context, params consulta.Para
 }
 
 func (r *FornecedorRepositorio) Desativar(ctx context.Context, id int64, autor string) error {
-	etiqueta, err := r.pool.Exec(ctx,
+	etiqueta, err := db.DoContexto(ctx, r.pool).Exec(ctx,
 		`UPDATE fornecedores SET ativo = false, updated_by = $2 WHERE id = $1`, id, autor)
 	if err != nil {
 		return fmt.Errorf("desativar fornecedor: %w", err)
@@ -143,7 +144,7 @@ func (r *FornecedorRepositorio) Desativar(ctx context.Context, id int64, autor s
 
 func (r *FornecedorRepositorio) PossuiPedidosPendentes(ctx context.Context, id int64) (bool, error) {
 	var existe bool
-	err := r.pool.QueryRow(ctx, `
+	err := db.DoContexto(ctx, r.pool).QueryRow(ctx, `
 		SELECT EXISTS (
 			SELECT 1 FROM pedidos_compra
 			WHERE fornecedor_id = $1 AND status <> ALL($2)

@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/estoque"
+	"github.com/gustavoflandal/pcp-lev/backend/internal/infra/db"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/platform/consulta"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -41,7 +42,7 @@ func escanearSaldo(linha interface{ Scan(...any) error }) (estoque.Saldo, error)
 
 // BuscarSaldo devolve o saldo de uma Parte/Peca especifica.
 func (r *EstoqueRepositorio) BuscarSaldo(ctx context.Context, partePecaID int64) (*estoque.Saldo, error) {
-	linha := r.pool.QueryRow(ctx,
+	linha := db.DoContexto(ctx, r.pool).QueryRow(ctx,
 		`SELECT `+colunasSaldo+` FROM saldo_estoque se JOIN partes_pecas pp ON pp.id = se.parte_peca_id
 		 WHERE se.parte_peca_id = $1`, partePecaID)
 	s, err := escanearSaldo(linha)
@@ -61,7 +62,7 @@ func (r *EstoqueRepositorio) ListarSaldo(ctx context.Context, params consulta.Pa
 	filtros, argumentos := filtrosDeEstoque(params)
 
 	var total int
-	if err := r.pool.QueryRow(ctx,
+	if err := db.DoContexto(ctx, r.pool).QueryRow(ctx,
 		`SELECT count(*) FROM saldo_estoque se JOIN partes_pecas pp ON pp.id = se.parte_peca_id `+filtros,
 		argumentos...).Scan(&total); err != nil {
 		return nil, 0, fmt.Errorf("contar saldo de estoque: %w", err)
@@ -79,7 +80,7 @@ func (r *EstoqueRepositorio) ListarSaldo(ctx context.Context, params consulta.Pa
 		colunasSaldo, filtros, ordenarPor, params.Ordem.SQL(), len(argumentos)+1, len(argumentos)+2)
 	argumentos = append(argumentos, params.Limite, params.Offset())
 
-	linhas, err := r.pool.Query(ctx, sql, argumentos...)
+	linhas, err := db.DoContexto(ctx, r.pool).Query(ctx, sql, argumentos...)
 	if err != nil {
 		return nil, 0, fmt.Errorf("listar saldo de estoque: %w", err)
 	}
@@ -99,7 +100,7 @@ func (r *EstoqueRepositorio) ListarSaldo(ctx context.Context, params consulta.Pa
 // ListarCriticos e um atalho de ListarSaldo para status=CRITICO, sem
 // paginacao -- e um alerta operacional, lista curta por natureza.
 func (r *EstoqueRepositorio) ListarCriticos(ctx context.Context) ([]estoque.Saldo, error) {
-	linhas, err := r.pool.Query(ctx,
+	linhas, err := db.DoContexto(ctx, r.pool).Query(ctx,
 		`SELECT `+colunasSaldo+` FROM saldo_estoque se JOIN partes_pecas pp ON pp.id = se.parte_peca_id
 		 WHERE se.status = $1 ORDER BY pp.codigo`, estoque.StatusCritico)
 	if err != nil {
@@ -121,7 +122,7 @@ func (r *EstoqueRepositorio) ListarCriticos(ctx context.Context) ([]estoque.Sald
 // ListarParaRelatorio devolve todo o saldo (sem paginacao, sem LIMIT/OFFSET
 // nem o count(*) que a listagem paginada paga) -- so para a exportacao CSV.
 func (r *EstoqueRepositorio) ListarParaRelatorio(ctx context.Context) ([]estoque.Saldo, error) {
-	linhas, err := r.pool.Query(ctx,
+	linhas, err := db.DoContexto(ctx, r.pool).Query(ctx,
 		`SELECT `+colunasSaldo+` FROM saldo_estoque se JOIN partes_pecas pp ON pp.id = se.parte_peca_id
 		 ORDER BY pp.codigo`)
 	if err != nil {
@@ -156,7 +157,7 @@ func escanearMovimentacao(linha interface{ Scan(...any) error }) (estoque.Movime
 // JOIN abaixo) tem coluna ativo.
 func (r *EstoqueRepositorio) ListarMovimentacoes(ctx context.Context, params consulta.Parametros) ([]estoque.Movimentacao, int, error) {
 	var total int
-	if err := r.pool.QueryRow(ctx,
+	if err := db.DoContexto(ctx, r.pool).QueryRow(ctx,
 		`SELECT count(*) FROM movimentacao_estoque m JOIN partes_pecas pp ON pp.id = m.parte_peca_id`,
 	).Scan(&total); err != nil {
 		return nil, 0, fmt.Errorf("contar movimentacoes: %w", err)
@@ -169,7 +170,7 @@ func (r *EstoqueRepositorio) ListarMovimentacoes(ctx context.Context, params con
 		 ORDER BY m.data_hora DESC LIMIT $1 OFFSET $2`,
 		colunasMovimentacao)
 
-	linhas, err := r.pool.Query(ctx, sql, params.Limite, params.Offset())
+	linhas, err := db.DoContexto(ctx, r.pool).Query(ctx, sql, params.Limite, params.Offset())
 	if err != nil {
 		return nil, 0, fmt.Errorf("listar movimentacoes: %w", err)
 	}
@@ -187,7 +188,7 @@ func (r *EstoqueRepositorio) ListarMovimentacoes(ctx context.Context, params con
 }
 
 func (r *EstoqueRepositorio) BuscarMovimentacao(ctx context.Context, id int64) (*estoque.Movimentacao, error) {
-	linha := r.pool.QueryRow(ctx,
+	linha := db.DoContexto(ctx, r.pool).QueryRow(ctx,
 		`SELECT `+colunasMovimentacao+` FROM movimentacao_estoque m
 		 JOIN partes_pecas pp ON pp.id = m.parte_peca_id
 		 LEFT JOIN usuarios u ON u.id = m.usuario_id
@@ -210,7 +211,7 @@ func (r *EstoqueRepositorio) BuscarMovimentacao(ctx context.Context, id int64) (
 func (r *EstoqueRepositorio) AplicarMovimento(
 	ctx context.Context, partePecaID int64, delta int, tipo, motivo string, referencia *string, observacoes, autor string,
 ) (*estoque.Saldo, error) {
-	tx, err := r.pool.Begin(ctx)
+	tx, err := db.DoContexto(ctx, r.pool).Begin(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("iniciar transacao: %w", err)
 	}

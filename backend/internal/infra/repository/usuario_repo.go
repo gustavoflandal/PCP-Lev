@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/usuario"
+	"github.com/gustavoflandal/pcp-lev/backend/internal/infra/db"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -40,7 +41,7 @@ func (r *UsuarioRepositorio) BuscarPorID(ctx context.Context, id int64) (*usuari
 
 // RegistrarLogin grava o instante do acesso bem-sucedido.
 func (r *UsuarioRepositorio) RegistrarLogin(ctx context.Context, id int64) error {
-	etiqueta, err := r.pool.Exec(ctx,
+	etiqueta, err := db.DoContexto(ctx, r.pool).Exec(ctx,
 		`UPDATE usuarios SET ultimo_login = CURRENT_TIMESTAMP WHERE id = $1`, id)
 	if err != nil {
 		return fmt.Errorf("registrar login: %w", err)
@@ -53,7 +54,7 @@ func (r *UsuarioRepositorio) RegistrarLogin(ctx context.Context, id int64) error
 
 // AtualizarSenha grava o novo hash da senha do usuario.
 func (r *UsuarioRepositorio) AtualizarSenha(ctx context.Context, id int64, senhaHash, autor string) error {
-	etiqueta, err := r.pool.Exec(ctx,
+	etiqueta, err := db.DoContexto(ctx, r.pool).Exec(ctx,
 		`UPDATE usuarios SET senha_hash = $2, updated_by = $3 WHERE id = $1`, id, senhaHash, autor)
 	if err != nil {
 		return fmt.Errorf("atualizar senha: %w", err)
@@ -66,7 +67,7 @@ func (r *UsuarioRepositorio) AtualizarSenha(ctx context.Context, id int64, senha
 
 // AtualizarPreferencias grava as preferencias de aparencia do usuario.
 func (r *UsuarioRepositorio) AtualizarPreferencias(ctx context.Context, id int64, p usuario.Preferencias) error {
-	etiqueta, err := r.pool.Exec(ctx,
+	etiqueta, err := db.DoContexto(ctx, r.pool).Exec(ctx,
 		`UPDATE usuarios SET tema = $2, alto_contraste = $3, densidade = $4, tamanho_fonte = $5 WHERE id = $1`,
 		id, p.Tema, p.AltoContraste, p.Densidade, p.TamanhoFonte)
 	if err != nil {
@@ -80,7 +81,7 @@ func (r *UsuarioRepositorio) AtualizarPreferencias(ctx context.Context, id int64
 
 func (r *UsuarioRepositorio) buscarUm(ctx context.Context, sql string, arg any) (*usuario.Usuario, error) {
 	var u usuario.Usuario
-	err := r.pool.QueryRow(ctx, sql, arg).Scan(
+	err := db.DoContexto(ctx, r.pool).QueryRow(ctx, sql, arg).Scan(
 		&u.ID, &u.Username, &u.Nome, &u.Email, &u.SenhaHash, &u.Perfil,
 		&u.Ativo, &u.UltimoLogin, &u.CreatedAt, &u.UpdatedAt,
 		&u.Tema, &u.AltoContraste, &u.Densidade, &u.TamanhoFonte,

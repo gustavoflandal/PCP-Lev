@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/empresa"
+	"github.com/gustavoflandal/pcp-lev/backend/internal/infra/db"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -34,7 +35,7 @@ func (r *EmpresaRepositorio) Buscar(ctx context.Context) (empresa.Empresa, error
 
 func (r *EmpresaRepositorio) buscarUm(ctx context.Context, sql string, args ...any) (empresa.Empresa, error) {
 	var e empresa.Empresa
-	err := r.pool.QueryRow(ctx, sql, args...).Scan(
+	err := db.DoContexto(ctx, r.pool).QueryRow(ctx, sql, args...).Scan(
 		&e.RazaoSocial, &e.NomeFantasia, &e.CNPJ, &e.InscricaoEstadual,
 		&e.InscricaoMunicipal, &e.CNAE, &e.CEP, &e.Logradouro, &e.Numero,
 		&e.Complemento, &e.Bairro, &e.Cidade, &e.UF, &e.Telefone, &e.Email,
@@ -86,7 +87,7 @@ func (r *EmpresaRepositorio) BuscarFavicon(ctx context.Context) ([]byte, string,
 func (r *EmpresaRepositorio) buscarImagem(ctx context.Context, sql string) ([]byte, string, error) {
 	var dados []byte
 	var tipo *string
-	if err := r.pool.QueryRow(ctx, sql).Scan(&dados, &tipo); err != nil {
+	if err := db.DoContexto(ctx, r.pool).QueryRow(ctx, sql).Scan(&dados, &tipo); err != nil {
 		return nil, "", fmt.Errorf("buscar imagem da empresa: %w", err)
 	}
 	if tipo == nil {
@@ -126,7 +127,7 @@ func (r *EmpresaRepositorio) atualizarImagem(ctx context.Context, sql string, da
 	if len(dados) > 0 {
 		tipoColuna = &tipo
 	}
-	if _, err := r.pool.Exec(ctx, sql, dados, tipoColuna, atualizadoPor); err != nil {
+	if _, err := db.DoContexto(ctx, r.pool).Exec(ctx, sql, dados, tipoColuna, atualizadoPor); err != nil {
 		return fmt.Errorf("atualizar imagem da empresa: %w", err)
 	}
 	return nil

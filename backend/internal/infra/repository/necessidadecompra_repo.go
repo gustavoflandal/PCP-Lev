@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/necessidadecompra"
+	"github.com/gustavoflandal/pcp-lev/backend/internal/infra/db"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -29,7 +30,7 @@ func NovoNecessidadeCompraRepositorio(pool *pgxpool.Pool) *NecessidadeCompraRepo
 // inutil -- a tela de Estoque/Painel ainda mostra esse caso como Critico
 // (RN5), so aqui ele nao gera sugestao. Divergencia deliberada, nao um erro.
 func (r *NecessidadeCompraRepositorio) Listar(ctx context.Context) ([]necessidadecompra.Item, error) {
-	linhas, err := r.pool.Query(ctx, `
+	linhas, err := db.DoContexto(ctx, r.pool).Query(ctx, `
 		SELECT pp.id, pp.codigo, pp.descricao, se.quantidade_atual, pp.estoque_minimo,
 		       f.id, f.razao_social
 		FROM partes_pecas pp

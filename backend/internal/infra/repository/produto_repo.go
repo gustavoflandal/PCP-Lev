@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/produto"
+	"github.com/gustavoflandal/pcp-lev/backend/internal/infra/db"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/platform/consulta"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/platform/tempo"
 	"github.com/jackc/pgx/v5"
@@ -31,7 +32,7 @@ func (r *ProdutoRepositorio) Criar(ctx context.Context, p *produto.ProdutoAcabad
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $7)
 		RETURNING id, created_at, updated_at`
 
-	err := r.pool.QueryRow(ctx, sql,
+	err := db.DoContexto(ctx, r.pool).QueryRow(ctx, sql,
 		p.Codigo, p.Descricao, p.UnidadeMedida, p.PrecoVenda, p.LeadTimeProducao, p.Ativo, autor,
 	).Scan(&p.ID, &p.CreatedAt, &p.UpdatedAt)
 
@@ -52,7 +53,7 @@ func (r *ProdutoRepositorio) Atualizar(ctx context.Context, p *produto.ProdutoAc
 		WHERE id = $1
 		RETURNING updated_at`
 
-	err := r.pool.QueryRow(ctx, sql,
+	err := db.DoContexto(ctx, r.pool).QueryRow(ctx, sql,
 		p.ID, p.Codigo, p.Descricao, p.UnidadeMedida, p.PrecoVenda, p.LeadTimeProducao, p.Ativo, autor,
 	).Scan(&p.UpdatedAt)
 
@@ -73,7 +74,7 @@ func (r *ProdutoRepositorio) BuscarPorID(ctx context.Context, id int64) (*produt
 	sql := `SELECT ` + colunasProduto + ` FROM produtos_acabados WHERE id = $1`
 
 	var p produto.ProdutoAcabado
-	err := r.pool.QueryRow(ctx, sql, id).Scan(
+	err := db.DoContexto(ctx, r.pool).QueryRow(ctx, sql, id).Scan(
 		&p.ID, &p.Codigo, &p.Descricao, &p.UnidadeMedida, &p.PrecoVenda,
 		&p.LeadTimeProducao, &p.Ativo, &p.CreatedAt, &p.UpdatedAt, &p.CreatedBy, &p.UpdatedBy,
 	)
@@ -97,7 +98,7 @@ func (r *ProdutoRepositorio) Listar(ctx context.Context, params consulta.Paramet
 	filtros, argumentos := filtrosDeCadastro(params, "codigo", "descricao")
 
 	var total int
-	if err := r.pool.QueryRow(ctx,
+	if err := db.DoContexto(ctx, r.pool).QueryRow(ctx,
 		`SELECT count(*) FROM produtos_acabados `+filtros, argumentos...).Scan(&total); err != nil {
 		return nil, 0, fmt.Errorf("contar produtos acabados: %w", err)
 	}
@@ -115,7 +116,7 @@ func (r *ProdutoRepositorio) Listar(ctx context.Context, params consulta.Paramet
 		len(argumentos)+1, len(argumentos)+2)
 	argumentos = append(argumentos, params.Limite, params.Offset())
 
-	linhas, err := r.pool.Query(ctx, sql, argumentos...)
+	linhas, err := db.DoContexto(ctx, r.pool).Query(ctx, sql, argumentos...)
 	if err != nil {
 		return nil, 0, fmt.Errorf("listar produtos acabados: %w", err)
 	}
@@ -142,7 +143,7 @@ func (r *ProdutoRepositorio) Listar(ctx context.Context, params consulta.Paramet
 }
 
 func (r *ProdutoRepositorio) Desativar(ctx context.Context, id int64, autor string) error {
-	etiqueta, err := r.pool.Exec(ctx,
+	etiqueta, err := db.DoContexto(ctx, r.pool).Exec(ctx,
 		`UPDATE produtos_acabados SET ativo = false, updated_by = $2 WHERE id = $1`, id, autor)
 	if err != nil {
 		return fmt.Errorf("desativar produto acabado: %w", err)
@@ -155,7 +156,7 @@ func (r *ProdutoRepositorio) Desativar(ctx context.Context, id int64, autor stri
 
 func (r *ProdutoRepositorio) PossuiVendas(ctx context.Context, id int64) (bool, error) {
 	var existe bool
-	err := r.pool.QueryRow(ctx,
+	err := db.DoContexto(ctx, r.pool).QueryRow(ctx,
 		`SELECT EXISTS (SELECT 1 FROM itens_pedido_venda WHERE produto_acabado_id = $1)`, id).Scan(&existe)
 	if err != nil {
 		return false, fmt.Errorf("verificar vendas do produto: %w", err)

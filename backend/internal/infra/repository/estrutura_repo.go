@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/estrutura"
+	"github.com/gustavoflandal/pcp-lev/backend/internal/infra/db"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/platform/tempo"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -28,7 +29,7 @@ func NovoEstruturaRepositorio(pool *pgxpool.Pool) *EstruturaRepositorio {
 
 // Criar grava a estrutura e os seus itens na mesma transacao.
 func (r *EstruturaRepositorio) Criar(ctx context.Context, e *estrutura.Estrutura, autor string) error {
-	tx, err := r.pool.Begin(ctx)
+	tx, err := db.DoContexto(ctx, r.pool).Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("iniciar transacao: %w", err)
 	}
@@ -85,7 +86,7 @@ func (r *EstruturaRepositorio) Criar(ctx context.Context, e *estrutura.Estrutura
 // BuscarPorID devolve a estrutura com os seus itens.
 func (r *EstruturaRepositorio) BuscarPorID(ctx context.Context, id int64) (*estrutura.Estrutura, error) {
 	var e estrutura.Estrutura
-	err := r.pool.QueryRow(ctx, `SELECT `+colunasEstrutura+` FROM estrutura_produto WHERE id = $1`, id).Scan(
+	err := db.DoContexto(ctx, r.pool).QueryRow(ctx, `SELECT `+colunasEstrutura+` FROM estrutura_produto WHERE id = $1`, id).Scan(
 		&e.ID, &e.ProdutoAcabadoID, &e.Versao, &e.DataVigenciaInicio, &e.DataVigenciaFim,
 		&e.Ativo, &e.CreatedAt, &e.UpdatedAt, &e.CreatedBy, &e.UpdatedBy,
 	)
@@ -104,7 +105,7 @@ func (r *EstruturaRepositorio) BuscarPorID(ctx context.Context, id int64) (*estr
 }
 
 func (r *EstruturaRepositorio) itensDaEstrutura(ctx context.Context, estruturaID int64) ([]estrutura.Item, error) {
-	linhas, err := r.pool.Query(ctx,
+	linhas, err := db.DoContexto(ctx, r.pool).Query(ctx,
 		`SELECT `+colunasItemEstrutura+` FROM itens_estrutura_produto WHERE estrutura_produto_id = $1 ORDER BY id`,
 		estruturaID)
 	if err != nil {
@@ -129,7 +130,7 @@ func (r *EstruturaRepositorio) itensDaEstrutura(ctx context.Context, estruturaID
 // (evita N+1) -- sem isso o `itens` some do JSON (omitempty) e a tela de
 // detalhe quebra ao tentar renderizar os itens da versao ativa.
 func (r *EstruturaRepositorio) ListarPorProduto(ctx context.Context, produtoAcabadoID int64) ([]estrutura.Estrutura, error) {
-	linhas, err := r.pool.Query(ctx,
+	linhas, err := db.DoContexto(ctx, r.pool).Query(ctx,
 		`SELECT `+colunasEstrutura+` FROM estrutura_produto WHERE produto_acabado_id = $1 ORDER BY versao DESC`,
 		produtoAcabadoID)
 	if err != nil {
@@ -170,7 +171,7 @@ func (r *EstruturaRepositorio) ListarPorProduto(ctx context.Context, produtoAcab
 // itensDeVariasEstruturas carrega os itens de varias estruturas numa unica
 // query (batching), agrupados por estrutura_produto_id.
 func (r *EstruturaRepositorio) itensDeVariasEstruturas(ctx context.Context, estruturaIDs []int64) (map[int64][]estrutura.Item, error) {
-	linhas, err := r.pool.Query(ctx,
+	linhas, err := db.DoContexto(ctx, r.pool).Query(ctx,
 		`SELECT estrutura_produto_id, `+colunasItemEstrutura+`
 		 FROM itens_estrutura_produto WHERE estrutura_produto_id = ANY($1) ORDER BY estrutura_produto_id, id`,
 		estruturaIDs)
@@ -199,7 +200,7 @@ func (r *EstruturaRepositorio) itensDeVariasEstruturas(ctx context.Context, estr
 func (r *EstruturaRepositorio) Versionar(
 	ctx context.Context, idAtual int64, nova *estrutura.Estrutura, autor string,
 ) (*estrutura.Estrutura, error) {
-	tx, err := r.pool.Begin(ctx)
+	tx, err := db.DoContexto(ctx, r.pool).Begin(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("iniciar transacao: %w", err)
 	}

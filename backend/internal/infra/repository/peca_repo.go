@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/peca"
+	"github.com/gustavoflandal/pcp-lev/backend/internal/infra/db"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/platform/consulta"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -29,7 +30,7 @@ func NovoPecaRepositorio(pool *pgxpool.Pool) *PecaRepositorio {
 // As duas gravacoes vao na mesma transacao: uma peca sem saldo nao pode ser
 // movimentada, e um saldo sem peca seria orfao.
 func (r *PecaRepositorio) Criar(ctx context.Context, p *peca.PartePeca, autor string) error {
-	tx, err := r.pool.Begin(ctx)
+	tx, err := db.DoContexto(ctx, r.pool).Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("iniciar transacao: %w", err)
 	}
@@ -80,7 +81,7 @@ func (r *PecaRepositorio) Atualizar(ctx context.Context, p *peca.PartePeca, auto
 		WHERE id = $1
 		RETURNING updated_at`
 
-	err := r.pool.QueryRow(ctx, sql,
+	err := db.DoContexto(ctx, r.pool).QueryRow(ctx, sql,
 		p.ID, p.Codigo, p.Descricao, p.UnidadeMedida, p.EstoqueMinimo, p.EstoqueMaximo,
 		p.FornecedorPadraoID, p.LeadTimeCompra, p.Ativo, autor,
 	).Scan(&p.UpdatedAt)
@@ -105,7 +106,7 @@ func (r *PecaRepositorio) BuscarPorID(ctx context.Context, id int64) (*peca.Part
 	sql := `SELECT ` + colunasPeca + ` FROM partes_pecas WHERE id = $1`
 
 	var p peca.PartePeca
-	err := r.pool.QueryRow(ctx, sql, id).Scan(
+	err := db.DoContexto(ctx, r.pool).QueryRow(ctx, sql, id).Scan(
 		&p.ID, &p.Codigo, &p.Descricao, &p.UnidadeMedida, &p.EstoqueMinimo, &p.EstoqueMaximo,
 		&p.FornecedorPadraoID, &p.LeadTimeCompra, &p.Ativo,
 		&p.CreatedAt, &p.UpdatedAt, &p.CreatedBy, &p.UpdatedBy,
@@ -123,7 +124,7 @@ func (r *PecaRepositorio) Listar(ctx context.Context, params consulta.Parametros
 	filtros, argumentos := filtrosDeCadastro(params, "codigo", "descricao")
 
 	var total int
-	if err := r.pool.QueryRow(ctx,
+	if err := db.DoContexto(ctx, r.pool).QueryRow(ctx,
 		`SELECT count(*) FROM partes_pecas `+filtros, argumentos...).Scan(&total); err != nil {
 		return nil, 0, fmt.Errorf("contar partes/pecas: %w", err)
 	}
@@ -133,7 +134,7 @@ func (r *PecaRepositorio) Listar(ctx context.Context, params consulta.Parametros
 		len(argumentos)+1, len(argumentos)+2)
 	argumentos = append(argumentos, params.Limite, params.Offset())
 
-	linhas, err := r.pool.Query(ctx, sql, argumentos...)
+	linhas, err := db.DoContexto(ctx, r.pool).Query(ctx, sql, argumentos...)
 	if err != nil {
 		return nil, 0, fmt.Errorf("listar partes/pecas: %w", err)
 	}
@@ -155,7 +156,7 @@ func (r *PecaRepositorio) Listar(ctx context.Context, params consulta.Parametros
 }
 
 func (r *PecaRepositorio) Desativar(ctx context.Context, id int64, autor string) error {
-	etiqueta, err := r.pool.Exec(ctx,
+	etiqueta, err := db.DoContexto(ctx, r.pool).Exec(ctx,
 		`UPDATE partes_pecas SET ativo = false, updated_by = $2 WHERE id = $1`, id, autor)
 	if err != nil {
 		return fmt.Errorf("desativar parte/peca: %w", err)
@@ -168,7 +169,7 @@ func (r *PecaRepositorio) Desativar(ctx context.Context, id int64, autor string)
 
 func (r *PecaRepositorio) PossuiMovimentacao(ctx context.Context, id int64) (bool, error) {
 	var existe bool
-	err := r.pool.QueryRow(ctx,
+	err := db.DoContexto(ctx, r.pool).QueryRow(ctx,
 		`SELECT EXISTS (SELECT 1 FROM movimentacao_estoque WHERE parte_peca_id = $1)`, id).Scan(&existe)
 	if err != nil {
 		return false, fmt.Errorf("verificar movimentacao da parte/peca: %w", err)

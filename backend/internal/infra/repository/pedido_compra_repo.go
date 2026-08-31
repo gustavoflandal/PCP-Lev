@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/pedidocompra"
+	"github.com/gustavoflandal/pcp-lev/backend/internal/infra/db"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/platform/consulta"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/platform/tempo"
 	"github.com/jackc/pgx/v5"
@@ -30,7 +31,7 @@ func NovoPedidoCompraRepositorio(pool *pgxpool.Pool) *PedidoCompraRepositorio {
 
 // Criar grava o pedido de compra e os seus itens na mesma transacao.
 func (r *PedidoCompraRepositorio) Criar(ctx context.Context, p *pedidocompra.PedidoCompra, autor string) error {
-	tx, err := r.pool.Begin(ctx)
+	tx, err := db.DoContexto(ctx, r.pool).Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("iniciar transacao: %w", err)
 	}
@@ -82,7 +83,7 @@ func (r *PedidoCompraRepositorio) Criar(ctx context.Context, p *pedidocompra.Ped
 // Atualizar substitui os dados e os itens de um pedido de compra (so
 // chamado em Rascunho — a guarda de status vive no Servico).
 func (r *PedidoCompraRepositorio) Atualizar(ctx context.Context, p *pedidocompra.PedidoCompra, autor string) error {
-	tx, err := r.pool.Begin(ctx)
+	tx, err := db.DoContexto(ctx, r.pool).Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("iniciar transacao: %w", err)
 	}
@@ -140,7 +141,7 @@ func (r *PedidoCompraRepositorio) Atualizar(ctx context.Context, p *pedidocompra
 // BuscarPorID devolve o pedido de compra com os seus itens.
 func (r *PedidoCompraRepositorio) BuscarPorID(ctx context.Context, id int64) (*pedidocompra.PedidoCompra, error) {
 	var p pedidocompra.PedidoCompra
-	err := r.pool.QueryRow(ctx, `SELECT `+colunasPedidoCompra+` FROM pedidos_compra WHERE id = $1`, id).Scan(
+	err := db.DoContexto(ctx, r.pool).QueryRow(ctx, `SELECT `+colunasPedidoCompra+` FROM pedidos_compra WHERE id = $1`, id).Scan(
 		&p.ID, &p.NumeroPC, &p.CotacaoID, &p.FornecedorID, &p.DataPedido, &p.DataEntregaPrevista,
 		&p.DataEntregaReal, &p.ValorTotal, &p.CondicaoPagamento, &p.Status, &p.Observacoes,
 		&p.CreatedAt, &p.UpdatedAt, &p.CreatedBy, &p.UpdatedBy,
@@ -161,7 +162,7 @@ func (r *PedidoCompraRepositorio) BuscarPorID(ctx context.Context, id int64) (*p
 }
 
 func (r *PedidoCompraRepositorio) itensDoPedido(ctx context.Context, pedidoID int64) ([]pedidocompra.ItemPedido, error) {
-	linhas, err := r.pool.Query(ctx,
+	linhas, err := db.DoContexto(ctx, r.pool).Query(ctx,
 		`SELECT `+colunasItemPedidoCompra+` FROM itens_pedido_compra WHERE pedido_compra_id = $1 ORDER BY id`, pedidoID)
 	if err != nil {
 		return nil, fmt.Errorf("buscar itens do pedido de compra: %w", err)
@@ -185,7 +186,7 @@ func (r *PedidoCompraRepositorio) Listar(ctx context.Context, params consulta.Pa
 	filtros, argumentos := filtrosDeCompras(params, "numero_pc")
 
 	var total int
-	if err := r.pool.QueryRow(ctx,
+	if err := db.DoContexto(ctx, r.pool).QueryRow(ctx,
 		`SELECT count(*) FROM pedidos_compra `+filtros, argumentos...).Scan(&total); err != nil {
 		return nil, 0, fmt.Errorf("contar pedidos de compra: %w", err)
 	}
@@ -195,7 +196,7 @@ func (r *PedidoCompraRepositorio) Listar(ctx context.Context, params consulta.Pa
 		len(argumentos)+1, len(argumentos)+2)
 	argumentos = append(argumentos, params.Limite, params.Offset())
 
-	linhas, err := r.pool.Query(ctx, sql, argumentos...)
+	linhas, err := db.DoContexto(ctx, r.pool).Query(ctx, sql, argumentos...)
 	if err != nil {
 		return nil, 0, fmt.Errorf("listar pedidos de compra: %w", err)
 	}
@@ -220,7 +221,7 @@ func (r *PedidoCompraRepositorio) Listar(ctx context.Context, params consulta.Pa
 // com o nome do fornecedor ja resolvido via JOIN -- so para a exportacao
 // CSV, que precisa ser legivel sem o cliente resolver o id depois.
 func (r *PedidoCompraRepositorio) ListarParaRelatorio(ctx context.Context) ([]pedidocompra.LinhaRelatorio, error) {
-	linhas, err := r.pool.Query(ctx, `
+	linhas, err := db.DoContexto(ctx, r.pool).Query(ctx, `
 		SELECT pc.numero_pc, f.razao_social, pc.status, pc.data_pedido, pc.data_entrega_prevista,
 		       pc.data_entrega_real, pc.valor_total
 		FROM pedidos_compra pc JOIN fornecedores f ON f.id = pc.fornecedor_id
@@ -246,7 +247,7 @@ func (r *PedidoCompraRepositorio) ListarParaRelatorio(ctx context.Context) ([]pe
 
 // AtualizarStatus troca so o status (emitir/cancelar).
 func (r *PedidoCompraRepositorio) AtualizarStatus(ctx context.Context, id int64, status string, autor string) error {
-	etiqueta, err := r.pool.Exec(ctx,
+	etiqueta, err := db.DoContexto(ctx, r.pool).Exec(ctx,
 		`UPDATE pedidos_compra SET status = $2, updated_by = $3 WHERE id = $1`, id, status, autor)
 	if err != nil {
 		return fmt.Errorf("atualizar status do pedido de compra: %w", err)
@@ -264,7 +265,7 @@ func (r *PedidoCompraRepositorio) EmAtraso(ctx context.Context, statusTerminais 
 		WHERE data_entrega_prevista < CURRENT_DATE AND status <> ALL($1)
 		ORDER BY data_entrega_prevista`
 
-	linhas, err := r.pool.Query(ctx, sql, statusTerminais)
+	linhas, err := db.DoContexto(ctx, r.pool).Query(ctx, sql, statusTerminais)
 	if err != nil {
 		return nil, fmt.Errorf("listar pedidos em atraso: %w", err)
 	}
@@ -291,7 +292,7 @@ func (r *PedidoCompraRepositorio) EmAtraso(ctx context.Context, statusTerminais 
 func (r *PedidoCompraRepositorio) RegistrarRecebimento(
 	ctx context.Context, id int64, itens []pedidocompra.ItemRecebimentoDados, autor string,
 ) (*pedidocompra.PedidoCompra, error) {
-	tx, err := r.pool.Begin(ctx)
+	tx, err := db.DoContexto(ctx, r.pool).Begin(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("iniciar transacao: %w", err)
 	}
