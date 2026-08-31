@@ -4,10 +4,13 @@ import (
 	"context"
 	"testing"
 
+	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/estrutura"
+	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/peca"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/produto"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/infra/repository"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/platform/consulta"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/platform/dinheiro"
+	"github.com/gustavoflandal/pcp-lev/backend/internal/platform/tempo"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/testsupport"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -197,4 +200,43 @@ func TestPossuiVendasDetectaProdutoUsadoEmPedido(t *testing.T) {
 	comVendas, err := repo.PossuiVendas(ctx, p.ID)
 	require.NoError(t, err)
 	assert.True(t, comVendas)
+}
+
+func TestListarSemEstruturaDevolveEstruturaAtivaNula(t *testing.T) {
+	ctx := context.Background()
+	repo := repoProduto(t)
+	require.NoError(t, repo.Criar(ctx, pa("VMS-01", "Painel sem BOM"), "gestor01"))
+
+	itens, _, err := repo.Listar(ctx, paramsPadrao(t))
+
+	require.NoError(t, err)
+	require.Len(t, itens, 1)
+	assert.Nil(t, itens[0].EstruturaAtiva)
+}
+
+func TestListarComEstruturaAtivaTrazVersaoEVigencia(t *testing.T) {
+	ctx := context.Background()
+	pool := testsupport.BancoMigrado(t)
+	repo := repository.NovoProdutoRepositorio(pool)
+	p := pa("VMS-01", "Painel com BOM")
+	require.NoError(t, repo.Criar(ctx, p, "gestor01"))
+
+	pecaRepo := repository.NovoPecaRepositorio(pool)
+	peca1 := &peca.PartePeca{Codigo: "RES-10K", Descricao: "Resistor de 10 kOhm", UnidadeMedida: "und", EstoqueMinimo: 0, EstoqueMaximo: 100, LeadTimeCompra: 7, Ativo: true}
+	require.NoError(t, pecaRepo.Criar(ctx, peca1, "gestor01"))
+
+	estruturaRepo := repository.NovoEstruturaRepositorio(pool)
+	inicio, _ := tempo.DeString("2026-09-01")
+	e := &estrutura.Estrutura{
+		ProdutoAcabadoID: p.ID, Versao: 1, DataVigenciaInicio: inicio, Ativo: true,
+		Itens: []estrutura.Item{{PartePecaID: peca1.ID, Quantidade: 4}},
+	}
+	require.NoError(t, estruturaRepo.Criar(ctx, e, "gestor01"))
+
+	itens, _, err := repo.Listar(ctx, paramsPadrao(t))
+
+	require.NoError(t, err)
+	require.Len(t, itens, 1)
+	require.NotNil(t, itens[0].EstruturaAtiva)
+	assert.Equal(t, 1, itens[0].EstruturaAtiva.Versao)
 }

@@ -7,6 +7,7 @@ import (
 
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/produto"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/platform/consulta"
+	"github.com/gustavoflandal/pcp-lev/backend/internal/platform/tempo"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -85,6 +86,13 @@ func (r *ProdutoRepositorio) BuscarPorID(ctx context.Context, id int64) (*produt
 	return &p, nil
 }
 
+// Listar devolve a pagina de produtos, com a estrutura ativa de cada um (se
+// houver). O filtro (filtrosDeCadastro) roda dentro do CTE `pa`, so contra
+// produtos_acabados -- o LEFT JOIN com estrutura_produto (que tambem tem uma
+// coluna "ativo") so acontece depois, sobre o resultado ja filtrado. Sem
+// isso, informar filtro_ativo deixaria "ativo" ambiguo entre as duas
+// tabelas assim que o JOIN entrasse (mesma armadilha corrigida no Sprint 4,
+// Task B2, em ListarMovimentacoes).
 func (r *ProdutoRepositorio) Listar(ctx context.Context, params consulta.Parametros) ([]produto.ProdutoAcabado, int, error) {
 	filtros, argumentos := filtrosDeCadastro(params, "codigo", "descricao")
 
@@ -96,7 +104,13 @@ func (r *ProdutoRepositorio) Listar(ctx context.Context, params consulta.Paramet
 
 	// OrdenarPor ja foi validado contra uma lista fechada em consulta.Analisar,
 	// entao pode ser interpolado; os valores seguem como parametros.
-	sql := fmt.Sprintf("SELECT %s FROM produtos_acabados %s ORDER BY %s %s LIMIT $%d OFFSET $%d",
+	sql := fmt.Sprintf(`
+		WITH pa AS (SELECT %s FROM produtos_acabados %s)
+		SELECT pa.id, pa.codigo, pa.descricao, pa.unidade_medida, pa.preco_venda,
+		       pa.lead_time_producao, pa.ativo, pa.created_at, pa.updated_at, pa.created_by, pa.updated_by,
+		       ep.versao, ep.data_vigencia_inicio
+		FROM pa LEFT JOIN estrutura_produto ep ON ep.produto_acabado_id = pa.id AND ep.ativo
+		ORDER BY pa.%s %s LIMIT $%d OFFSET $%d`,
 		colunasProduto, filtros, params.OrdenarPor, params.Ordem.SQL(),
 		len(argumentos)+1, len(argumentos)+2)
 	argumentos = append(argumentos, params.Limite, params.Offset())
@@ -110,11 +124,17 @@ func (r *ProdutoRepositorio) Listar(ctx context.Context, params consulta.Paramet
 	itens := make([]produto.ProdutoAcabado, 0, params.Limite)
 	for linhas.Next() {
 		var p produto.ProdutoAcabado
+		var versao *int
+		var vigenciaInicio tempo.Data
 		if err := linhas.Scan(
 			&p.ID, &p.Codigo, &p.Descricao, &p.UnidadeMedida, &p.PrecoVenda,
 			&p.LeadTimeProducao, &p.Ativo, &p.CreatedAt, &p.UpdatedAt, &p.CreatedBy, &p.UpdatedBy,
+			&versao, &vigenciaInicio,
 		); err != nil {
 			return nil, 0, err
+		}
+		if versao != nil {
+			p.EstruturaAtiva = &produto.EstruturaResumo{Versao: *versao, DataVigenciaInicio: vigenciaInicio}
 		}
 		itens = append(itens, p)
 	}
