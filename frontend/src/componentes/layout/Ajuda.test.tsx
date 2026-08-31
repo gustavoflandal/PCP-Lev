@@ -90,6 +90,14 @@ describe('Ajuda', () => {
     expect(screen.getByRole('dialog', { name: /Estoque/ })).toBeInTheDocument();
   });
 
+  it('o conteudo muda conforme a tela: estrutura de produtos', async () => {
+    renderizar('/estrutura-produtos');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Ajuda' }));
+
+    expect(screen.getByRole('dialog', { name: /Estrutura de produtos/ })).toBeInTheDocument();
+  });
+
   it('uma sub-rota de cotacoes cai no conteudo da lista (prefixo)', async () => {
     renderizar('/cotacoes/nova');
 

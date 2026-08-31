@@ -13,6 +13,9 @@ import { NovoPedidoCompra } from '@/paginas/compras/NovoPedidoCompra';
 import { PedidosCompra } from '@/paginas/compras/PedidosCompra';
 import { Estoque } from '@/paginas/estoque/Estoque';
 import { Movimentacoes } from '@/paginas/estoque/Movimentacoes';
+import { DetalheEstruturaProduto } from '@/paginas/estrutura/DetalheEstruturaProduto';
+import { EstruturaProdutos } from '@/paginas/estrutura/EstruturaProdutos';
+import { NovaEstruturaProduto } from '@/paginas/estrutura/NovaEstruturaProduto';
 import { Login } from '@/paginas/Login';
 import { Painel } from '@/paginas/Painel';
 
@@ -40,6 +43,9 @@ export function App() {
             <Route path="/fornecedores" element={<Fornecedores />} />
             <Route path="/partes-pecas" element={<PartesPecas />} />
             <Route path="/produtos-acabados" element={<ProdutosAcabados />} />
+            <Route path="/estrutura-produtos" element={<EstruturaProdutos />} />
+            <Route path="/estrutura-produtos/:produtoId" element={<DetalheEstruturaProduto />} />
+            <Route path="/estrutura-produtos/:produtoId/nova" element={<NovaEstruturaProduto />} />
             <Route path="/cotacoes" element={<Cotacoes />} />
             <Route path="/cotacoes/nova" element={<NovaCotacao />} />
             <Route path="/cotacoes/:id" element={<DetalheCotacao />} />
