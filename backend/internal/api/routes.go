@@ -55,6 +55,10 @@ func NovoRoteador(dep Dependencias) *echo.Echo {
 			echo.HeaderAccept, echo.HeaderAuthorization},
 		AllowCredentials: true,
 	}))
+	// Global (nao por rota): fixa a conexao que os repositorios usam durante
+	// toda a requisicao, para que os triggers de auditoria (migration 007)
+	// vejam o usuario/IP corretos -- ver middleware.ConexaoDeAuditoria.
+	e.Use(middleware.ConexaoDeAuditoria(dep.Pool, dep.Tokens))
 
 	v1 := e.Group("/api/v1")
 
