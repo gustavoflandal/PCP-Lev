@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { Botao } from '@/componentes/ui/Botao';
 import { icones } from '@/componentes/ui/icones';
 import { useAutenticacao, type Perfil } from '@/store/autenticacao';
@@ -13,6 +14,7 @@ const ROTULO_PERFIL: Record<Perfil, string> = {
 export function Cabecalho() {
   const usuario = useAutenticacao((estado) => estado.usuario);
   const sair = useAutenticacao((estado) => estado.sair);
+  const navegar = useNavigate();
   const IconeFabrica = icones.factory;
 
   return (
@@ -29,6 +31,9 @@ export function Cabecalho() {
             <p className="text-label text-texto-secondary">{ROTULO_PERFIL[usuario.perfil]}</p>
           </div>
         )}
+        <Botao variante="secundaria" icone="settings" onClick={() => navegar('/preferencias')}>
+          Preferências
+        </Botao>
         <Ajuda />
         <Botao variante="secundaria" icone="log-out" onClick={() => sair()}>
           Sair

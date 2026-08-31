@@ -82,6 +82,15 @@ const CONTEUDO_POR_ROTA: Record<string, ConteudoAjuda> = {
       'Cancelar só é possível enquanto o pedido não estiver Concluído ou já Cancelado.',
     ],
   },
+  '/preferencias': {
+    titulo: 'Ajuda · Preferências',
+    itens: [
+      'Tema, alto contraste, densidade e tamanho de fonte mudam a interface imediatamente ao selecionar — não é preciso salvar.',
+      'A preferência fica salva na sua conta: vale em qualquer computador que você usar para entrar no sistema.',
+      'Tema "Automático" segue a configuração de claro/escuro do sistema operacional.',
+      'Densidade "Compacta" mostra mais linhas por tela nas listas; "Confortável" deixa alvos maiores, melhor para tablet.',
+    ],
+  },
   '/necessidade-compra': {
     titulo: 'Ajuda · Necessidade de compra',
     itens: [
