@@ -1,10 +1,8 @@
 import { useNavigate } from 'react-router-dom';
 import { Botao } from '@/componentes/ui/Botao';
 import { icones } from '@/componentes/ui/icones';
-import { useDadosEmpresa } from '@/hooks/useDadosEmpresa';
-import { urlLogoClaro, urlLogoEscuro } from '@/servicos/empresa';
+import { useLogoEmpresa } from '@/hooks/useLogoEmpresa';
 import { useAutenticacao, type Perfil } from '@/store/autenticacao';
-import { useTemaResolvido } from '@/store/preferencias';
 import { Ajuda } from './Ajuda';
 
 /** Rotulo de exibicao do perfil — sentence case, conforme §7 do design. */
@@ -20,11 +18,7 @@ export function Cabecalho() {
   const navegar = useNavigate();
   const IconeFabrica = icones.factory;
 
-  const { data: empresa } = useDadosEmpresa();
-  const temaResolvido = useTemaResolvido();
-  const temLogo = temaResolvido === 'escuro' ? empresa?.tem_logo_escuro : empresa?.tem_logo_claro;
-  const urlLogo = temaResolvido === 'escuro' ? urlLogoEscuro(empresa?.updated_at) : urlLogoClaro(empresa?.updated_at);
-  const nomeExibido = empresa?.nome_fantasia || 'Sistema PCP';
+  const { temLogo, url: urlLogo, nomeExibido } = useLogoEmpresa();
 
   return (
     <header className="flex h-[3.5rem] items-center justify-between gap-4 border-b border-borda-subtle bg-surface-raised px-4">

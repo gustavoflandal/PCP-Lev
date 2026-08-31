@@ -57,4 +57,12 @@ describe('servicos/empresa', () => {
     expect(urlLogoEscuro()).toMatch(/\/configuracoes\/empresa\/logotipo\/escuro$/);
     expect(urlFavicon()).toMatch(/\/configuracoes\/empresa\/favicon$/);
   });
+
+  it('leva a versao como query string -- e o unico jeito de invalidar o cache do navegador quando a imagem muda', () => {
+    const versao = '2026-08-31T10:00:00Z';
+
+    expect(urlLogoClaro(versao)).toBe(`/api/v1/configuracoes/empresa/logotipo/claro?v=${encodeURIComponent(versao)}`);
+    expect(urlLogoEscuro(versao)).toBe(`/api/v1/configuracoes/empresa/logotipo/escuro?v=${encodeURIComponent(versao)}`);
+    expect(urlFavicon(versao)).toBe(`/api/v1/configuracoes/empresa/favicon?v=${encodeURIComponent(versao)}`);
+  });
 });

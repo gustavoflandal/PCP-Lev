@@ -49,6 +49,13 @@ const esquema = z.object({
 
 type Formulario = z.input<typeof esquema>;
 
+// Espelha empresa.TamanhoMaximoLogoBytes/TamanhoMaximoFaviconBytes no
+// backend -- checar aqui evita ler um arquivo gigante inteiro para memoria
+// (FileReader + base64, ~1.37x o tamanho original) so para descobrir do
+// lado do servidor que ele sera rejeitado.
+const TAMANHO_MAXIMO_LOGO_BYTES = 1024 * 1024;
+const TAMANHO_MAXIMO_FAVICON_BYTES = 200 * 1024;
+
 const CAMPOS_VAZIOS: Formulario = {
   razao_social: '', nome_fantasia: '', cnpj: '', inscricao_estadual: '', inscricao_municipal: '',
   cnae: '', cep: '', logradouro: '', numero: '', complemento: '', bairro: '', cidade: '', uf: '',
@@ -156,7 +163,7 @@ function CampoLogotipo({ titulo, aceita, temImagem, url, ocupado, aoEnviar, aoRe
 
 export function DadosEmpresaPagina() {
   const perfil = useAutenticacao((estado) => estado.usuario?.perfil);
-  const { data: empresa, isLoading } = useDadosEmpresa();
+  const { data: empresa, isLoading, isError } = useDadosEmpresa();
   const queryClient = useQueryClient();
   const mostrarToast = useToasts((estado) => estado.mostrar);
   const [buscandoCep, setBuscandoCep] = useState(false);
@@ -226,9 +233,21 @@ export function DadosEmpresaPagina() {
     }
   }
 
-  async function enviarImagem(mutacao: typeof mutacaoLogoClaro, arquivo: File) {
-    const { base64, mime } = await lerArquivoComoBase64(arquivo);
-    mutacao.mutate({ dados_base64: base64, mime });
+  async function enviarImagem(mutacao: typeof mutacaoLogoClaro, arquivo: File, limiteBytes: number, rotuloLimite: string) {
+    if (arquivo.size > limiteBytes) {
+      mostrarToast(`O arquivo excede o tamanho máximo de ${rotuloLimite}.`, 'pending');
+      return;
+    }
+    try {
+      const { base64, mime } = await lerArquivoComoBase64(arquivo);
+      mutacao.mutate({ dados_base64: base64, mime });
+    } catch {
+      // FileReader rejeita em cenarios reais (arquivo num dispositivo
+      // removido no meio da leitura, permissao negada) -- sem o catch, a
+      // Promise rejeitada nunca chegava a um toast: o botao nem ficava
+      // ocupado, e a pessoa clicava sem nada acontecer.
+      mostrarToast('Não foi possível ler o arquivo selecionado. Tente novamente.', 'pending');
+    }
   }
 
   function removerImagem(mutacao: typeof mutacaoLogoClaro) {
@@ -250,6 +269,23 @@ export function DadosEmpresaPagina() {
 
   if (isLoading) {
     return <p className="text-body text-texto-secondary">Carregando dados da empresa…</p>;
+  }
+
+  if (isError || !empresa) {
+    // O formulario grava a empresa inteira de novo a cada PUT (nao existe
+    // "campo nao informado" aqui) -- renderizar com CAMPOS_VAZIOS depois de
+    // uma falha de carga deixaria "Salvar" apagar endereco, contato e
+    // documentos que ja estavam configurados.
+    return (
+      <div className="mx-auto flex max-w-[600px] flex-col gap-4">
+        <p
+          role="alert"
+          className="rounded-campo border border-estado-pending bg-estado-pending-bg px-3 py-2 text-body text-estado-pending"
+        >
+          Não foi possível carregar os dados da empresa. Recarregue a página para tentar de novo.
+        </p>
+      </div>
+    );
   }
 
   return (
@@ -350,28 +386,28 @@ export function DadosEmpresaPagina() {
         <CampoLogotipo
           titulo="Logotipo (tema claro)"
           aceita="image/png,image/svg+xml"
-          temImagem={empresa?.tem_logo_claro}
-          url={urlLogoClaro(empresa?.updated_at)}
+          temImagem={empresa.tem_logo_claro}
+          url={urlLogoClaro(empresa.updated_at)}
           ocupado={mutacaoLogoClaro.isPending}
-          aoEnviar={(arquivo) => enviarImagem(mutacaoLogoClaro, arquivo)}
+          aoEnviar={(arquivo) => enviarImagem(mutacaoLogoClaro, arquivo, TAMANHO_MAXIMO_LOGO_BYTES, '1 MB')}
           aoRemover={() => removerImagem(mutacaoLogoClaro)}
         />
         <CampoLogotipo
           titulo="Logotipo (tema escuro)"
           aceita="image/png,image/svg+xml"
-          temImagem={empresa?.tem_logo_escuro}
-          url={urlLogoEscuro(empresa?.updated_at)}
+          temImagem={empresa.tem_logo_escuro}
+          url={urlLogoEscuro(empresa.updated_at)}
           ocupado={mutacaoLogoEscuro.isPending}
-          aoEnviar={(arquivo) => enviarImagem(mutacaoLogoEscuro, arquivo)}
+          aoEnviar={(arquivo) => enviarImagem(mutacaoLogoEscuro, arquivo, TAMANHO_MAXIMO_LOGO_BYTES, '1 MB')}
           aoRemover={() => removerImagem(mutacaoLogoEscuro)}
         />
         <CampoLogotipo
           titulo="Favicon"
           aceita="image/png"
-          temImagem={empresa?.tem_favicon}
-          url={urlFavicon(empresa?.updated_at)}
+          temImagem={empresa.tem_favicon}
+          url={urlFavicon(empresa.updated_at)}
           ocupado={mutacaoFavicon.isPending}
-          aoEnviar={(arquivo) => enviarImagem(mutacaoFavicon, arquivo)}
+          aoEnviar={(arquivo) => enviarImagem(mutacaoFavicon, arquivo, TAMANHO_MAXIMO_FAVICON_BYTES, '200 KB')}
           aoRemover={() => removerImagem(mutacaoFavicon)}
         />
       </section>

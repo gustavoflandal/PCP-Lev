@@ -1,6 +1,7 @@
-import { screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { useToasts } from '@/componentes/ui/Toast';
 import { useAutenticacao } from '@/store/autenticacao';
 import { instalarServidorFalso, renderizarComProvedores, type ServidorFalso } from '@/testes/utilitarios';
 import { DadosEmpresaPagina } from './DadosEmpresa';
@@ -27,6 +28,7 @@ describe('DadosEmpresaPagina', () => {
     servidor = instalarServidorFalso();
     sessionStorage.clear();
     useAutenticacao.getState().sair();
+    useToasts.setState({ itens: [] });
   });
 
   afterEach(() => {
@@ -122,5 +124,63 @@ describe('DadosEmpresaPagina', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Buscar CEP' }));
 
     expect(await screen.findByLabelText('Logradouro')).toHaveValue('');
+  });
+
+  it('falha ao carregar os dados mostra erro em vez do formulario em branco', async () => {
+    useAutenticacao.getState().entrar(respostaLoginAdmin);
+    servidor.responder([
+      { metodo: 'get', url: '/configuracoes/empresa', status: 500, corpo: { sucesso: false, erro: { codigo: 'ERRO_INTERNO', mensagem: 'falha' } } },
+    ]);
+
+    renderizarComProvedores(<DadosEmpresaPagina />);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/não foi possível carregar/i);
+    // Sem isto, "Salvar" no formulario vazio apagaria endereco/contato/
+    // documentos que ja estavam configurados -- o PUT sempre grava a
+    // empresa inteira de novo, sem campos parciais.
+    expect(screen.queryByLabelText('Razão social')).not.toBeInTheDocument();
+  });
+
+  it('arquivo de logotipo acima do limite avisa e nao envia para a API', async () => {
+    useAutenticacao.getState().entrar(respostaLoginAdmin);
+    servidor.responder([{ metodo: 'get', url: '/configuracoes/empresa', status: 200, corpo: { dados: empresaVazia } }]);
+    const resultado = renderizarComProvedores(<DadosEmpresaPagina />);
+    await screen.findByLabelText('Nome fantasia');
+
+    const inputArquivo = resultado.container.querySelectorAll('input[type="file"]')[0];
+    const arquivoGrande = new File([new Uint8Array(1024 * 1024 + 1)], 'logo.png', { type: 'image/png' });
+    fireEvent.change(inputArquivo, { target: { files: [arquivoGrande] } });
+
+    // O Toast de verdade e um componente a parte, montado na raiz do app
+    // (fora desta pagina) -- o mesmo padrao de Preferencias.test.tsx.
+    await waitFor(() => expect(useToasts.getState().itens[0]?.mensagem).toMatch(/excede o tamanho máximo/i));
+    expect(servidor.requisicoes.some((r) => r.url === '/configuracoes/empresa/logotipo/claro')).toBe(false);
+  });
+
+  it('falha ao ler o arquivo mostra um aviso em vez de nao fazer nada', async () => {
+    useAutenticacao.getState().entrar(respostaLoginAdmin);
+    servidor.responder([{ metodo: 'get', url: '/configuracoes/empresa', status: 200, corpo: { dados: empresaVazia } }]);
+    const LeitorOriginal = globalThis.FileReader;
+    class LeitorComFalha {
+      onerror: (() => void) | null = null;
+      readAsDataURL() {
+        queueMicrotask(() => this.onerror?.());
+      }
+    }
+    // @ts-expect-error -- substitui só para este teste, restaurado no finally.
+    globalThis.FileReader = LeitorComFalha;
+
+    try {
+      const resultado = renderizarComProvedores(<DadosEmpresaPagina />);
+      await screen.findByLabelText('Nome fantasia');
+
+      const inputArquivo = resultado.container.querySelectorAll('input[type="file"]')[0];
+      const arquivo = new File([new Uint8Array(10)], 'logo.png', { type: 'image/png' });
+      fireEvent.change(inputArquivo, { target: { files: [arquivo] } });
+
+      await waitFor(() => expect(useToasts.getState().itens[0]?.mensagem).toMatch(/não foi possível ler o arquivo/i));
+    } finally {
+      globalThis.FileReader = LeitorOriginal;
+    }
   });
 });
