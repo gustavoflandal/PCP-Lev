@@ -96,28 +96,37 @@ func (r *EmpresaRepositorio) buscarImagem(ctx context.Context, sql string) ([]by
 }
 
 // AtualizarLogoClaro grava (ou remove, com dados=nil) o logo claro.
-func (r *EmpresaRepositorio) AtualizarLogoClaro(ctx context.Context, dados []byte, tipo string) error {
-	return r.atualizarImagem(ctx, `UPDATE configuracao_empresa SET logo_claro = $1, logo_claro_tipo = $2 WHERE id = 1`, dados, tipo)
+func (r *EmpresaRepositorio) AtualizarLogoClaro(ctx context.Context, dados []byte, tipo, atualizadoPor string) error {
+	return r.atualizarImagem(ctx,
+		`UPDATE configuracao_empresa SET logo_claro = $1, logo_claro_tipo = $2, updated_at = now(), updated_by = $3 WHERE id = 1`,
+		dados, tipo, atualizadoPor)
 }
 
 // AtualizarLogoEscuro grava (ou remove) o logo escuro.
-func (r *EmpresaRepositorio) AtualizarLogoEscuro(ctx context.Context, dados []byte, tipo string) error {
-	return r.atualizarImagem(ctx, `UPDATE configuracao_empresa SET logo_escuro = $1, logo_escuro_tipo = $2 WHERE id = 1`, dados, tipo)
+func (r *EmpresaRepositorio) AtualizarLogoEscuro(ctx context.Context, dados []byte, tipo, atualizadoPor string) error {
+	return r.atualizarImagem(ctx,
+		`UPDATE configuracao_empresa SET logo_escuro = $1, logo_escuro_tipo = $2, updated_at = now(), updated_by = $3 WHERE id = 1`,
+		dados, tipo, atualizadoPor)
 }
 
 // AtualizarFavicon grava (ou remove) o favicon.
-func (r *EmpresaRepositorio) AtualizarFavicon(ctx context.Context, dados []byte, tipo string) error {
-	return r.atualizarImagem(ctx, `UPDATE configuracao_empresa SET favicon = $1, favicon_tipo = $2 WHERE id = 1`, dados, tipo)
+func (r *EmpresaRepositorio) AtualizarFavicon(ctx context.Context, dados []byte, tipo, atualizadoPor string) error {
+	return r.atualizarImagem(ctx,
+		`UPDATE configuracao_empresa SET favicon = $1, favicon_tipo = $2, updated_at = now(), updated_by = $3 WHERE id = 1`,
+		dados, tipo, atualizadoPor)
 }
 
-func (r *EmpresaRepositorio) atualizarImagem(ctx context.Context, sql string, dados []byte, tipo string) error {
+// atualizarImagem tambem grava updated_at/updated_by -- a URL da imagem nao
+// muda quando o conteudo muda (sem parametro de versao), entao o frontend
+// usa esse carimbo para invalidar o preview em cache apos o upload.
+func (r *EmpresaRepositorio) atualizarImagem(ctx context.Context, sql string, dados []byte, tipo, atualizadoPor string) error {
 	// dados=nil grava NULL na coluna bytea -- remove a imagem, como
 	// pgx.QueryRow/Exec com []byte(nil) grava normalmente.
 	var tipoColuna *string
 	if len(dados) > 0 {
 		tipoColuna = &tipo
 	}
-	if _, err := r.pool.Exec(ctx, sql, dados, tipoColuna); err != nil {
+	if _, err := r.pool.Exec(ctx, sql, dados, tipoColuna, atualizadoPor); err != nil {
 		return fmt.Errorf("atualizar imagem da empresa: %w", err)
 	}
 	return nil

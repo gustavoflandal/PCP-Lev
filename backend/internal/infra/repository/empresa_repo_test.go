@@ -74,14 +74,14 @@ func TestLogoClaroComecaAusenteEPodeSerGravadoERemovido(t *testing.T) {
 	assert.Nil(t, dados)
 	assert.Equal(t, "", tipo)
 
-	require.NoError(t, repo.AtualizarLogoClaro(ctx, []byte{0x89, 0x50, 0x4e, 0x47}, "image/png"))
+	require.NoError(t, repo.AtualizarLogoClaro(ctx, []byte{0x89, 0x50, 0x4e, 0x47}, "image/png", "admin"))
 
 	dados, tipo, err = repo.BuscarLogoClaro(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, []byte{0x89, 0x50, 0x4e, 0x47}, dados)
 	assert.Equal(t, "image/png", tipo)
 
-	require.NoError(t, repo.AtualizarLogoClaro(ctx, nil, ""))
+	require.NoError(t, repo.AtualizarLogoClaro(ctx, nil, "", "admin"))
 
 	dados, tipo, err = repo.BuscarLogoClaro(ctx)
 	require.NoError(t, err)
@@ -93,14 +93,19 @@ func TestLogoEscuroEFaviconSaoIndependentesDoLogoClaro(t *testing.T) {
 	ctx := context.Background()
 	repo := repository.NovoEmpresaRepositorio(testsupport.BancoMigrado(t))
 
-	require.NoError(t, repo.AtualizarLogoEscuro(ctx, []byte("svg-escuro"), "image/svg+xml"))
-	require.NoError(t, repo.AtualizarFavicon(ctx, []byte("favicon-bytes"), "image/png"))
+	require.NoError(t, repo.AtualizarLogoEscuro(ctx, []byte("svg-escuro"), "image/svg+xml", "admin"))
+	require.NoError(t, repo.AtualizarFavicon(ctx, []byte("favicon-bytes"), "image/png", "admin"))
 
 	e, err := repo.Buscar(ctx)
 	require.NoError(t, err)
 	assert.False(t, e.TemLogoClaro)
 	assert.True(t, e.TemLogoEscuro)
 	assert.True(t, e.TemFavicon)
+	// updated_by tambem e gravado numa mudanca de imagem, nao so de texto --
+	// e o carimbo que o frontend usa para invalidar o preview em cache, ja
+	// que a URL da imagem nao muda quando o conteudo muda.
+	require.NotNil(t, e.UpdatedBy)
+	assert.Equal(t, "admin", *e.UpdatedBy)
 
 	dadosEscuro, tipoEscuro, err := repo.BuscarLogoEscuro(ctx)
 	require.NoError(t, err)

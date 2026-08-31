@@ -11,9 +11,9 @@ type Repositorio interface {
 	BuscarLogoEscuro(ctx context.Context) ([]byte, string, error)
 	BuscarFavicon(ctx context.Context) ([]byte, string, error)
 
-	AtualizarLogoClaro(ctx context.Context, dados []byte, tipo string) error
-	AtualizarLogoEscuro(ctx context.Context, dados []byte, tipo string) error
-	AtualizarFavicon(ctx context.Context, dados []byte, tipo string) error
+	AtualizarLogoClaro(ctx context.Context, dados []byte, tipo, atualizadoPor string) error
+	AtualizarLogoEscuro(ctx context.Context, dados []byte, tipo, atualizadoPor string) error
+	AtualizarFavicon(ctx context.Context, dados []byte, tipo, atualizadoPor string) error
 }
 
 // Servico reune os casos de uso de dados da empresa.
@@ -52,31 +52,33 @@ func (s *Servico) BuscarFavicon(ctx context.Context) ([]byte, string, error) {
 }
 
 // AtualizarLogoClaro valida e grava o logo claro; dados vazio remove a
-// imagem atual em vez de rejeitar a chamada.
-func (s *Servico) AtualizarLogoClaro(ctx context.Context, dados []byte, mimeDeclarado string) error {
-	return s.atualizarImagem(ctx, dados, mimeDeclarado, false, s.repo.AtualizarLogoClaro)
+// imagem atual em vez de rejeitar a chamada. Tambem atualiza updated_at --
+// a URL da imagem nao muda quando o conteudo muda (sem parametro de versao),
+// entao o frontend usa esse carimbo para invalidar o preview em cache.
+func (s *Servico) AtualizarLogoClaro(ctx context.Context, dados []byte, mimeDeclarado, atualizadoPor string) error {
+	return s.atualizarImagem(ctx, dados, mimeDeclarado, false, atualizadoPor, s.repo.AtualizarLogoClaro)
 }
 
 // AtualizarLogoEscuro valida e grava o logo escuro.
-func (s *Servico) AtualizarLogoEscuro(ctx context.Context, dados []byte, mimeDeclarado string) error {
-	return s.atualizarImagem(ctx, dados, mimeDeclarado, false, s.repo.AtualizarLogoEscuro)
+func (s *Servico) AtualizarLogoEscuro(ctx context.Context, dados []byte, mimeDeclarado, atualizadoPor string) error {
+	return s.atualizarImagem(ctx, dados, mimeDeclarado, false, atualizadoPor, s.repo.AtualizarLogoEscuro)
 }
 
 // AtualizarFavicon valida e grava o favicon (so aceita PNG).
-func (s *Servico) AtualizarFavicon(ctx context.Context, dados []byte, mimeDeclarado string) error {
-	return s.atualizarImagem(ctx, dados, mimeDeclarado, true, s.repo.AtualizarFavicon)
+func (s *Servico) AtualizarFavicon(ctx context.Context, dados []byte, mimeDeclarado, atualizadoPor string) error {
+	return s.atualizarImagem(ctx, dados, mimeDeclarado, true, atualizadoPor, s.repo.AtualizarFavicon)
 }
 
 func (s *Servico) atualizarImagem(
-	ctx context.Context, dados []byte, mimeDeclarado string, ehFavicon bool,
-	gravar func(ctx context.Context, dados []byte, tipo string) error,
+	ctx context.Context, dados []byte, mimeDeclarado string, ehFavicon bool, atualizadoPor string,
+	gravar func(ctx context.Context, dados []byte, tipo, atualizadoPor string) error,
 ) error {
 	if len(dados) == 0 {
-		return gravar(ctx, nil, "")
+		return gravar(ctx, nil, "", atualizadoPor)
 	}
 	tipo, err := ValidarImagem(dados, mimeDeclarado, ehFavicon)
 	if err != nil {
 		return err
 	}
-	return gravar(ctx, dados, tipo)
+	return gravar(ctx, dados, tipo, atualizadoPor)
 }

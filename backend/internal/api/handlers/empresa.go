@@ -135,7 +135,12 @@ func (h *EmpresaHandler) AtualizarFavicon(c echo.Context) error {
 	return h.atualizarImagem(c, h.servico.AtualizarFavicon)
 }
 
-func (h *EmpresaHandler) atualizarImagem(c echo.Context, gravar func(ctx context.Context, dados []byte, mime string) error) error {
+func (h *EmpresaHandler) atualizarImagem(c echo.Context, gravar func(ctx context.Context, dados []byte, mime, atualizadoPor string) error) error {
+	claims := middleware.ClaimsDoContexto(c)
+	if claims == nil {
+		return httpx.NaoAutorizado(c, "Token de acesso ausente")
+	}
+
 	var req imagemRequest
 	if err := c.Bind(&req); err != nil {
 		return httpx.Erro(c, http.StatusBadRequest, httpx.CodigoRequisicaoInvalida, "Corpo da requisicao invalido")
@@ -150,7 +155,7 @@ func (h *EmpresaHandler) atualizarImagem(c echo.Context, gravar func(ctx context
 		dados = decodificados
 	}
 
-	if err := gravar(c.Request().Context(), dados, req.Mime); err != nil {
+	if err := gravar(c.Request().Context(), dados, req.Mime, claims.Username); err != nil {
 		return errosEmpresa.responder(c, err)
 	}
 

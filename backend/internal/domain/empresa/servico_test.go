@@ -58,7 +58,7 @@ func TestServicoAtualizarLogoClaroGravaEBuscaDevolveOsMesmosBytes(t *testing.T) 
 	servico := servicoComBanco(t)
 	dadosPng := pngValidoServico(t, 64)
 
-	require.NoError(t, servico.AtualizarLogoClaro(ctx, dadosPng, "image/png"))
+	require.NoError(t, servico.AtualizarLogoClaro(ctx, dadosPng, "image/png", "admin"))
 
 	dados, tipo, err := servico.BuscarLogoClaro(ctx)
 	require.NoError(t, err)
@@ -70,7 +70,7 @@ func TestServicoAtualizarLogoClaroComImagemPequenaDemaisNaoGrava(t *testing.T) {
 	ctx := context.Background()
 	servico := servicoComBanco(t)
 
-	err := servico.AtualizarLogoClaro(ctx, pngValidoServico(t, 8), "image/png")
+	err := servico.AtualizarLogoClaro(ctx, pngValidoServico(t, 8), "image/png", "admin")
 
 	assert.ErrorIs(t, err, empresa.ErrImagemPequenaDemais)
 
@@ -82,9 +82,9 @@ func TestServicoAtualizarLogoClaroComImagemPequenaDemaisNaoGrava(t *testing.T) {
 func TestServicoAtualizarLogoClaroComDadosVaziosRemove(t *testing.T) {
 	ctx := context.Background()
 	servico := servicoComBanco(t)
-	require.NoError(t, servico.AtualizarLogoClaro(ctx, pngValidoServico(t, 64), "image/png"))
+	require.NoError(t, servico.AtualizarLogoClaro(ctx, pngValidoServico(t, 64), "image/png", "admin"))
 
-	require.NoError(t, servico.AtualizarLogoClaro(ctx, nil, ""))
+	require.NoError(t, servico.AtualizarLogoClaro(ctx, nil, "", "admin"))
 
 	dados, tipo, err := servico.BuscarLogoClaro(ctx)
 	require.NoError(t, err)
@@ -97,7 +97,7 @@ func TestServicoAtualizarFaviconRejeitaSVG(t *testing.T) {
 	servico := servicoComBanco(t)
 	svg := []byte(`<svg xmlns="http://www.w3.org/2000/svg"></svg>`)
 
-	err := servico.AtualizarFavicon(ctx, svg, "image/svg+xml")
+	err := servico.AtualizarFavicon(ctx, svg, "image/svg+xml", "admin")
 
 	assert.ErrorIs(t, err, empresa.ErrImagemFormatoInvalido)
 }
