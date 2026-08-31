@@ -108,4 +108,23 @@ describe('NavegacaoLateral', () => {
 
     expect(screen.queryByRole('link', { name: 'Dados da empresa' })).not.toBeInTheDocument();
   });
+
+  it('Administrador ve o link de Auditoria', () => {
+    useAutenticacao.getState().entrar(respostaLogin('ADMIN'));
+
+    renderizarEm('/');
+
+    expect(screen.getByRole('link', { name: 'Auditoria' })).toHaveAttribute(
+      'href',
+      '/configuracoes/auditoria',
+    );
+  });
+
+  it('quem nao e Administrador nao ve o link de Auditoria', () => {
+    useAutenticacao.getState().entrar(respostaLogin('GESTOR'));
+
+    renderizarEm('/');
+
+    expect(screen.queryByRole('link', { name: 'Auditoria' })).not.toBeInTheDocument();
+  });
 });

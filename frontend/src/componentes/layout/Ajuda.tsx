@@ -109,6 +109,15 @@ const CONTEUDO_POR_ROTA: Record<string, ConteudoAjuda> = {
       'Só o Administrador acessa e edita esta tela.',
     ],
   },
+  '/configuracoes/auditoria': {
+    titulo: 'Ajuda · Auditoria',
+    itens: [
+      'Toda inclusão, alteração e exclusão nos cadastros e módulos principais fica registrada aqui automaticamente — não precisa ativar nada.',
+      'Filtre por período, tabela ou tipo de ação para achar um evento específico mais rápido.',
+      '"Ver detalhes" mostra campo a campo o que mudou, com o valor anterior e o novo — não o dado bruto do banco.',
+      'Só o Administrador acessa esta tela.',
+    ],
+  },
   '/estoque': {
     titulo: 'Ajuda · Estoque',
     itens: [
