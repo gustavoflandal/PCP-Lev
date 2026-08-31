@@ -5,9 +5,14 @@ import { instalarServidorFalso, renderizarComProvedores, type ServidorFalso } fr
 import { NovaCotacao } from './NovaCotacao';
 
 const navegar = vi.fn();
+let estadoDeLocalizacao: unknown = null;
 vi.mock('react-router-dom', async (importarOriginal) => {
   const original = await importarOriginal<typeof import('react-router-dom')>();
-  return { ...original, useNavigate: () => navegar };
+  return {
+    ...original,
+    useNavigate: () => navegar,
+    useLocation: () => ({ pathname: '/cotacoes/nova', search: '', hash: '', key: 'teste', state: estadoDeLocalizacao }),
+  };
 });
 
 const paginaFornecedores = {
@@ -40,6 +45,7 @@ describe('NovaCotacao', () => {
 
   beforeEach(() => {
     navegar.mockClear();
+    estadoDeLocalizacao = null;
     servidor = instalarServidorFalso();
     servidor.responder([
       { metodo: 'get', url: '/fornecedores', status: 200, corpo: paginaFornecedores },
@@ -124,5 +130,16 @@ describe('NovaCotacao', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('já existe uma cotação com este número');
     expect(navegar).not.toHaveBeenCalled();
+  });
+
+  it('pre-preenche fornecedor e itens vindos da Necessidade de compra', async () => {
+    estadoDeLocalizacao = { fornecedorId: 1, itens: [{ parte_peca_id: 1, quantidade: 8 }] };
+    renderizarComProvedores(<NovaCotacao />);
+    await screen.findByText('Componentes Silva Ltda');
+
+    expect(screen.getByLabelText(/^Fornecedor/)).toHaveValue('1');
+    expect(screen.getByLabelText(/^Parte\/peça/)).toHaveValue('1');
+    expect(screen.getByLabelText(/^Quantidade/)).toHaveValue('8');
+    expect(screen.getByLabelText(/^Preço unitário/)).toHaveValue('');
   });
 });

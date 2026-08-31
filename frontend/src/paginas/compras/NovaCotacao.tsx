@@ -1,7 +1,8 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
+import { useEffect, useRef } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { Botao } from '@/componentes/ui/Botao';
 import { Campo } from '@/componentes/ui/Campo';
@@ -36,17 +37,29 @@ type Formulario = {
 
 const ITEM_VAZIO = { parte_peca_id: '', quantidade: '1', preco_unitario: '0' };
 
+/** Estado de navegacao opcional vindo da tela de Necessidade de compra
+ * (botao "Gerar cotação") -- fornecedor e itens ja escolhidos, so falta o
+ * preco, que a API nao sabe nesse ponto do fluxo. */
+interface PreenchimentoNecessidadeCompra {
+  fornecedorId: number | null;
+  itens: { parte_peca_id: number; quantidade: number }[];
+}
+
 export function NovaCotacao() {
   const navegar = useNavigate();
+  const localizacao = useLocation();
   const mostrarToast = useToasts((estado) => estado.mostrar);
   const { opcoes: opcoesFornecedor } = useFornecedoresAtivos();
   const { opcoes: opcoesPeca } = usePartesPecasAtivas();
+
+  const preenchimento = localizacao.state as PreenchimentoNecessidadeCompra | null;
 
   const {
     register,
     control,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<Formulario>({
     resolver: zodResolver(esquema),
@@ -58,8 +71,33 @@ export function NovaCotacao() {
     },
   });
 
-  const { fields, append, remove } = useFieldArray({ control, name: 'itens' });
+  const { fields, append, remove, replace } = useFieldArray({ control, name: 'itens' });
   const itensObservados = watch('itens');
+
+  // O <select> so aceita um value cujo <option> ja existe no DOM -- as
+  // opcoes de fornecedor/peca carregam async (useQuery), entao aplicar o
+  // preenchimento nos defaultValues do useForm nao funciona (o <select>
+  // nasce sem nenhum <option> ainda). Aplicado via setValue/replace so
+  // depois que as duas listas de opcoes chegarem, uma unica vez.
+  const preenchimentoAplicado = useRef(false);
+  useEffect(() => {
+    if (!preenchimento || preenchimentoAplicado.current) return;
+    if (opcoesFornecedor.length === 0 || opcoesPeca.length === 0) return;
+    preenchimentoAplicado.current = true;
+
+    if (preenchimento.fornecedorId) {
+      setValue('fornecedor_id', String(preenchimento.fornecedorId));
+    }
+    if (preenchimento.itens.length > 0) {
+      replace(
+        preenchimento.itens.map((item) => ({
+          parte_peca_id: String(item.parte_peca_id),
+          quantidade: String(item.quantidade),
+          preco_unitario: '',
+        })),
+      );
+    }
+  }, [preenchimento, opcoesFornecedor, opcoesPeca, setValue, replace]);
 
   const mutacao = useMutation({
     mutationFn: (valores: Formulario) =>
