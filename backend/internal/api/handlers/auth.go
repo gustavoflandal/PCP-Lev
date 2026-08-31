@@ -111,18 +111,31 @@ func (h *AuthHandler) Eu(c echo.Context) error {
 	}
 
 	u, err := h.servico.BuscarUsuarioAtual(c.Request().Context(), claims.UsuarioID)
-	if err != nil {
+	switch {
+	case err == nil:
+		return httpx.OK(c, u)
+	case errors.Is(err, usuario.ErrNaoEncontrado):
 		return httpx.NaoAutorizado(c, "Usuario nao encontrado")
+	default:
+		// Uma falha transitoria de banco nao pode deslogar o usuario -- o
+		// interceptador do frontend trata todo 401 fora de /auth/login como
+		// sessao expirada (api.ts). 500 aqui e o mesmo tratamento que
+		// TrocarSenha ja da para erros nao mapeados.
+		slog.Error("falha ao buscar usuario atual", "usuario_id", claims.UsuarioID, "erro", err)
+		return httpx.ErroInterno(c)
 	}
-	return httpx.OK(c, u)
 }
 
-// preferenciasRequest e o corpo de PUT /auth/preferencias.
+// preferenciasRequest e o corpo de PUT /auth/preferencias. Sem tags
+// `validate:"required"` -- usuario.Preferencias.Validar() ja rejeita string
+// vazia (fora do conjunto fechado por campo); duplicar a checagem aqui so
+// fazia a mesma falha chegar ao cliente em dois formatos diferentes
+// (com/sem `detalhes` por campo).
 type preferenciasRequest struct {
-	Tema          string `json:"tema" validate:"required"`
+	Tema          string `json:"tema"`
 	AltoContraste bool   `json:"alto_contraste"`
-	Densidade     string `json:"densidade" validate:"required"`
-	TamanhoFonte  string `json:"tamanho_fonte" validate:"required"`
+	Densidade     string `json:"densidade"`
+	TamanhoFonte  string `json:"tamanho_fonte"`
 }
 
 // AtualizarPreferencias grava as preferencias de aparencia do usuario da

@@ -107,16 +107,21 @@ type Preferencias struct {
 	TamanhoFonte  string
 }
 
+// Conjuntos fechados aceitos por Preferencias.Validar -- variaveis de
+// pacote, nao alocadas a cada chamada.
+var (
+	temasValidos      = []string{TemaClaro, TemaEscuro, TemaAutomatico}
+	densidadesValidas = []string{DensidadeCompacta, DensidadeConfortavel}
+	fontesValidas     = []string{FontePadrao, FonteGrande, FonteExtraGrande}
+)
+
 // Validar aplica o conjunto fechado de valores permitidos por campo -- um
 // valor fora da lista quebraria o CHECK constraint da migration com um 500
 // generico em vez de um 400 explicando o motivo.
 func (p Preferencias) Validar() error {
-	temas := []string{TemaClaro, TemaEscuro, TemaAutomatico}
-	densidades := []string{DensidadeCompacta, DensidadeConfortavel}
-	fontes := []string{FontePadrao, FonteGrande, FonteExtraGrande}
-	if !slices.Contains(temas, p.Tema) ||
-		!slices.Contains(densidades, p.Densidade) ||
-		!slices.Contains(fontes, p.TamanhoFonte) {
+	if !slices.Contains(temasValidos, p.Tema) ||
+		!slices.Contains(densidadesValidas, p.Densidade) ||
+		!slices.Contains(fontesValidas, p.TamanhoFonte) {
 		return ErrPreferenciaInvalida
 	}
 	return nil
