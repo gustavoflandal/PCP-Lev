@@ -9,6 +9,7 @@ import (
 	"github.com/gustavoflandal/pcp-lev/backend/internal/config"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/auth"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/cotacao"
+	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/empresa"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/estoque"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/estrutura"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/fornecedor"
@@ -64,6 +65,7 @@ func NovoRoteador(dep Dependencias) *echo.Echo {
 	registrarCadastros(v1, dep, autenticacao)
 	estoqueServico := registrarEstoque(v1, dep, autenticacao)
 	registrarCompras(v1, dep, autenticacao, estoqueServico)
+	registrarConfiguracoes(v1, dep, autenticacao)
 
 	return e
 }
@@ -118,6 +120,16 @@ func registrarCompras(v1 *echo.Group, dep Dependencias, autenticacao echo.Middle
 
 	handlers.NovoNecessidadeCompraHandler(
 		necessidadecompra.NovoServico(repository.NovoNecessidadeCompraRepositorio(dep.Pool)),
+	).Registrar(v1, autenticacao)
+}
+
+// registrarConfiguracoes publica o modulo de configuracoes do sistema (doc 0,
+// secao 4.6). A leitura de /configuracoes/empresa fica publica dentro do
+// proprio handler -- a tela de login e o favicon do navegador precisam dela
+// antes de qualquer sessao existir.
+func registrarConfiguracoes(v1 *echo.Group, dep Dependencias, autenticacao echo.MiddlewareFunc) {
+	handlers.NovoEmpresaHandler(
+		empresa.NovoServico(repository.NovoEmpresaRepositorio(dep.Pool)),
 	).Registrar(v1, autenticacao)
 }
 
