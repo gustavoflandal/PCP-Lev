@@ -25,7 +25,7 @@ func TestAplicarCriaSchemaCompleto(t *testing.T) {
 
 	var versoes int
 	require.NoError(t, pool.QueryRow(ctx, `SELECT count(*) FROM schema_version`).Scan(&versoes))
-	assert.Equal(t, 9, versoes, "as 9 migrations devem estar registradas")
+	assert.Equal(t, 10, versoes, "as 10 migrations devem estar registradas")
 }
 
 func TestAplicarEhIdempotente(t *testing.T) {
@@ -37,7 +37,7 @@ func TestAplicarEhIdempotente(t *testing.T) {
 
 	var versoes int
 	require.NoError(t, pool.QueryRow(ctx, `SELECT count(*) FROM schema_version`).Scan(&versoes))
-	assert.Equal(t, 9, versoes, "nenhuma migration pode ser aplicada duas vezes")
+	assert.Equal(t, 10, versoes, "nenhuma migration pode ser aplicada duas vezes")
 }
 
 func TestAplicarCriaUsuarioAdministradorInicial(t *testing.T) {
@@ -94,5 +94,5 @@ func TestAplicarSuportaDuasInstanciasSubindoAoMesmoTempo(t *testing.T) {
 
 	var versoes int
 	require.NoError(t, pool.QueryRow(ctx, `SELECT count(*) FROM schema_version`).Scan(&versoes))
-	assert.Equal(t, 9, versoes, "cada migration deve ser aplicada uma unica vez")
+	assert.Equal(t, 10, versoes, "cada migration deve ser aplicada uma unica vez")
 }
