@@ -148,7 +148,7 @@ func TestRelatorioCSVDePedidosCompraTrazCabecalhoEFornecedorResolvido(t *testing
 	require.Equal(t, http.StatusOK, rec.Code)
 	assert.Contains(t, rec.Header().Get("Content-Type"), "text/csv")
 	corpo := rec.Body.String()
-	assert.Contains(t, corpo, "numero_pc,fornecedor,status,data_pedido,data_entrega_prevista,data_entrega_real,valor_total")
+	assert.Contains(t, corpo, "numero_pc;fornecedor;status;data_pedido;data_entrega_prevista;data_entrega_real;valor_total")
 	assert.Contains(t, corpo, "PC-2026-001")
 	assert.Contains(t, corpo, "Fornecedor Teste")
 }

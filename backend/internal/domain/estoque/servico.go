@@ -20,6 +20,9 @@ type Repositorio interface {
 	BuscarSaldo(ctx context.Context, partePecaID int64) (*Saldo, error)
 	ListarSaldo(ctx context.Context, params consulta.Parametros) ([]Saldo, int, error)
 	ListarCriticos(ctx context.Context) ([]Saldo, error)
+	// ListarParaRelatorio devolve todo o saldo (sem paginacao), para a
+	// exportacao CSV.
+	ListarParaRelatorio(ctx context.Context) ([]Saldo, error)
 	ListarMovimentacoes(ctx context.Context, params consulta.Parametros) ([]Movimentacao, int, error)
 	BuscarMovimentacao(ctx context.Context, id int64) (*Movimentacao, error)
 	// AplicarMovimento grava uma movimentacao e ajusta o saldo dentro de
@@ -48,6 +51,10 @@ func (s *Servico) ListarSaldo(ctx context.Context, params consulta.Parametros) (
 
 func (s *Servico) ListarCriticos(ctx context.Context) ([]Saldo, error) {
 	return s.repo.ListarCriticos(ctx)
+}
+
+func (s *Servico) ListarParaRelatorio(ctx context.Context) ([]Saldo, error) {
+	return s.repo.ListarParaRelatorio(ctx)
 }
 
 func (s *Servico) ListarMovimentacoes(ctx context.Context, params consulta.Parametros) ([]Movimentacao, int, error) {

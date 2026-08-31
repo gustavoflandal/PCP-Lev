@@ -93,6 +93,23 @@ func TestListarNaoTrazPecaInativa(t *testing.T) {
 	assert.Empty(t, itens)
 }
 
+func TestListarNaoTrazFornecedorPadraoInativo(t *testing.T) {
+	ctx := context.Background()
+	servico, pool := servicoComBanco(t)
+	fornecedorID := criarFornecedorDeTeste(ctx, t, pool)
+	criarPecaComMinimo(ctx, t, pool, "PP-FORN-INATIVO", 5, &fornecedorID)
+
+	fornecedorServico := fornecedor.NovoServico(repository.NovoFornecedorRepositorio(pool))
+	require.NoError(t, fornecedorServico.Excluir(ctx, fornecedorID, "gestor01"))
+
+	itens, err := servico.Listar(ctx)
+
+	require.NoError(t, err)
+	require.Len(t, itens, 1)
+	assert.Nil(t, itens[0].FornecedorPadraoID, "fornecedor inativo nao deve aparecer -- a peca cai no grupo sem fornecedor padrao")
+	assert.Nil(t, itens[0].FornecedorPadraoNome)
+}
+
 func TestListarTrazFornecedorPadraoQuandoExiste(t *testing.T) {
 	ctx := context.Background()
 	servico, pool := servicoComBanco(t)

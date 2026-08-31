@@ -1,12 +1,16 @@
 package handlers
 
 import (
-	"log/slog"
-
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/necessidadecompra"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/platform/httpx"
 	"github.com/labstack/echo/v4"
 )
+
+// errosNecessidadeCompra e vazio de proposito: o dominio e so leitura, sem
+// sentinelas -- mantido pelo mesmo motivo de todo handler usar
+// mapaDeErros.responder (log padronizado do erro nao mapeado + 500 generico
+// para o cliente), em vez de duplicar esse bloco aqui.
+var errosNecessidadeCompra = mapaDeErros{}
 
 // NecessidadeCompraHandler atende GET /necessidade-compra (RF3.2).
 type NecessidadeCompraHandler struct {
@@ -28,9 +32,7 @@ func (h *NecessidadeCompraHandler) Registrar(grupo *echo.Group, autenticacao ech
 func (h *NecessidadeCompraHandler) Listar(c echo.Context) error {
 	itens, err := h.servico.Listar(c.Request().Context())
 	if err != nil {
-		slog.Error("erro nao tratado no handler",
-			"rota", c.Request().URL.Path, "metodo", c.Request().Method, "erro", err)
-		return httpx.ErroInterno(c)
+		return errosNecessidadeCompra.responder(c, err)
 	}
 	return httpx.OK(c, itens)
 }

@@ -12,11 +12,6 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-// limiteRelatorio e um teto generoso para as exportacoes CSV -- um
-// relatorio nao pagina (decisao de escopo da Fase 2.4), mas ainda precisa
-// de algum limite para nao construir uma query sem fim.
-const limiteRelatorio = 100_000
-
 var errosEstoque = mapaDeErros{
 	{estoque.ErrNaoEncontrado, http.StatusNotFound, httpx.CodigoNaoEncontrado},
 	{estoque.ErrMovimentacaoNaoEncontrada, http.StatusNotFound, httpx.CodigoNaoEncontrado},
@@ -101,8 +96,7 @@ func (h *EstoqueHandler) Criticos(c echo.Context) error {
 
 // RelatorioCSV exporta o saldo de estoque inteiro, sem paginacao.
 func (h *EstoqueHandler) RelatorioCSV(c echo.Context) error {
-	params := consulta.Parametros{Pagina: 1, Limite: limiteRelatorio, OrdenarPor: "codigo", Ordem: consulta.Crescente}
-	itens, _, err := h.servico.ListarSaldo(c.Request().Context(), params)
+	itens, err := h.servico.ListarParaRelatorio(c.Request().Context())
 	if err != nil {
 		return errosEstoque.responder(c, err)
 	}

@@ -23,13 +23,18 @@ func NovoNecessidadeCompraRepositorio(pool *pgxpool.Pool) *NecessidadeCompraRepo
 // fornecedor padrao (se houver) para o atalho de "gerar cotacao" no
 // frontend. A necessidade e calculada em Go, nao em SQL, para nao duplicar
 // a subtracao caso um dia precise arredondar por lote de compra.
+//
+// Fronteira exclusiva (`<`, nao `<=` como estoque.SituacaoDoSaldo/RN5): com
+// saldo igual ao minimo a necessidade seria zero, uma sugestao de compra
+// inutil -- a tela de Estoque/Painel ainda mostra esse caso como Critico
+// (RN5), so aqui ele nao gera sugestao. Divergencia deliberada, nao um erro.
 func (r *NecessidadeCompraRepositorio) Listar(ctx context.Context) ([]necessidadecompra.Item, error) {
 	linhas, err := r.pool.Query(ctx, `
 		SELECT pp.id, pp.codigo, pp.descricao, se.quantidade_atual, pp.estoque_minimo,
 		       f.id, f.razao_social
 		FROM partes_pecas pp
 		JOIN saldo_estoque se ON se.parte_peca_id = pp.id
-		LEFT JOIN fornecedores f ON f.id = pp.fornecedor_padrao_id
+		LEFT JOIN fornecedores f ON f.id = pp.fornecedor_padrao_id AND f.ativo
 		WHERE pp.ativo AND se.quantidade_atual < pp.estoque_minimo
 		ORDER BY pp.codigo`)
 	if err != nil {

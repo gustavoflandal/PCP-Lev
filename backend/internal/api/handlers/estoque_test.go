@@ -1,6 +1,7 @@
 package handlers_test
 
 import (
+	"bytes"
 	"context"
 	"net/http"
 	"testing"
@@ -69,8 +70,9 @@ func TestRelatorioCSVDeEstoqueTrazCabecalhoELinhas(t *testing.T) {
 	require.Equal(t, http.StatusOK, rec.Code)
 	assert.Contains(t, rec.Header().Get("Content-Type"), "text/csv")
 	assert.Contains(t, rec.Header().Get("Content-Disposition"), "estoque.csv")
+	assert.True(t, bytes.HasPrefix(rec.Body.Bytes(), []byte{0xEF, 0xBB, 0xBF}), "arquivo deve comecar com o BOM UTF-8 (Excel pt-BR nao detecta UTF-8 sem ele)")
 	corpo := rec.Body.String()
-	assert.Contains(t, corpo, "codigo,descricao,saldo_atual,disponivel,estoque_minimo,situacao")
+	assert.Contains(t, corpo, "codigo;descricao;saldo_atual;disponivel;estoque_minimo;situacao")
 	assert.Contains(t, corpo, "HND-001")
 }
 

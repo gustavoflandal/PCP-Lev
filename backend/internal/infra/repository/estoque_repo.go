@@ -118,6 +118,28 @@ func (r *EstoqueRepositorio) ListarCriticos(ctx context.Context) ([]estoque.Sald
 	return itens, linhas.Err()
 }
 
+// ListarParaRelatorio devolve todo o saldo (sem paginacao, sem LIMIT/OFFSET
+// nem o count(*) que a listagem paginada paga) -- so para a exportacao CSV.
+func (r *EstoqueRepositorio) ListarParaRelatorio(ctx context.Context) ([]estoque.Saldo, error) {
+	linhas, err := r.pool.Query(ctx,
+		`SELECT `+colunasSaldo+` FROM saldo_estoque se JOIN partes_pecas pp ON pp.id = se.parte_peca_id
+		 ORDER BY pp.codigo`)
+	if err != nil {
+		return nil, fmt.Errorf("listar saldo de estoque para relatorio: %w", err)
+	}
+	defer linhas.Close()
+
+	itens := make([]estoque.Saldo, 0)
+	for linhas.Next() {
+		s, err := escanearSaldo(linhas)
+		if err != nil {
+			return nil, err
+		}
+		itens = append(itens, s)
+	}
+	return itens, linhas.Err()
+}
+
 func escanearMovimentacao(linha interface{ Scan(...any) error }) (estoque.Movimentacao, error) {
 	var m estoque.Movimentacao
 	err := linha.Scan(
