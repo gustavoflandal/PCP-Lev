@@ -21,8 +21,9 @@
 11. [Necessidade de compra e relatórios](#11-necessidade-de-compra-e-relatórios)
 12. [Aparência e preferências](#12-aparência-e-preferências)
 13. [Dados da empresa](#13-dados-da-empresa)
-14. [Ajuda contextual](#14-ajuda-contextual)
-15. [Perguntas frequentes](#15-perguntas-frequentes)
+14. [Auditoria](#14-auditoria)
+15. [Ajuda contextual](#15-ajuda-contextual)
+16. [Perguntas frequentes](#16-perguntas-frequentes)
 
 ---
 
@@ -41,7 +42,7 @@ administrador.
   depois de um tempo sem uso) ou expirar, o sistema volta para esta tela e
   avisa o motivo. Basta entrar de novo — nada do que já foi salvo se perde.
 - Todas as telas, inclusive esta, têm um botão **Ajuda** no canto superior
-  direito. Veja a seção [14](#14-ajuda-contextual).
+  direito. Veja a seção [15](#15-ajuda-contextual).
 
 ---
 
@@ -358,7 +359,7 @@ O botão **Exportar CSV** baixa o saldo completo, sem filtro — veja a seção
   ou abaixo do estoque mínimo cadastrado na peça (seção [5](#5-partes-e-peças)),
   **OK** quando está acima, ou **Bloqueado**. Uma peça recém-cadastrada nasce
   com saldo zero e por isso sempre começa em Crítico, mesmo que o estoque
-  mínimo cadastrado seja zero (veja a seção [15](#15-perguntas-frequentes)).
+  mínimo cadastrado seja zero (veja a seção [16](#16-perguntas-frequentes)).
 
 ### 10.2 Ajustar o saldo manualmente
 
@@ -515,7 +516,37 @@ administradores" para quem tentar abri-la diretamente pela URL.
 
 ---
 
-## 14. Ajuda contextual
+## 14. Auditoria
+
+Clique em **Auditoria**, na seção "Configurações" da navegação lateral (só
+aparece para o perfil Administrador), para consultar a trilha de alterações
+do sistema — quem mudou o quê, quando e de onde.
+
+![Lista de auditoria filtrada por Fornecedores](screenshots/40-auditoria-lista.png)
+
+- **Filtros**: período (De/Até), Tabela e Ação (Incluído, Alterado,
+  Excluído). Combine quantos quiser; a lista atualiza sozinha a cada
+  mudança.
+- **Ver detalhes** abre o que mudou campo a campo, não o registro bruto: o
+  valor anterior aparece riscado e o novo em destaque, para uma alteração
+  ("Alterado") ambos aparecem lado a lado; para uma inclusão só existe o
+  valor novo, e para uma exclusão só o valor anterior.
+
+![Detalhes de uma alteração, com o campo mudado em destaque](screenshots/41-auditoria-detalhe-diff.png)
+
+- **Exportar CSV** baixa exatamente os registros que os filtros aplicados
+  na tela mostram.
+- **Usuário** e **IP** ficam em branco (—) para linhas gravadas antes desta
+  funcionalidade existir, ou para ações sem uma sessão de usuário associada
+  (ex.: rotina interna do sistema).
+
+Quem não é Administrador não vê o link "Auditoria" na navegação e recebe
+"Acesso restrito a administradores" ao tentar abrir a tela diretamente pela
+URL.
+
+---
+
+## 15. Ajuda contextual
 
 Toda tela do sistema, inclusive o login, tem um botão **Ajuda** no
 cabeçalho. Ele abre uma janela com um lembrete rápido do que dá para fazer
@@ -530,7 +561,7 @@ telas se relacionam.
 
 ---
 
-## 15. Perguntas frequentes
+## 16. Perguntas frequentes
 
 **Inativei um cadastro por engano. Como desfaço?**
 Mude o filtro Situação para "Inativos" ou "Todos", clique em Editar no
@@ -592,6 +623,13 @@ Duas causas possíveis: o saldo está **exatamente igual** ao estoque mínimo
 saldo **abaixo** do mínimo — sugerir comprar zero unidades não ajudaria); ou
 a peça foi inativada (a necessidade de compra só considera peças ativas).
 
+**Uma linha da Auditoria mostra Usuário e IP em branco (—) — é um bug?**
+Só se a data for recente. Antes da correção que acompanha esta funcionalidade,
+o sistema não registrava usuário nem IP em nenhuma alteração — linhas
+gravadas antes disso ficam permanentemente em branco nesses dois campos.
+De resto, um branco também é normal para ações sem uma sessão de usuário
+associada (ex.: uma rotina interna do sistema).
+
 ---
 
-**Última atualização**: Agosto 2026 · Fase 2.4 (necessidade de compra e relatórios).
+**Última atualização**: Agosto 2026 · Fase 4 (auditoria).
