@@ -438,3 +438,99 @@ PP-E2E-01) removidos do Postgres do compose apos a verificacao.
 
 Backend da Fase 2.1 fechado (Tasks B1-B5). Frontend (Tasks F1-F6) a seguir.
 
+Task F1: complete (commit 7488cac, lint/tsc limpos, 4/4 testes). tipos/estrutura.ts +
+servicos/estrutura.ts (criar/versionar/obter/listarPorProduto).
+Task F2: complete (commit e27c523, lint limpo, 2/2 testes). Campo aditivo
+`estrutura_ativa` em `tipos/cadastros.ts`; tela de listagem "Estrutura de produtos"
+reaproveitando `useListagem` sem nenhuma mudanca no hook.
+Task F3: complete (commit 96c96b6, lint limpo, 3/3 testes). Detalhe + historico:
+versao ativa com itens, "Nova versao"/"Criar estrutura" conforme o caso, historico de
+versoes superadas.
+Task F4: complete (commit d8634ae, lint limpo, 3/3 testes). Formulario unico
+(NovaEstruturaProduto) que decide criar vs versionar consultando o historico do produto.
+Task F5: complete (commit fe2b91f, lint/tsc limpos, 317/317 no total). Rotas em App.tsx,
+secao "Estrutura de produtos" na navegacao lateral (entre Cadastros e Compras, icone
+'settings'), entrada em Ajuda.tsx com lookup por prefixo ja existente cobrindo as
+sub-rotas /:produtoId e /:produtoId/nova.
+
+Task F6 (verificacao final): iniciada com `code-reviewer` (agente) sobre o diff inteiro
+da branch antes do roteiro de navegador -- decisao do usuario de usar os agentes/skills
+disponiveis em `.claude`. Achado critico real, confirmado de forma independente por um
+teste manual via Playwright que reproduziu o mesmo crash antes mesmo do relatorio do
+agente chegar:
+
+1. **P0 (bloqueante)**: `EstruturaRepositorio.ListarPorProduto` nunca carregava os itens
+   de cada versao (so o header) -- como `Estrutura.Itens` e `omitempty`, o campo sumia do
+   JSON de `GET /produtos-acabados/{id}/boms`, e a tela de detalhe quebrava (TypeError)
+   ao tentar renderizar `ativa.itens` de qualquer produto com BOM real. Os testes nao
+   pegavam porque o teste de frontend mockava a resposta ja com itens (um contrato que o
+   backend real nao entregava) e o teste de repositorio so checava versao/ordem, nunca
+   itens. Corrigido com uma query em lote (`WHERE estrutura_produto_id = ANY($1)`, evita
+   N+1) que carrega os itens de todo o historico de uma vez; teste de regressao
+   `TestListarPorProdutoTrazOsItensDeCadaVersao` adicionado.
+2. Peca duplicada nos itens de uma estrutura vazava um 500 generico (so o indice unico
+   `uk_estrutura_pp` barrava, sem sentinela de dominio) -- corrigido com
+   `estrutura.ErrItemDuplicado` (400) validado no dominio + rede de seguranca no
+   repositorio; formulario ganhou validacao zod (`superRefine`) equivalente, com teste.
+3. `NovaEstruturaProduto` nao tratava `historicoQuery.isError` (`DetalheEstruturaProduto`
+   ja tratava) -- se o historico falhasse ao carregar, a tela decidia silenciosamente
+   "criar" em vez de "versionar" para um produto que ja tinha BOM ativa. Corrigido com a
+   mesma mensagem de erro do detalhe; teste adicionado.
+4. Limpeza (P2): removido codigo morto (`Dados.Normalizar` no-op, `ColunasOrdenaveis` sem
+   consumidor) e `coalesce(max(versao), 0)` no repositorio (tira uma pre-condicao
+   implicita do metodo).
+
+Dois achados do agente foram registrados como Minor e conscientemente **nao** corrigidos
+nesta tarefa (mesmo padrao de achados nao bloqueantes documentados nas sprints
+anteriores): `Versionar` sempre recalcula `data_vigencia_fim` da versao anterior como
+`nova_inicio - 1 dia`, o que pode estender silenciosamente uma vigencia que tivesse sido
+explicitamente encurtada na criacao -- caso de borda sem cobertura de teste, e o proprio
+plano ja especificava esse calculo; e o formulario de "Nova versao" sempre comeca vazio
+em vez de pre-carregar os itens da versao ativa, obrigando redigitar a BOM inteira a cada
+versionamento -- friccao de UX real, mas fora do desenho de formulario que o plano
+especificou.
+
+Commit `4ee1f9b fix: corrige achados da revisao de codigo da Fase 2.1 (BOM)`. Suite
+completa apos as correcoes: 392/392 backend (21 novos desde a Task B5), 319/319 frontend
+(2 novos), go build/vet/gofmt e npm lint/tsc/build limpos -- tudo rodado dentro do Docker
+(decisao do usuario: nunca usar toolchain local no PATH do host neste projeto, ver nota
+abaixo).
+
+Roteiro de navegador real via Playwright (dentro de um container na rede do compose,
+apontando para `http://frontend:80`, nao API direta) apos as correcoes: 16/16 passos --
+login, criar produto sem BOM, criar peca, lista mostra "Sem estrutura ativa", detalhe
+oferece "Criar estrutura", criar 1a versao (toast + versao 1 visivel), "Nova versao"
+(versao 2 ativa, versao 1 no historico com `data_vigencia_fim` preenchida), lista mostra
+"v.2 desde ...", UI so oferece "Nova versao" quando ja ha uma ativa (sem caminho para o
+409 pela interface), informacao sobrevive em escala de cinza, 800px sem rolagem
+horizontal na lista e no formulario, Tab alcanca "Adicionar item" no formulario.
+
+Task 22 (documentacao/entrega): capturas 29-31 em `docs/screenshots/` (listagem com um
+produto com BOM e outro sem, detalhe com a versao ativa + botao "Nova versao" + historico
+na mesma tela, formulario de nova versao preenchido com 3 itens), dados de exemplo
+realistas do dominio (VMS-02 "Painel de mensagem variavel", R-210 "Radar movel de
+fiscalizacao", pecas PCB-VMS-01/LED-MOD-01/FONE-24V) via navegador real, nao API direta.
+`docs/8_MANUAL_OPERACAO.md` ganhou a secao 7 "Estrutura de produtos (BOM)" (inserida
+entre Produtos acabados e Cotacoes, espelhando a ordem da navegacao lateral), indice e
+todos os links cruzados internos renumerados (Cotacoes 7->8, Pedidos de compra 8->9,
+Estoque 9->10, Ajuda 10->11, FAQ 11->12), e uma entrada nova na FAQ para "por que nao da
+para editar uma estrutura existente".
+
+Fase 2.1 (Estrutura de Produto / BOM) completa: backend (392 testes) + frontend (319
+testes) verdes, revisao de codigo por agente com 1 bug critico real encontrado e
+corrigido, verificacao de navegador real via Playwright (16/16), documentacao e capturas
+de tela entregues.
+
+## Nota de infraestrutura (pre-requisito desta fase, corrigido na main antes de comecar)
+
+Antes de retomar o desenvolvimento desta fase, dois problemas de ambiente local foram
+corrigidos (commit `0f1151a` na main, herdado por esta branch -- ver secao "Pre-requisito"
+acima para o detalhe completo): falta de `.env` local causando conflito de porta do
+Postgres com outro projeto rodando no Docker da mesma maquina, e o Kaspersky Endpoint
+Security desta maquina fazendo inspecao TLS (MITM) que quebrava `go mod download`/`apk
+add`/`npm ci` dentro dos builds Docker. A partir dessa correcao, o usuario decidiu que
+toda execucao de backend/frontend nesta maquina -- inclusive testes -- deve rodar via
+Docker (containers `golang:1.25-alpine`/`node:22-alpine` com bind-mount do codigo-fonte
+real, conectados a rede `pcp-lev_default`, `PCP_TEST_DSN` apontando para o servico
+`postgres` pelo nome interno), nunca via `go`/`npm` resolvidos no PATH do host.
+
