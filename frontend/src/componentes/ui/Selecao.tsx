@@ -45,7 +45,7 @@ export const Selecao = forwardRef<HTMLSelectElement, SelecaoProps>(function Sele
         aria-invalid={erro ? true : undefined}
         aria-describedby={descricao ? idDescricao : undefined}
         className={cn(
-          'h-[40px] w-full rounded-campo border bg-surface-raised px-3 text-body',
+          'h-[2.5rem] w-full rounded-campo border bg-surface-raised px-3 text-body',
           'text-texto-primary',
           erro ? 'border-estado-pending' : 'border-borda-strong',
           'disabled:bg-surface-sunken disabled:text-texto-disabled',

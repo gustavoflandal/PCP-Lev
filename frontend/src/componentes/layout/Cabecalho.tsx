@@ -18,7 +18,7 @@ export function Cabecalho() {
   const IconeFabrica = icones.factory;
 
   return (
-    <header className="flex h-[56px] items-center justify-between gap-4 border-b border-borda-subtle bg-surface-raised px-4">
+    <header className="flex h-[3.5rem] items-center justify-between gap-4 border-b border-borda-subtle bg-surface-raised px-4">
       <div className="flex items-center gap-2">
         <IconeFabrica size={20} aria-hidden="true" className="text-brand" />
         <span className="text-subtitle text-texto-primary">Sistema PCP</span>

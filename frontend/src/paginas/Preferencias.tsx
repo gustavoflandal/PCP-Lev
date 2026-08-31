@@ -28,7 +28,19 @@ export function PreferenciasPagina() {
 
   const mutacao = useMutation({
     mutationFn: atualizarPreferencias,
-    onSuccess: () => mostrarToast('Preferências salvas'),
+    // Reconcilia com o que o servidor de fato gravou, nao so confia na
+    // aplicacao otimista -- fecha a janela de duas mudancas em voo ao mesmo
+    // tempo (a segunda poderia terminar antes da primeira, e um "onError"
+    // da primeira reverteria por cima do que a segunda ja tinha confirmado).
+    onSuccess: (usuarioAtualizado) => {
+      aplicar({
+        tema: usuarioAtualizado.tema,
+        alto_contraste: usuarioAtualizado.alto_contraste,
+        densidade: usuarioAtualizado.densidade,
+        tamanho_fonte: usuarioAtualizado.tamanho_fonte,
+      });
+      mostrarToast('Preferências salvas');
+    },
   });
 
   // Aplicacao otimista: muda a tela na hora, mas reverte se o backend

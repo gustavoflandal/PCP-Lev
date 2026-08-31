@@ -14,7 +14,9 @@ export interface Preferencias {
 export const PREFERENCIAS_PADRAO: Preferencias = {
   tema: 'automatico',
   alto_contraste: false,
-  densidade: 'confortavel',
+  // 'compacta' preserva o visual de antes da Fase 4.1 (linha de 40px fixa);
+  // ver o comentario da migration 009 no backend.
+  densidade: 'compacta',
   tamanho_fonte: 'padrao',
 };
 
@@ -28,17 +30,27 @@ export function resolverTema(tema: Tema, prefereEscuro: boolean): 'claro' | 'esc
   return prefereEscuro ? 'escuro' : 'claro';
 }
 
+function prefereEscuroAgora(): boolean {
+  return window.matchMedia('(prefers-color-scheme: dark)').matches;
+}
+
+/** Mesma normalizacao defensiva do script inline em index.html -- um valor
+ * fora do conjunto conhecido (backend antigo, cache corrompido) cai no
+ * padrao em vez de virar um atributo CSS que nenhum seletor reconhece. As
+ * duas implementacoes existem em runtimes diferentes (HTML puro roda antes
+ * do bundle carregar) e por isso nao podem compartilhar codigo, mas
+ * precisam concordar em todo caso, nao so no caminho feliz. */
 function aplicarNoDocumento(preferencias: Preferencias): void {
   const el = document.documentElement;
-  const prefereEscuro = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  el.setAttribute('data-tema', resolverTema(preferencias.tema, prefereEscuro));
+  el.setAttribute('data-tema', resolverTema(preferencias.tema, prefereEscuroAgora()));
   if (preferencias.alto_contraste) {
     el.setAttribute('data-alto-contraste', 'true');
   } else {
     el.removeAttribute('data-alto-contraste');
   }
-  el.setAttribute('data-densidade', preferencias.densidade);
-  el.setAttribute('data-fonte', preferencias.tamanho_fonte);
+  el.setAttribute('data-densidade', preferencias.densidade === 'confortavel' ? 'confortavel' : 'compacta');
+  const fontesValidas: TamanhoFonte[] = ['padrao', 'grande', 'extra-grande'];
+  el.setAttribute('data-fonte', fontesValidas.includes(preferencias.tamanho_fonte) ? preferencias.tamanho_fonte : 'padrao');
 }
 
 function salvarCache(preferencias: Preferencias): void {
@@ -83,3 +95,20 @@ export const usePreferencias = create<EstadoPreferencias>((set) => ({
     set({ preferencias });
   },
 }));
+
+// Reaplica quando o SO troca de claro/escuro (ex.: anoitecer) e a
+// preferencia e "automatico" -- sem isso, uma estacao de cho de fabrica que
+// fica ligada o dia inteiro so acompanharia a troca no proximo F5/login.
+// Assinatura unica, no carregamento do modulo (nao por componente).
+try {
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    const atual = usePreferencias.getState().preferencias;
+    if (atual.tema === 'automatico') {
+      aplicarNoDocumento(atual);
+    }
+  });
+} catch {
+  // matchMedia ou addEventListener indisponivel (ambiente de teste sem o
+  // polyfill, navegador muito antigo) -- tema automatico so atualiza no
+  // proximo F5/login, degradacao aceitavel.
+}

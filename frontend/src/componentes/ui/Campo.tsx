@@ -51,7 +51,7 @@ export const Campo = forwardRef<HTMLInputElement, CampoProps>(function Campo(
         autoCorrect={tipoDado === 'codigo' ? 'off' : undefined}
         spellCheck={tipoDado === 'codigo' ? false : undefined}
         className={cn(
-          'h-[40px] w-full rounded-campo border bg-surface-raised px-3 text-body',
+          'h-[2.5rem] w-full rounded-campo border bg-surface-raised px-3 text-body',
           'text-texto-primary placeholder:text-texto-disabled',
           tipoDado === 'codigo' && 'font-mono uppercase',
           tipoDado === 'quantidade' && 'tabular text-right',

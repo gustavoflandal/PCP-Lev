@@ -11,17 +11,27 @@
       // com a preferencia de verdade (backend). Ver store/preferencias.ts,
       // que reaplica a mesma logica depois de montar (login/troca).
       (function () {
+        // O parse fica isolado: se a chave estiver corrompida, "p" volta a
+        // {} e cada atributo ainda recebe um valor valido abaixo -- um so
+        // try ao redor de tudo faria um JSON quebrado pular ate a
+        // resolucao de tema (que nao depende do parse), deixando o <html>
+        // sem nenhum atributo e a pagina inteira sem tema nenhum.
+        var p = {};
         try {
-          var p = JSON.parse(localStorage.getItem('pcp.preferencias') || '{}');
-          var el = document.documentElement;
-          var tema = p.tema === 'claro' || p.tema === 'escuro'
-            ? p.tema
-            : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'escuro' : 'claro');
-          el.setAttribute('data-tema', tema);
-          if (p.alto_contraste) el.setAttribute('data-alto-contraste', 'true');
-          el.setAttribute('data-densidade', p.densidade === 'compacta' ? 'compacta' : 'confortavel');
-          el.setAttribute('data-fonte', p.tamanho_fonte || 'padrao');
+          p = JSON.parse(localStorage.getItem('pcp.preferencias') || '{}');
         } catch (e) {}
+
+        var el = document.documentElement;
+        var tema = p.tema === 'claro' || p.tema === 'escuro'
+          ? p.tema
+          : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'escuro' : 'claro');
+        el.setAttribute('data-tema', tema);
+        if (p.alto_contraste) el.setAttribute('data-alto-contraste', 'true');
+        // 'compacta' e o padrao (preserva o visual de antes da Fase 4.1) --
+        // ver store/preferencias.ts e a migration 009 no backend.
+        el.setAttribute('data-densidade', p.densidade === 'confortavel' ? 'confortavel' : 'compacta');
+        var fontesValidas = ['padrao', 'grande', 'extra-grande'];
+        el.setAttribute('data-fonte', fontesValidas.indexOf(p.tamanho_fonte) !== -1 ? p.tamanho_fonte : 'padrao');
       })();
     </script>
   </head>

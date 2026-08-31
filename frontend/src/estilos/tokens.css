@@ -37,9 +37,14 @@
   --state-neutral-bg: #eef1f4;
 
   /* Densidade de layout (Fase 4.1) — altura da linha de tabela/navegacao.
-     Confortavel e o padrao (o valor que ja estava fixo em tailwind.config.js
-     antes desta fase). */
-  --altura-linha: 48px;
+     Compacta (2.5rem = 40px) e o padrao: e o valor que ja estava fixo em
+     tailwind.config.js antes desta fase existir, preservado para nao mudar
+     o visual de quem nunca mexeu na preferencia. Confortavel (3rem = 48px,
+     doc 7 secao 4: densidade de tablet) fica como opt-in. Em `rem`, nao
+     `px`, para acompanhar Tamanho de Fonte — sem isso a linha ficaria
+     cravada num tamanho fixo enquanto todo o resto (fontSize/spacing/
+     minHeight do tailwind.config.js) escala. */
+  --altura-linha: 2.5rem;
 }
 
 /* Tema escuro (Fase 4.1) — mesmo papel semantico de cada token, cores
@@ -86,16 +91,18 @@
 :root[data-tema='escuro'][data-alto-contraste='true'] {
   --surface-base: #000000;
   --surface-raised: #000000;
+  --surface-sunken: #000000;
   --text-primary: #ffffff;
   --text-secondary: #e5e7eb;
   --border-strong: #ffffff;
   --focus-ring: #ffffff;
 }
 
-/* Densidade (Fase 4.1) — compacta encolhe a linha de tabela/navegacao;
-   confortavel (padrao) mantem o valor que ja existia antes desta fase. */
-:root[data-densidade='compacta'] {
-  --altura-linha: 40px;
+/* Densidade (Fase 4.1) — confortavel (opt-in) aumenta a linha de tabela/
+   navegacao; compacta (padrao, ver :root acima) mantem o valor que ja
+   existia antes desta fase. */
+:root[data-densidade='confortavel'] {
+  --altura-linha: 3rem;
 }
 
 /* Tamanho de fonte (Fase 4.1) — escala tudo que usa `rem` (fontSize,
