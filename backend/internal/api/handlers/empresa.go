@@ -18,6 +18,9 @@ var errosEmpresa = mapaDeErros{
 	{empresa.ErrCNPJInvalido, http.StatusBadRequest, httpx.CodigoErroValidacao},
 	{empresa.ErrUFInvalida, http.StatusBadRequest, httpx.CodigoErroValidacao},
 	{empresa.ErrEmailInvalido, http.StatusBadRequest, httpx.CodigoErroValidacao},
+	{empresa.ErrCEPInvalido, http.StatusBadRequest, httpx.CodigoErroValidacao},
+	{empresa.ErrTelefoneInvalido, http.StatusBadRequest, httpx.CodigoErroValidacao},
+	{empresa.ErrCampoMuitoLongo, http.StatusBadRequest, httpx.CodigoErroValidacao},
 	{empresa.ErrImagemFormatoInvalido, http.StatusBadRequest, httpx.CodigoErroValidacao},
 	{empresa.ErrImagemMuitoGrande, http.StatusBadRequest, httpx.CodigoErroValidacao},
 	{empresa.ErrImagemPequenaDemais, http.StatusBadRequest, httpx.CodigoErroValidacao},
@@ -161,7 +164,14 @@ func (h *EmpresaHandler) atualizarImagem(c echo.Context, gravar func(ctx context
 
 	e, err := h.servico.Buscar(c.Request().Context())
 	if err != nil {
-		return errosEmpresa.responder(c, err)
+		// A imagem ja foi gravada com sucesso neste ponto (gravar() e um
+		// UPDATE atomico, ver empresa_repo.go) -- so a releitura falhou. O
+		// cliente ve um 500 mesmo com o upload persistido; o log distingue
+		// esse caso do erro de gravacao em si, para nao investigar a
+		// gravacao a toa quando o problema e so a releitura.
+		slog.Error("imagem da empresa gravada, mas falhou ao reler a configuracao atualizada",
+			"rota", c.Request().URL.Path, "erro", err)
+		return httpx.ErroInterno(c)
 	}
 	return httpx.OK(c, e)
 }
@@ -194,5 +204,13 @@ func (h *EmpresaHandler) servirImagem(c echo.Context, buscar func(ctx context.Co
 	// aqui, "no-cache" sempre busca de novo -- aceitavel para um arquivo
 	// pequeno pedido poucas vezes por sessao (cabecalho, login).
 	c.Response().Header().Set("Cache-Control", "no-cache")
+	// Um SVG valido (raiz <svg> reconhecida por ValidarImagem) ainda pode
+	// carregar um <script> interno -- embutido via <img> o navegador nao
+	// executa esse script, mas esta URL e publica e pode ser aberta direto
+	// como documento. "nosniff" impede o navegador de reinterpretar o
+	// Content-Type: e o CSP sandbox desliga a execucao de script mesmo
+	// nesse caso, sem precisar sanitizar o XML em si.
+	c.Response().Header().Set("X-Content-Type-Options", "nosniff")
+	c.Response().Header().Set("Content-Security-Policy", "default-src 'none'; sandbox")
 	return c.Blob(http.StatusOK, tipo, dados)
 }

@@ -40,6 +40,13 @@ func NovoRoteador(dep Dependencias) *echo.Echo {
 	e.Use(echomw.Recover())
 	e.Use(echomw.RequestID())
 	e.Use(middleware.Log())
+	// O upload de logotipo/favicon (base64 no corpo JSON) e o unico endpoint
+	// hoje que aceita um payload potencialmente grande -- sem um limite, um
+	// arquivo enorme e lido inteiro para memoria (aqui e no navegador, via
+	// FileReader) antes de qualquer validacao de tamanho rodar. 2 MiB cobre
+	// folgado o maior upload valido (1 MiB de imagem em base64 fica ~1.4 MiB)
+	// e nao aperta nenhum outro endpoint, que so trafega JSON de formulario.
+	e.Use(echomw.BodyLimit("2M"))
 	e.Use(echomw.CORSWithConfig(echomw.CORSConfig{
 		AllowOrigins: dep.Cfg.CorsOrigens,
 		AllowMethods: []string{http.MethodGet, http.MethodPost, http.MethodPut,
@@ -153,6 +160,12 @@ func tratarErro(err error, c echo.Context) {
 			codigo, mensagem = httpx.CodigoRequisicaoInvalida, "Metodo nao permitido"
 		case http.StatusBadRequest:
 			codigo, mensagem = httpx.CodigoRequisicaoInvalida, "Requisicao invalida"
+		case http.StatusRequestEntityTooLarge:
+			// Devolvido pelo middleware BodyLimit (ver NovoRoteador) antes de
+			// qualquer handler rodar -- sem este caso, o cliente veria
+			// "Erro interno do servidor" para o que e, na verdade, um corpo
+			// grande demais.
+			codigo, mensagem = httpx.CodigoRequisicaoInvalida, "Requisicao excede o tamanho maximo permitido"
 		}
 	}
 

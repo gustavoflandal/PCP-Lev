@@ -18,7 +18,10 @@ CREATE TABLE configuracao_empresa (
   complemento VARCHAR(100) NOT NULL DEFAULT '',
   bairro VARCHAR(100) NOT NULL DEFAULT '',
   cidade VARCHAR(100) NOT NULL DEFAULT '',
-  uf CHAR(2) NOT NULL DEFAULT '',
+  -- VARCHAR, nao CHAR: um bpchar e preenchido com espacos ate o tamanho
+  -- fixo, entao uma UF vazia sairia como "  " (dois espacos) no JSON
+  -- publico em vez de "" -- um valor "truthy" indevido no frontend.
+  uf VARCHAR(2) NOT NULL DEFAULT '',
 
   telefone VARCHAR(11) NOT NULL DEFAULT '',
   email VARCHAR(200) NOT NULL DEFAULT '',

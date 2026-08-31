@@ -6,6 +6,7 @@ import (
 	"image"
 	"image/png"
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/gustavoflandal/pcp-lev/backend/internal/api/handlers"
@@ -78,6 +79,36 @@ func TestAtualizarEmpresaComRazaoSocialVaziaResponde400(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, rec.Code)
 }
 
+func TestAtualizarEmpresaComTelefoneComDDIResponde400(t *testing.T) {
+	// A coluna e VARCHAR(11); sem a validacao de dominio isto batia direto
+	// no Postgres e voltava 500 (achado da revisao de codigo da Fase 4.2).
+	api := apiEmpresa(t)
+
+	rec := api.chamar(http.MethodPut, "/api/v1/configuracoes/empresa",
+		`{"razao_social": "Industria VMS", "telefone": "+55 (12) 3456-7890"}`, usuario.PerfilAdmin)
+
+	assert.Equal(t, http.StatusBadRequest, rec.Code)
+}
+
+func TestAtualizarEmpresaComCEPInvalidoResponde400(t *testing.T) {
+	api := apiEmpresa(t)
+
+	rec := api.chamar(http.MethodPut, "/api/v1/configuracoes/empresa",
+		`{"razao_social": "Industria VMS", "cep": "123"}`, usuario.PerfilAdmin)
+
+	assert.Equal(t, http.StatusBadRequest, rec.Code)
+}
+
+func TestAtualizarEmpresaComCampoAcimaDoLimiteResponde400(t *testing.T) {
+	api := apiEmpresa(t)
+	nomeGigante := strings.Repeat("a", 250)
+
+	rec := api.chamar(http.MethodPut, "/api/v1/configuracoes/empresa",
+		`{"razao_social": "`+nomeGigante+`"}`, usuario.PerfilAdmin)
+
+	assert.Equal(t, http.StatusBadRequest, rec.Code)
+}
+
 func TestAtualizarEmpresaValidoReflecteNoGetSeguinte(t *testing.T) {
 	api := apiEmpresa(t)
 
@@ -116,6 +147,11 @@ func TestAtualizarLogoClaroValidoEDepoisServidoPublicamente(t *testing.T) {
 	require.Equal(t, http.StatusOK, rec.Code)
 	assert.Equal(t, "image/png", rec.Header().Get("Content-Type"))
 	assert.NotEmpty(t, rec.Body.Bytes())
+	// Mesmo um SVG com raiz valida pode carregar <script> interno -- estes
+	// headers neutralizam a execucao se a URL publica for aberta direto,
+	// sem depender de sanitizar o XML em si.
+	assert.Equal(t, "nosniff", rec.Header().Get("X-Content-Type-Options"))
+	assert.Contains(t, rec.Header().Get("Content-Security-Policy"), "sandbox")
 }
 
 func TestAtualizarLogoClaroComImagemPequenaDemaisResponde400(t *testing.T) {

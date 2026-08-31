@@ -5,6 +5,7 @@ import (
 	"image"
 	"image/color"
 	"image/png"
+	"strings"
 	"testing"
 
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/empresa"
@@ -74,6 +75,57 @@ func TestValidarRejeitaEmailInvalido(t *testing.T) {
 	assert.ErrorIs(t, dados.Validar(), empresa.ErrEmailInvalido)
 }
 
+func TestValidarAceitaCEPVazio(t *testing.T) {
+	dados := dadosValidos()
+	dados.CEP = ""
+
+	assert.NoError(t, dados.Validar())
+}
+
+func TestValidarRejeitaCEPComTamanhoErrado(t *testing.T) {
+	dados := dadosValidos()
+	dados.CEP = "1234"
+
+	assert.ErrorIs(t, dados.Validar(), empresa.ErrCEPInvalido)
+}
+
+func TestValidarAceitaTelefoneVazio(t *testing.T) {
+	dados := dadosValidos()
+	dados.Telefone = ""
+
+	assert.NoError(t, dados.Validar())
+}
+
+func TestValidarRejeitaTelefoneComDDI(t *testing.T) {
+	// A coluna e VARCHAR(11); um numero com DDI tem mais digitos do que
+	// cabe -- sem esta checagem o Postgres devolvia um erro cru (22001).
+	dados := dadosValidos()
+	dados.Telefone = "+55 (12) 3456-7890"
+
+	assert.ErrorIs(t, dados.Validar(), empresa.ErrTelefoneInvalido)
+}
+
+func TestValidarAceitaTelefoneComDDDEOitoOuNoveDigitos(t *testing.T) {
+	dados := dadosValidos()
+	dados.Telefone = "12988887777"
+
+	assert.NoError(t, dados.Validar())
+}
+
+func TestValidarRejeitaCampoAcimaDoTamanhoDaColuna(t *testing.T) {
+	dados := dadosValidos()
+	dados.RazaoSocial = strings.Repeat("a", 201)
+
+	assert.ErrorIs(t, dados.Validar(), empresa.ErrCampoMuitoLongo)
+}
+
+func TestValidarRejeitaEnderecoAcimaDoTamanhoDaColuna(t *testing.T) {
+	dados := dadosValidos()
+	dados.Cidade = strings.Repeat("a", 101)
+
+	assert.ErrorIs(t, dados.Validar(), empresa.ErrCampoMuitoLongo)
+}
+
 func TestNormalizarLimpaDocumentoEEndereco(t *testing.T) {
 	dados := empresa.Dados{
 		RazaoSocial: "  Industria de Paineis VMS Ltda  ",
@@ -126,6 +178,40 @@ func TestValidarImagemAceitaSVGComTagRaiz(t *testing.T) {
 
 func TestValidarImagemRejeitaSVGSemTagRaiz(t *testing.T) {
 	_, err := empresa.ValidarImagem([]byte("nao e um svg de verdade"), "image/svg+xml", false)
+
+	assert.ErrorIs(t, err, empresa.ErrImagemFormatoInvalido)
+}
+
+func TestValidarImagemRejeitaSVGComMimeVazio(t *testing.T) {
+	// Mime vazio nao entra mais pela via do SVG (so PNG detecta pelo
+	// conteudo puro) -- fecha a porta que aceitava qualquer coisa quando o
+	// navegador nao informava o tipo do arquivo.
+	svg := []byte(`<svg xmlns="http://www.w3.org/2000/svg"></svg>`)
+
+	_, err := empresa.ValidarImagem(svg, "", false)
+
+	assert.ErrorIs(t, err, empresa.ErrImagemFormatoInvalido)
+}
+
+func TestValidarImagemAceitaSVGComPreambuloLongo(t *testing.T) {
+	// Um DOCTYPE/comentario de licenca comum em exports corporativos pode
+	// empurrar a tag <svg> para alem de qualquer recorte fixo de bytes --
+	// a deteccao precisa parsear o XML de verdade, nao recortar os
+	// primeiros N bytes.
+	preambulo := "<!-- " + strings.Repeat("licenca ", 200) + " -->"
+	svg := []byte(preambulo + `<svg xmlns="http://www.w3.org/2000/svg"><circle r="5"/></svg>`)
+	require.Greater(t, len(preambulo), 1024)
+
+	tipo, err := empresa.ValidarImagem(svg, "image/svg+xml", false)
+
+	require.NoError(t, err)
+	assert.Equal(t, "image/svg+xml", tipo)
+}
+
+func TestValidarImagemRejeitaXMLComRaizDiferenteDeSvg(t *testing.T) {
+	xml := []byte(`<html><body>nao e um svg</body></html>`)
+
+	_, err := empresa.ValidarImagem(xml, "image/svg+xml", false)
 
 	assert.ErrorIs(t, err, empresa.ErrImagemFormatoInvalido)
 }

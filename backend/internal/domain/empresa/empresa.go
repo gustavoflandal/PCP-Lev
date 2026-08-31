@@ -5,14 +5,25 @@ package empresa
 
 import (
 	"bytes"
+	"encoding/xml"
 	"errors"
+	"fmt"
 	"image"
 	_ "image/png"
 	"net/mail"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/gustavoflandal/pcp-lev/backend/internal/platform/documento"
+)
+
+// Telefone institucional: mesma faixa do cadastro de Fornecedor (10 digitos
+// fixo, 11 celular, sempre com DDD) -- a coluna e VARCHAR(11), entao um
+// numero com DDI (ex.: "+55 12 3456-7890", 12 digitos) nunca caberia.
+const (
+	digitosMinimosTelefone = 10
+	digitosMaximosTelefone = 11
 )
 
 var (
@@ -20,6 +31,14 @@ var (
 	ErrCNPJInvalido           = errors.New("o CNPJ informado e invalido")
 	ErrUFInvalida             = errors.New("a UF deve ter 2 letras")
 	ErrEmailInvalido          = errors.New("o email institucional e invalido")
+	ErrTelefoneInvalido       = errors.New("o telefone deve ter DDD e 8 ou 9 digitos")
+	ErrCEPInvalido            = errors.New("o CEP deve ter 8 digitos")
+	// ErrCampoMuitoLongo e envolvido com fmt.Errorf para levar o nome do
+	// campo e o limite na mensagem -- as colunas do banco sao VARCHAR de
+	// tamanho fixo (ver migration 010), e sem essa checagem o Postgres
+	// devolve um erro 22001 cru que o repositorio nao sabe traduzir,
+	// virando "Erro interno do servidor" para o administrador.
+	ErrCampoMuitoLongo = errors.New("um campo excede o tamanho maximo permitido")
 
 	// ErrImagemFormatoInvalido cobre tanto o formato errado (nem PNG nem SVG,
 	// ou SVG onde so PNG e aceito) quanto um arquivo corrompido/vazio.
@@ -129,8 +148,9 @@ func (d *Dados) Normalizar() {
 // aqui e opcional: nao faz sentido travar a primeira configuracao do sistema
 // (ambiente novo, demo, homologacao) por falta de CNPJ definitivo.
 //
-// Nao exige Normalizar antes: CNPJ e conferido pelos digitos, entao um valor
-// pontuado vindo da interface passa pelas mesmas regras.
+// Nao exige Normalizar antes: CNPJ, CEP e telefone sao conferidos pelos
+// digitos, entao um valor pontuado vindo da interface passa pelas mesmas
+// regras.
 func (d Dados) Validar() error {
 	if strings.TrimSpace(d.RazaoSocial) == "" {
 		return ErrRazaoSocialObrigatoria
@@ -141,7 +161,16 @@ func (d Dados) Validar() error {
 	if uf := strings.TrimSpace(d.UF); uf != "" && len(uf) != 2 {
 		return ErrUFInvalida
 	}
-	return validarEmail(d.Email)
+	if err := validarCEP(d.CEP); err != nil {
+		return err
+	}
+	if err := validarTelefone(d.Telefone); err != nil {
+		return err
+	}
+	if err := validarEmail(d.Email); err != nil {
+		return err
+	}
+	return validarComprimentos(d)
 }
 
 // validarEmail aceita o campo vazio: nem toda empresa tem e-mail
@@ -153,6 +182,68 @@ func validarEmail(email string) error {
 	}
 	if _, err := mail.ParseAddress(email); err != nil {
 		return ErrEmailInvalido
+	}
+	return nil
+}
+
+// validarCEP aceita o campo vazio -- nem toda empresa tem o CEP preenchido
+// ainda (a busca automatica so preenche o resto do endereco depois).
+func validarCEP(cep string) error {
+	digitos := documento.ApenasDigitos(cep)
+	if digitos == "" {
+		return nil
+	}
+	if len(digitos) != 8 {
+		return ErrCEPInvalido
+	}
+	return nil
+}
+
+// validarTelefone aceita o campo vazio, pelo mesmo motivo do CEP.
+func validarTelefone(telefone string) error {
+	digitos := documento.ApenasDigitos(telefone)
+	if digitos == "" {
+		return nil
+	}
+	if len(digitos) < digitosMinimosTelefone || len(digitos) > digitosMaximosTelefone {
+		return ErrTelefoneInvalido
+	}
+	return nil
+}
+
+// limiteDeCampo casa um valor de Dados com o tamanho da coluna VARCHAR
+// correspondente na migration 010, para o 400 explicar qual campo estourou
+// em vez do Postgres devolver um 22001 cru.
+type limiteDeCampo struct {
+	nome  string
+	valor string
+	max   int
+}
+
+// validarComprimentos confere os campos de texto livre contra o limite da
+// coluna. CNPJ e UF ja tem checagem propria (comprimento exato, nao
+// maximo); CEP e telefone tambem; rodape/condicoes gerais sao TEXT, sem
+// limite no banco.
+func validarComprimentos(d Dados) error {
+	limites := []limiteDeCampo{
+		{"a razão social", d.RazaoSocial, 200},
+		{"o nome fantasia", d.NomeFantasia, 200},
+		{"a inscrição estadual", d.InscricaoEstadual, 30},
+		{"a inscrição municipal", d.InscricaoMunicipal, 30},
+		{"o CNAE", d.CNAE, 20},
+		{"o logradouro", d.Logradouro, 200},
+		{"o número", d.Numero, 20},
+		{"o complemento", d.Complemento, 100},
+		{"o bairro", d.Bairro, 100},
+		{"a cidade", d.Cidade, 100},
+		{"o e-mail", d.Email, 200},
+		{"o site", d.Site, 200},
+		{"o responsável técnico", d.ResponsavelTecnico, 200},
+	}
+	for _, l := range limites {
+		if utf8.RuneCountInString(l.valor) > l.max {
+			return fmt.Errorf("%w: %s deve ter no maximo %d caracteres", ErrCampoMuitoLongo, l.nome, l.max)
+		}
 	}
 	return nil
 }
@@ -192,16 +283,30 @@ func ValidarImagem(dados []byte, mimeDeclarado string, ehFavicon bool) (tipoNorm
 	return mimePNG, nil
 }
 
-// ehImagemSVG aceita pelo conteudo, nao so pelo mimetype declarado -- o
-// mimetype de um <input type=file> pode vir vazio dependendo do navegador e
-// da extensao do arquivo.
+// ehImagemSVG exige o mimetype declarado igual e analisa o XML de verdade
+// (nao so `bytes.Contains(..., "<svg")`) para achar o elemento raiz --
+// aceitar por substring deixava passar qualquer arquivo com "<svg" em
+// algum comentario, e um SVG com um DOCTYPE/comentario de licenca longo
+// (comum em exports corporativos) empurrava a tag raiz para alem de um
+// recorte fixo de bytes, sendo rejeitado por engano.
+//
+// Isto NAO sanitiza o conteudo interno: um <svg> bem formado ainda pode
+// carregar um <script>. Embutido via <img> o navegador nao executa esse
+// script, mas a URL publica pode ser aberta direto -- por isso
+// servirImagem tambem manda Content-Security-Policy: sandbox (ver
+// handlers/empresa.go), que neutraliza a execucao nesse caso.
 func ehImagemSVG(dados []byte, mimeDeclarado string) bool {
-	if mimeDeclarado != mimeSVG && mimeDeclarado != "" {
+	if mimeDeclarado != mimeSVG {
 		return false
 	}
-	trecho := dados
-	if len(trecho) > 1024 {
-		trecho = trecho[:1024]
+	decodificador := xml.NewDecoder(bytes.NewReader(dados))
+	for {
+		token, err := decodificador.Token()
+		if err != nil {
+			return false
+		}
+		if inicio, ok := token.(xml.StartElement); ok {
+			return inicio.Name.Local == "svg"
+		}
 	}
-	return bytes.Contains(bytes.ToLower(trecho), []byte("<svg"))
 }

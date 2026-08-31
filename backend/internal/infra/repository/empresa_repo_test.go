@@ -19,6 +19,9 @@ func TestBuscarDevolveALinhaSemeadaPelaMigration(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Equal(t, "", e.RazaoSocial, "sem configuracao ainda, a razao social comeca vazia")
+	// uf e VARCHAR, nao CHAR -- um bpchar sairia como "  " (preenchido com
+	// espacos) em vez de "", um valor "truthy" indevido no frontend.
+	assert.Equal(t, "", e.UF)
 	assert.False(t, e.TemLogoClaro)
 	assert.False(t, e.TemLogoEscuro)
 	assert.False(t, e.TemFavicon)
