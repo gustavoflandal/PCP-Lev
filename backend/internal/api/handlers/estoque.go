@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/gustavoflandal/pcp-lev/backend/internal/api/middleware"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/estoque"
@@ -10,6 +11,11 @@ import (
 	"github.com/gustavoflandal/pcp-lev/backend/internal/platform/httpx"
 	"github.com/labstack/echo/v4"
 )
+
+// limiteRelatorio e um teto generoso para as exportacoes CSV -- um
+// relatorio nao pagina (decisao de escopo da Fase 2.4), mas ainda precisa
+// de algum limite para nao construir uma query sem fim.
+const limiteRelatorio = 100_000
 
 var errosEstoque = mapaDeErros{
 	{estoque.ErrNaoEncontrado, http.StatusNotFound, httpx.CodigoNaoEncontrado},
@@ -36,9 +42,10 @@ func (h *EstoqueHandler) Registrar(grupo *echo.Group, autenticacao echo.Middlewa
 	gestao := middleware.ExigirPerfil(usuario.PerfilAdmin, usuario.PerfilGestor)
 
 	estoqueRotas := grupo.Group("/estoque", autenticacao)
-	// /criticos antes de /:parte_peca_id: rota estatica, nao pode ser
-	// capturada pelo parametro.
+	// /criticos e /relatorio.csv antes de /:parte_peca_id: rotas estaticas,
+	// nao podem ser capturadas pelo parametro.
 	estoqueRotas.GET("/criticos", h.Criticos)
+	estoqueRotas.GET("/relatorio.csv", h.RelatorioCSV)
 	estoqueRotas.GET("", h.Listar)
 	estoqueRotas.GET("/:parte_peca_id", h.Obter)
 	estoqueRotas.POST("/ajuste", h.Ajustar, gestao)
@@ -90,6 +97,26 @@ func (h *EstoqueHandler) Criticos(c echo.Context) error {
 		return errosEstoque.responder(c, err)
 	}
 	return httpx.OK(c, itens)
+}
+
+// RelatorioCSV exporta o saldo de estoque inteiro, sem paginacao.
+func (h *EstoqueHandler) RelatorioCSV(c echo.Context) error {
+	params := consulta.Parametros{Pagina: 1, Limite: limiteRelatorio, OrdenarPor: "codigo", Ordem: consulta.Crescente}
+	itens, _, err := h.servico.ListarSaldo(c.Request().Context(), params)
+	if err != nil {
+		return errosEstoque.responder(c, err)
+	}
+
+	linhas := make([][]string, len(itens))
+	for i, s := range itens {
+		linhas[i] = []string{
+			s.Codigo, s.Descricao,
+			strconv.Itoa(s.QuantidadeAtual), strconv.Itoa(s.Disponivel), strconv.Itoa(s.EstoqueMinimo),
+			s.Status,
+		}
+	}
+	return responderCSV(c, "estoque.csv",
+		[]string{"codigo", "descricao", "saldo_atual", "disponivel", "estoque_minimo", "situacao"}, linhas)
 }
 
 // Ajustar registra um ajuste manual de estoque.

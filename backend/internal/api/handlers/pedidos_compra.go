@@ -48,9 +48,10 @@ func (h *PedidoCompraHandler) Registrar(grupo *echo.Group, autenticacao echo.Mid
 	rotas := grupo.Group("/pedidos-compra", autenticacao)
 	gestao := middleware.ExigirPerfil(usuario.PerfilAdmin, usuario.PerfilGestor)
 
-	// /em-atraso antes de /:id: e uma rota estatica que nao pode ser
-	// capturada pelo parametro de id.
+	// /em-atraso e /relatorio.csv antes de /:id: rotas estaticas, nao podem
+	// ser capturadas pelo parametro de id.
 	rotas.GET("/em-atraso", h.EmAtraso)
+	rotas.GET("/relatorio.csv", h.RelatorioCSV)
 	rotas.GET("", h.Listar)
 	rotas.GET("/:id", h.Obter)
 	rotas.POST("", h.Criar, gestao)
@@ -141,6 +142,32 @@ func (h *PedidoCompraHandler) EmAtraso(c echo.Context) error {
 		return errosPedidoCompra.responder(c, err)
 	}
 	return httpx.OK(c, itens)
+}
+
+const layoutDataCSV = "2006-01-02"
+
+// RelatorioCSV exporta todos os pedidos de compra, sem paginacao.
+func (h *PedidoCompraHandler) RelatorioCSV(c echo.Context) error {
+	itens, err := h.servico.ListarParaRelatorio(c.Request().Context())
+	if err != nil {
+		return errosPedidoCompra.responder(c, err)
+	}
+
+	linhas := make([][]string, len(itens))
+	for i, l := range itens {
+		entregaReal := ""
+		if !l.DataEntregaReal.IsZero() {
+			entregaReal = l.DataEntregaReal.Time.Format(layoutDataCSV)
+		}
+		linhas[i] = []string{
+			l.NumeroPC, l.FornecedorNome, l.Status,
+			l.DataPedido.Time.Format(layoutDataCSV), l.DataEntregaPrevista.Time.Format(layoutDataCSV), entregaReal,
+			l.ValorTotal.String(),
+		}
+	}
+	return responderCSV(c, "pedidos-compra.csv",
+		[]string{"numero_pc", "fornecedor", "status", "data_pedido", "data_entrega_prevista", "data_entrega_real", "valor_total"},
+		linhas)
 }
 
 // Obter devolve um pedido de compra especifico.

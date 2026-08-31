@@ -68,6 +68,20 @@ type PedidoCompra struct {
 	UpdatedBy           *string           `json:"updated_by,omitempty"`
 }
 
+// LinhaRelatorio e uma linha do relatorio CSV de pedidos de compra -- so
+// leitura, com o nome do fornecedor ja resolvido (o resto do dominio nao
+// precisa disso: PedidoCompra.FornecedorID basta, e o frontend resolve o
+// nome via useFornecedoresAtivos; um CSV precisa ser legivel sozinho).
+type LinhaRelatorio struct {
+	NumeroPC            string
+	FornecedorNome      string
+	Status              string
+	DataPedido          tempo.Data
+	DataEntregaPrevista tempo.Data
+	DataEntregaReal     tempo.Data
+	ValorTotal          dinheiro.Dinheiro
+}
+
 // ItemDados sao os dados de um item informados na criacao/edicao.
 type ItemDados struct {
 	PartePecaID          int64

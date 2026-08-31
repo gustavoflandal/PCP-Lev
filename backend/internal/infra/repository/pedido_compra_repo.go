@@ -216,6 +216,34 @@ func (r *PedidoCompraRepositorio) Listar(ctx context.Context, params consulta.Pa
 	return itens, total, linhas.Err()
 }
 
+// ListarParaRelatorio devolve todos os pedidos de compra (sem paginacao),
+// com o nome do fornecedor ja resolvido via JOIN -- so para a exportacao
+// CSV, que precisa ser legivel sem o cliente resolver o id depois.
+func (r *PedidoCompraRepositorio) ListarParaRelatorio(ctx context.Context) ([]pedidocompra.LinhaRelatorio, error) {
+	linhas, err := r.pool.Query(ctx, `
+		SELECT pc.numero_pc, f.razao_social, pc.status, pc.data_pedido, pc.data_entrega_prevista,
+		       pc.data_entrega_real, pc.valor_total
+		FROM pedidos_compra pc JOIN fornecedores f ON f.id = pc.fornecedor_id
+		ORDER BY pc.numero_pc`)
+	if err != nil {
+		return nil, fmt.Errorf("listar pedidos de compra para relatorio: %w", err)
+	}
+	defer linhas.Close()
+
+	itens := make([]pedidocompra.LinhaRelatorio, 0)
+	for linhas.Next() {
+		var l pedidocompra.LinhaRelatorio
+		if err := linhas.Scan(
+			&l.NumeroPC, &l.FornecedorNome, &l.Status, &l.DataPedido, &l.DataEntregaPrevista,
+			&l.DataEntregaReal, &l.ValorTotal,
+		); err != nil {
+			return nil, err
+		}
+		itens = append(itens, l)
+	}
+	return itens, linhas.Err()
+}
+
 // AtualizarStatus troca so o status (emitir/cancelar).
 func (r *PedidoCompraRepositorio) AtualizarStatus(ctx context.Context, id int64, status string, autor string) error {
 	etiqueta, err := r.pool.Exec(ctx,

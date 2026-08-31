@@ -61,6 +61,19 @@ func TestListarEstoqueResponde200(t *testing.T) {
 	require.Equal(t, http.StatusOK, rec.Code)
 }
 
+func TestRelatorioCSVDeEstoqueTrazCabecalhoELinhas(t *testing.T) {
+	api, _ := apiEstoque(t)
+
+	rec := api.chamar(http.MethodGet, "/api/v1/estoque/relatorio.csv", "", usuario.PerfilOperador)
+
+	require.Equal(t, http.StatusOK, rec.Code)
+	assert.Contains(t, rec.Header().Get("Content-Type"), "text/csv")
+	assert.Contains(t, rec.Header().Get("Content-Disposition"), "estoque.csv")
+	corpo := rec.Body.String()
+	assert.Contains(t, corpo, "codigo,descricao,saldo_atual,disponivel,estoque_minimo,situacao")
+	assert.Contains(t, corpo, "HND-001")
+}
+
 func TestObterEstoqueDeParteInexistenteResponde404(t *testing.T) {
 	api, _ := apiEstoque(t)
 
