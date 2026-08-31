@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { usePreferencias, type Densidade, type TamanhoFonte, type Tema } from './preferencias';
 
 export type Perfil = 'ADMIN' | 'GESTOR' | 'OPERADOR';
 
@@ -7,6 +8,10 @@ export interface UsuarioSessao {
   username: string;
   nome: string;
   perfil: Perfil;
+  tema: Tema;
+  alto_contraste: boolean;
+  densidade: Densidade;
+  tamanho_fonte: TamanhoFonte;
 }
 
 /** Contrato de POST /auth/login (doc 3). */
@@ -79,6 +84,12 @@ export const useAutenticacao = create<EstadoAutenticacao>((set) => ({
   entrar: (resposta) => {
     const sessao: Sessao = { token: resposta.access_token, usuario: resposta.usuario };
     salvarSessao(sessao);
+    usePreferencias.getState().aplicar({
+      tema: resposta.usuario.tema,
+      alto_contraste: resposta.usuario.alto_contraste,
+      densidade: resposta.usuario.densidade,
+      tamanho_fonte: resposta.usuario.tamanho_fonte,
+    });
     set({ ...sessao, autenticado: true, motivoSaida: null });
   },
 

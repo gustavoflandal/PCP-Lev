@@ -9,7 +9,10 @@ const respostaLogin = {
   access_token: 'token-abc',
   token_type: 'Bearer',
   expires_in: 28800,
-  usuario: { id: 1, username: 'admin', nome: 'Gustavo Landal', perfil: 'GESTOR' as const },
+  usuario: {
+    id: 1, username: 'admin', nome: 'Gustavo Landal', perfil: 'GESTOR' as const,
+    tema: 'automatico' as const, alto_contraste: false, densidade: 'confortavel' as const, tamanho_fonte: 'padrao' as const,
+  },
 };
 
 function renderizar() {

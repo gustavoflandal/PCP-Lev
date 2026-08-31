@@ -24,7 +24,7 @@ describe('App', () => {
             access_token: 'token-abc',
             token_type: 'Bearer',
             expires_in: 28800,
-            usuario: { id: 1, username: 'admin', nome: 'Gustavo Landal', perfil: 'GESTOR' },
+            usuario: { id: 1, username: 'admin', nome: 'Gustavo Landal', perfil: 'GESTOR', tema: 'automatico', alto_contraste: false, densidade: 'confortavel', tamanho_fonte: 'padrao' },
           }
         : { sucesso: true, dados: { status: 'ok', ambiente: 'test' } };
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -46,7 +46,7 @@ describe('App', () => {
       access_token: 'token-abc',
       token_type: 'Bearer',
       expires_in: 28800,
-      usuario: { id: 1, username: 'admin', nome: 'Gustavo Landal', perfil: 'GESTOR' },
+      usuario: { id: 1, username: 'admin', nome: 'Gustavo Landal', perfil: 'GESTOR', tema: 'automatico', alto_contraste: false, densidade: 'confortavel', tamanho_fonte: 'padrao' },
     });
 
     renderizarEm('/');
@@ -76,7 +76,7 @@ describe('App', () => {
       access_token: 'token-abc',
       token_type: 'Bearer',
       expires_in: 28800,
-      usuario: { id: 1, username: 'admin', nome: 'Gustavo Landal', perfil: 'GESTOR' },
+      usuario: { id: 1, username: 'admin', nome: 'Gustavo Landal', perfil: 'GESTOR', tema: 'automatico', alto_contraste: false, densidade: 'confortavel', tamanho_fonte: 'padrao' },
     });
 
     renderizarEm('/login');

@@ -31,7 +31,7 @@ function entrarComo(perfil: Perfil) {
     access_token: 'token-abc',
     token_type: 'Bearer',
     expires_in: 28800,
-    usuario: { id: 1, username: 'gestor01', nome: 'Gustavo Landal', perfil },
+    usuario: { id: 1, username: 'gestor01', nome: 'Gustavo Landal', perfil, tema: 'automatico', alto_contraste: false, densidade: 'confortavel', tamanho_fonte: 'padrao' },
   });
 }
 

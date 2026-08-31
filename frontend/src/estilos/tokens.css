@@ -3,6 +3,11 @@
    mapeadas em tailwind.config.js, nunca estes valores diretamente. */
 
 :root {
+  /* Controla a paleta nativa do navegador (scrollbar, controles de
+     formulario) -- precisa acompanhar data-tema, nao ficar fixo em
+     "light" (era assim antes da Fase 4.1, quando so existia tema claro). */
+  color-scheme: light;
+
   /* Superficies e texto — tema claro, padrao de galpao */
   --surface-base: #f7f8fa;
   --surface-raised: #ffffff;
@@ -41,6 +46,8 @@
    diferentes. Aplicado via atributo no <html>, nunca por classe de
    componente (nenhum componente sabe que tema escuro existe). */
 :root[data-tema='escuro'] {
+  color-scheme: dark;
+
   --surface-base: #0b0f14;
   --surface-raised: #151b23;
   --surface-sunken: #1c232c;

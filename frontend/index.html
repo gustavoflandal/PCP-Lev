@@ -3,8 +3,27 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="color-scheme" content="light" />
     <title>Sistema PCP</title>
+    <script>
+      // Aplica tema/contraste/densidade/fonte antes do primeiro paint, a
+      // partir do cache local -- sem isso a tela pisca no tema claro (ou
+      // errado) por uma fracao de segundo ate o React montar e reconciliar
+      // com a preferencia de verdade (backend). Ver store/preferencias.ts,
+      // que reaplica a mesma logica depois de montar (login/troca).
+      (function () {
+        try {
+          var p = JSON.parse(localStorage.getItem('pcp.preferencias') || '{}');
+          var el = document.documentElement;
+          var tema = p.tema === 'claro' || p.tema === 'escuro'
+            ? p.tema
+            : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'escuro' : 'claro');
+          el.setAttribute('data-tema', tema);
+          if (p.alto_contraste) el.setAttribute('data-alto-contraste', 'true');
+          el.setAttribute('data-densidade', p.densidade === 'compacta' ? 'compacta' : 'confortavel');
+          el.setAttribute('data-fonte', p.tamanho_fonte || 'padrao');
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -10,7 +10,7 @@ const respostaLogin = {
   access_token: 'token-abc',
   token_type: 'Bearer',
   expires_in: 28800,
-  usuario: { id: 1, username: 'admin', nome: 'Administrador do Sistema', perfil: 'ADMIN' },
+  usuario: { id: 1, username: 'admin', nome: 'Administrador do Sistema', perfil: 'ADMIN', tema: 'automatico', alto_contraste: false, densidade: 'confortavel', tamanho_fonte: 'padrao' },
 };
 
 async function preencherEEnviar(usuario = 'admin', senha = 'Admin@123') {
