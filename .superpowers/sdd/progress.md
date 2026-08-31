@@ -657,3 +657,39 @@ Fase 2.4 (Necessidade de Compra e Relatorios) completa: backend (397 testes) + f
 corrigidos (mais 6 achados Medios/Baixos), verificacao de navegador real via Playwright
 (13/13) incluindo confirmacao byte-a-byte do formato CSV, documentacao e capturas de
 tela entregues.
+
+---
+
+# Ledger — Fase 4.1: Aparencia e Preferencias (feat/aparencia-preferencias)
+
+Plano: docs/superpowers/plans/2026-08-31-aparencia-preferencias.md
+Decisoes de pre-voo: branch empilhada sobre feat/necessidade-compra-relatorios (PR ainda
+aberto). Escopo confirmado com o usuario: Tema (claro/escuro/automatico) + Alto
+Contraste + Densidade + Tamanho de Fonte, persistidos no backend por usuario (nao so
+localStorage). Fora de escopo: Cor de Destaque (conflita com a marca fixa do design
+system), Modo Quiosque/TV (sem Kanban ainda -- Fase 3), preparacao de i18n (sem segundo
+idioma real). `GET /auth/eu` deixa de so ecoar claims do JWT e passa a consultar o
+banco -- greenfield seguro, nao era consumido por nenhuma tela do frontend ate agora.
+
+Base do branch: 67b2410 (topo de feat/necessidade-compra-relatorios).
+
+## Progresso
+
+Task B1: complete (commit f1a8c2d, gofmt/vet limpos, 11/11 testes no dominio usuario).
+Migration 009 (4 colunas + CHECK constraints em `usuarios`); `usuario.Preferencias` +
+`Validar()` (conjunto fechado por campo, para 400 explicito em vez de estourar o CHECK
+do banco como 500).
+Task B2: complete (commit cb35cd8, 6/6 testes novos no repositorio). `Repositorio.
+AtualizarPreferencias` + `colunasUsuario`/`buscarUm` ganham os 4 campos novos.
+Task B3: complete (commit 2c428d9). `ServicoAutenticacao.AtualizarPreferencias` +
+`BuscarUsuarioAtual`; `AuthHandler.Eu` reescrito para consultar o banco em vez de ecoar
+claims; rota nova `PUT /auth/preferencias`. Efeito colateral mecanico corrigido: 3
+testes de `migrator_test.go` tinham a contagem de migrations hardcoded em 8, atualizados
+para 9.
+Task B4: verificacao manual via curl dentro da rede do compose -- login -> `GET
+/auth/eu` mostra os defaults (`automatico`/`false`/`confortavel`/`padrao`) -> `PUT
+/auth/preferencias` -> `GET /auth/eu` reflete os 4 campos sem novo login -> tema
+invalido responde 400 -> revertido para os defaults. Suite completa: 408/408 testes em
+22 pacotes (397 anteriores + 11 novos), go build/vet/gofmt limpos -- tudo via Docker.
+
+Backend da Fase 4.1 fechado (Tasks B1-B4). Frontend (Tasks F1-F5) a seguir.
