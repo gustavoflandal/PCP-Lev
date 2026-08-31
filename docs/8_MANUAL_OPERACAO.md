@@ -19,8 +19,9 @@
 9. [Pedidos de compra](#9-pedidos-de-compra)
 10. [Estoque e recebimento](#10-estoque-e-recebimento)
 11. [Necessidade de compra e relatórios](#11-necessidade-de-compra-e-relatórios)
-12. [Ajuda contextual](#12-ajuda-contextual)
-13. [Perguntas frequentes](#13-perguntas-frequentes)
+12. [Aparência e preferências](#12-aparência-e-preferências)
+13. [Ajuda contextual](#13-ajuda-contextual)
+14. [Perguntas frequentes](#14-perguntas-frequentes)
 
 ---
 
@@ -39,7 +40,7 @@ administrador.
   depois de um tempo sem uso) ou expirar, o sistema volta para esta tela e
   avisa o motivo. Basta entrar de novo — nada do que já foi salvo se perde.
 - Todas as telas, inclusive esta, têm um botão **Ajuda** no canto superior
-  direito. Veja a seção [12](#12-ajuda-contextual).
+  direito. Veja a seção [13](#13-ajuda-contextual).
 
 ---
 
@@ -356,7 +357,7 @@ O botão **Exportar CSV** baixa o saldo completo, sem filtro — veja a seção
   ou abaixo do estoque mínimo cadastrado na peça (seção [5](#5-partes-e-peças)),
   **OK** quando está acima, ou **Bloqueado**. Uma peça recém-cadastrada nasce
   com saldo zero e por isso sempre começa em Crítico, mesmo que o estoque
-  mínimo cadastrado seja zero (veja a seção [13](#13-perguntas-frequentes)).
+  mínimo cadastrado seja zero (veja a seção [14](#14-perguntas-frequentes)).
 
 ### 10.2 Ajustar o saldo manualmente
 
@@ -447,7 +448,40 @@ abrir no Excel. Só CSV por enquanto — PDF pode vir depois, se for pedido.
 
 ---
 
-## 12. Ajuda contextual
+## 12. Aparência e preferências
+
+Clique em **Preferências** no cabeçalho, ao lado do seu nome, para ajustar
+como o sistema aparece na sua tela. A preferência é salva na sua conta —
+vale em qualquer computador que você usar para entrar, não só na estação
+atual.
+
+![Tela de Preferências, tema claro](screenshots/34-preferencias-tema-claro.png)
+
+- **Tema**: Claro, Escuro ou Automático (segue o sistema operacional e muda
+  sozinho se o computador alternar entre claro e escuro, por exemplo ao
+  anoitecer).
+
+  ![Tela de Preferências, tema escuro](screenshots/35-preferencias-tema-escuro.png)
+
+- **Alto contraste**: variante de alta legibilidade para uso sob luz intensa
+  no chão de fábrica.
+
+  ![Tela de Preferências, alto contraste](screenshots/36-preferencias-alto-contraste.png)
+
+- **Densidade**: Compacta mostra mais linhas por tela (padrão, ideal para
+  telas de gestão); Confortável usa linhas mais altas, melhor para uso em
+  tablet.
+- **Tamanho de fonte**: Padrão, Grande ou Extra grande, para quem prefere
+  texto maior.
+
+  ![Tela de Preferências, fonte extra grande](screenshots/37-preferencias-fonte-extra-grande.png)
+
+Cada mudança é aplicada na hora, antes mesmo de confirmar — se a gravação
+falhar, o sistema volta para o valor anterior e avisa por quê.
+
+---
+
+## 13. Ajuda contextual
 
 Toda tela do sistema, inclusive o login, tem um botão **Ajuda** no
 cabeçalho. Ele abre uma janela com um lembrete rápido do que dá para fazer
@@ -462,7 +496,7 @@ telas se relacionam.
 
 ---
 
-## 13. Perguntas frequentes
+## 14. Perguntas frequentes
 
 **Inativei um cadastro por engano. Como desfaço?**
 Mude o filtro Situação para "Inativos" ou "Todos", clique em Editar no
