@@ -183,9 +183,11 @@ func (h *EmpresaHandler) servirImagem(c echo.Context, buscar func(ctx context.Co
 		return httpx.NaoEncontrado(c, "Imagem nao configurada")
 	}
 
-	// Cache curto: a mesma imagem raramente muda, mas nao ha versionamento
-	// na URL (todas apontam pro mesmo caminho) -- um cache longo demais
-	// atrasaria a atualizacao apos o administrador trocar o logo.
-	c.Response().Header().Set("Cache-Control", "private, max-age=300")
+	// Sempre revalida: a URL nao muda quando a imagem muda (nenhum
+	// parametro de versao), entao um max-age exibiria o logo antigo por ate
+	// esse tempo depois do administrador trocar. Sem ETag/Last-Modified
+	// aqui, "no-cache" sempre busca de novo -- aceitavel para um arquivo
+	// pequeno pedido poucas vezes por sessao (cabecalho, login).
+	c.Response().Header().Set("Cache-Control", "no-cache")
 	return c.Blob(http.StatusOK, tipo, dados)
 }
