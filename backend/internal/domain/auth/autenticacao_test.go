@@ -171,3 +171,47 @@ func TestTrocarSenhaDeUsuarioInexistente(t *testing.T) {
 
 	require.ErrorIs(t, err, usuario.ErrNaoEncontrado)
 }
+
+func TestAtualizarPreferenciasGravaEDevolveOUsuarioAtualizado(t *testing.T) {
+	ctx := context.Background()
+	pool := testsupport.BancoMigrado(t)
+	repo := repository.NovoUsuarioRepositorio(pool)
+	servico := auth.NovoServicoAutenticacao(repo, auth.NovoServicoToken(segredoTeste, time.Hour))
+	admin, err := repo.BuscarPorUsername(ctx, "admin")
+	require.NoError(t, err)
+
+	atualizado, err := servico.AtualizarPreferencias(ctx, admin.ID, usuario.Preferencias{
+		Tema: usuario.TemaEscuro, AltoContraste: true, Densidade: usuario.DensidadeCompacta, TamanhoFonte: usuario.FonteGrande,
+	})
+
+	require.NoError(t, err)
+	assert.Equal(t, usuario.TemaEscuro, atualizado.Tema)
+	assert.True(t, atualizado.AltoContraste)
+	assert.Empty(t, atualizado.SenhaHash, "o hash nunca sai do dominio")
+}
+
+func TestAtualizarPreferenciasRejeitaValorForaDoConjunto(t *testing.T) {
+	ctx := context.Background()
+	servico := servicoComBanco(t)
+
+	_, err := servico.AtualizarPreferencias(ctx, 1, usuario.Preferencias{
+		Tema: "roxo", Densidade: usuario.DensidadeCompacta, TamanhoFonte: usuario.FontePadrao,
+	})
+
+	require.ErrorIs(t, err, usuario.ErrPreferenciaInvalida)
+}
+
+func TestBuscarUsuarioAtualDevolveOUsuarioSemHash(t *testing.T) {
+	ctx := context.Background()
+	pool := testsupport.BancoMigrado(t)
+	repo := repository.NovoUsuarioRepositorio(pool)
+	servico := auth.NovoServicoAutenticacao(repo, auth.NovoServicoToken(segredoTeste, time.Hour))
+	admin, err := repo.BuscarPorUsername(ctx, "admin")
+	require.NoError(t, err)
+
+	u, err := servico.BuscarUsuarioAtual(ctx, admin.ID)
+
+	require.NoError(t, err)
+	assert.Equal(t, "admin", u.Username)
+	assert.Empty(t, u.SenhaHash)
+}

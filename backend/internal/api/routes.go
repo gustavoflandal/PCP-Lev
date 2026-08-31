@@ -76,6 +76,7 @@ func registrarAutenticacao(v1 *echo.Group, dep Dependencias) {
 	protegida := middleware.Autenticacao(dep.Tokens)
 	v1.GET("/auth/eu", handler.Eu, protegida)
 	v1.POST("/auth/trocar-senha", handler.TrocarSenha, protegida)
+	v1.PUT("/auth/preferencias", handler.AtualizarPreferencias, protegida)
 }
 
 // registrarCadastros publica os modulos de cadastro base (RF1).

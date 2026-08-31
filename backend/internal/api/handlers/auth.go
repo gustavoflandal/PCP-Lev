@@ -101,17 +101,59 @@ func (h *AuthHandler) TrocarSenha(c echo.Context) error {
 	}
 }
 
-// Eu devolve os dados do usuario da sessao corrente.
+// Eu devolve os dados do usuario da sessao corrente. Consulta o banco (nao
+// so ecoa as claims do JWT) para refletir mudancas -- como preferencias de
+// aparencia -- sem exigir um novo login.
 func (h *AuthHandler) Eu(c echo.Context) error {
 	claims := middleware.ClaimsDoContexto(c)
 	if claims == nil {
 		return httpx.NaoAutorizado(c, "Token de acesso ausente")
 	}
 
-	return httpx.OK(c, map[string]any{
-		"id":       claims.UsuarioID,
-		"username": claims.Username,
-		"nome":     claims.Nome,
-		"perfil":   claims.Perfil,
+	u, err := h.servico.BuscarUsuarioAtual(c.Request().Context(), claims.UsuarioID)
+	if err != nil {
+		return httpx.NaoAutorizado(c, "Usuario nao encontrado")
+	}
+	return httpx.OK(c, u)
+}
+
+// preferenciasRequest e o corpo de PUT /auth/preferencias.
+type preferenciasRequest struct {
+	Tema          string `json:"tema" validate:"required"`
+	AltoContraste bool   `json:"alto_contraste"`
+	Densidade     string `json:"densidade" validate:"required"`
+	TamanhoFonte  string `json:"tamanho_fonte" validate:"required"`
+}
+
+// AtualizarPreferencias grava as preferencias de aparencia do usuario da
+// sessao corrente.
+func (h *AuthHandler) AtualizarPreferencias(c echo.Context) error {
+	claims := middleware.ClaimsDoContexto(c)
+	if claims == nil {
+		return httpx.NaoAutorizado(c, "Token de acesso ausente")
+	}
+
+	var req preferenciasRequest
+	if err := c.Bind(&req); err != nil {
+		return httpx.Erro(c, http.StatusBadRequest, httpx.CodigoRequisicaoInvalida, "Corpo da requisicao invalido")
+	}
+	if problemas := httpx.Validar(req); problemas != nil {
+		return httpx.ErroValidacao(c, problemas)
+	}
+
+	atualizado, err := h.servico.AtualizarPreferencias(c.Request().Context(), claims.UsuarioID, usuario.Preferencias{
+		Tema: req.Tema, AltoContraste: req.AltoContraste, Densidade: req.Densidade, TamanhoFonte: req.TamanhoFonte,
 	})
+	if err != nil {
+		switch {
+		case errors.Is(err, usuario.ErrPreferenciaInvalida):
+			return httpx.Erro(c, http.StatusBadRequest, httpx.CodigoErroValidacao, err.Error())
+		case errors.Is(err, usuario.ErrNaoEncontrado):
+			return httpx.NaoEncontrado(c, "Usuario nao encontrado")
+		default:
+			slog.Error("falha ao atualizar preferencias", "usuario_id", claims.UsuarioID, "erro", err)
+			return httpx.ErroInterno(c)
+		}
+	}
+	return httpx.OK(c, atualizado)
 }

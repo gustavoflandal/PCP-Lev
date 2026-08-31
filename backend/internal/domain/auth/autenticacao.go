@@ -98,3 +98,27 @@ func (s *ServicoAutenticacao) TrocarSenha(ctx context.Context, usuarioID int64, 
 	}
 	return s.repo.AtualizarSenha(ctx, usuarioID, hash, u.Username)
 }
+
+// BuscarUsuarioAtual devolve os dados de sessao atualizados do usuario --
+// usado por GET /auth/eu, que precisa refletir mudancas (como preferencias)
+// sem exigir um novo login.
+func (s *ServicoAutenticacao) BuscarUsuarioAtual(ctx context.Context, usuarioID int64) (*usuario.Usuario, error) {
+	u, err := s.repo.BuscarPorID(ctx, usuarioID)
+	if err != nil {
+		return nil, err
+	}
+	u.SenhaHash = ""
+	return u, nil
+}
+
+// AtualizarPreferencias grava as preferencias de aparencia do usuario da
+// sessao e devolve os dados atualizados.
+func (s *ServicoAutenticacao) AtualizarPreferencias(ctx context.Context, usuarioID int64, p usuario.Preferencias) (*usuario.Usuario, error) {
+	if err := p.Validar(); err != nil {
+		return nil, err
+	}
+	if err := s.repo.AtualizarPreferencias(ctx, usuarioID, p); err != nil {
+		return nil, err
+	}
+	return s.BuscarUsuarioAtual(ctx, usuarioID)
+}

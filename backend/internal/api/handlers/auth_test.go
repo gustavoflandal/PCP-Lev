@@ -32,6 +32,7 @@ func apiDeTeste(t *testing.T) (*echo.Echo, *auth.ServicoToken) {
 	e.POST("/api/v1/auth/login", handler.Login)
 	e.GET("/api/v1/auth/eu", handler.Eu, middleware.Autenticacao(tokens))
 	e.POST("/api/v1/auth/trocar-senha", handler.TrocarSenha, middleware.Autenticacao(tokens))
+	e.PUT("/api/v1/auth/preferencias", handler.AtualizarPreferencias, middleware.Autenticacao(tokens))
 	return e, tokens
 }
 
@@ -188,6 +189,56 @@ func TestTrocarSenhaExigeAutenticacao(t *testing.T) {
 	e, _ := apiDeTeste(t)
 
 	rec := postTrocaDeSenha(t, e, "", `{"senha_atual":"Admin@123","nova_senha":"NovaSenha@2026"}`)
+
+	assert.Equal(t, http.StatusUnauthorized, rec.Code)
+}
+
+// putPreferencias dispara a atualizacao autenticada com o token informado.
+func putPreferencias(t *testing.T, e *echo.Echo, token, corpo string) *httptest.ResponseRecorder {
+	t.Helper()
+	req := httptest.NewRequest(http.MethodPut, "/api/v1/auth/preferencias", strings.NewReader(corpo))
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	if token != "" {
+		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
+	}
+	rec := httptest.NewRecorder()
+	e.ServeHTTP(rec, req)
+	return rec
+}
+
+func TestAtualizarPreferenciasResponde200ERefleteNoEu(t *testing.T) {
+	e, _ := apiDeTeste(t)
+	token := tokenDoAdmin(t, e)
+
+	rec := putPreferencias(t, e, token, `{"tema":"escuro","alto_contraste":true,"densidade":"compacta","tamanho_fonte":"grande"}`)
+
+	require.Equal(t, http.StatusOK, rec.Code, rec.Body.String())
+	dados := json_(t, rec)["dados"].(map[string]any)
+	assert.Equal(t, "escuro", dados["tema"])
+	assert.Equal(t, true, dados["alto_contraste"])
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/auth/eu", nil)
+	req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
+	recEu := httptest.NewRecorder()
+	e.ServeHTTP(recEu, req)
+	euDados := json_(t, recEu)["dados"].(map[string]any)
+	assert.Equal(t, "escuro", euDados["tema"], "Eu deve refletir a preferencia sem exigir novo login")
+}
+
+func TestAtualizarPreferenciasComTemaInvalidoResponde400(t *testing.T) {
+	e, _ := apiDeTeste(t)
+	token := tokenDoAdmin(t, e)
+
+	rec := putPreferencias(t, e, token, `{"tema":"roxo","densidade":"compacta","tamanho_fonte":"padrao"}`)
+
+	require.Equal(t, http.StatusBadRequest, rec.Code)
+	assert.Equal(t, "ERRO_VALIDACAO", json_(t, rec)["erro"].(map[string]any)["codigo"])
+}
+
+func TestAtualizarPreferenciasExigeAutenticacao(t *testing.T) {
+	e, _ := apiDeTeste(t)
+
+	rec := putPreferencias(t, e, "", `{"tema":"claro","densidade":"compacta","tamanho_fonte":"padrao"}`)
 
 	assert.Equal(t, http.StatusUnauthorized, rec.Code)
 }
