@@ -88,6 +88,22 @@ func TestCriarSegundaDiretoResponde409(t *testing.T) {
 	require.Equal(t, http.StatusConflict, rec.Code)
 }
 
+func TestCriarComPecaDuplicadaResponde400(t *testing.T) {
+	api, produtoID, pecaID := apiEstrutura(t)
+
+	corpo := `{
+		"produto_acabado_id": ` + formatarID(float64(produtoID)) + `,
+		"data_vigencia_inicio": "2026-09-01",
+		"itens": [
+			{"parte_peca_id": ` + formatarID(float64(pecaID)) + `, "quantidade": 4},
+			{"parte_peca_id": ` + formatarID(float64(pecaID)) + `, "quantidade": 1}
+		]
+	}`
+	rec := api.chamar(http.MethodPost, "/api/v1/boms", corpo, usuario.PerfilGestor)
+
+	require.Equal(t, http.StatusBadRequest, rec.Code, rec.Body.String())
+}
+
 func TestObterEstruturaInexistenteResponde404(t *testing.T) {
 	api, _, _ := apiEstrutura(t)
 

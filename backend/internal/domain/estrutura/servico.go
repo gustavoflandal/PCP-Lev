@@ -2,12 +2,6 @@ package estrutura
 
 import "context"
 
-// ColunasOrdenaveis restringe o `ordenar_por` do historico (nesta tarefa o
-// historico nao pagina/ordena por query string, mas a constante existe pela
-// simetria com os demais dominios, caso uma listagem HTTP paginada seja
-// adicionada depois).
-var ColunasOrdenaveis = []string{"versao", "data_vigencia_inicio", "created_at"}
-
 // Repositorio e a porta de persistencia da estrutura de produto.
 type Repositorio interface {
 	Criar(ctx context.Context, e *Estrutura, autor string) error

@@ -18,7 +18,24 @@ const itemEsquema = z.object({
 
 const esquema = z.object({
   data_vigencia_inicio: z.string().trim().min(1, 'Informe a vigência'),
-  itens: z.array(itemEsquema).min(1, 'Informe ao menos um item'),
+  itens: z
+    .array(itemEsquema)
+    .min(1, 'Informe ao menos um item')
+    .superRefine((itens, ctx) => {
+      const vistas = new Set<string>();
+      itens.forEach((item, indice) => {
+        if (!item.parte_peca_id) return;
+        if (vistas.has(item.parte_peca_id)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Esta peça já foi adicionada',
+            path: [indice, 'parte_peca_id'],
+          });
+          return;
+        }
+        vistas.add(item.parte_peca_id);
+      });
+    }),
 });
 
 type Formulario = {
@@ -77,6 +94,9 @@ export function NovaEstruturaProduto() {
 
   if (historicoQuery.isPending) {
     return <p className="text-body text-texto-secondary">Carregando…</p>;
+  }
+  if (historicoQuery.isError) {
+    return <p className="text-body text-estado-pending">Não foi possível carregar o histórico da estrutura.</p>;
   }
 
   return (

@@ -65,6 +65,9 @@ func (r *EstruturaRepositorio) Criar(ctx context.Context, e *estrutura.Estrutura
 			e.ID, item.PartePecaID, item.Quantidade,
 		).Scan(&e.Itens[i].ID)
 		if err != nil {
+			if violouIndiceUnico(err, "uk_estrutura_pp") {
+				return estrutura.ErrItemDuplicado
+			}
 			if violouChaveEstrangeira(err) {
 				return estrutura.ErrPartePecaInexistente
 			}
@@ -121,7 +124,10 @@ func (r *EstruturaRepositorio) itensDaEstrutura(ctx context.Context, estruturaID
 }
 
 // ListarPorProduto devolve o historico completo (todas as versoes), da mais
-// recente para a mais antiga — sem paginacao, lista curta por natureza.
+// recente para a mais antiga — sem paginacao, lista curta por natureza. Os
+// itens de cada versao sao carregados numa segunda query, agrupados em lote
+// (evita N+1) -- sem isso o `itens` some do JSON (omitempty) e a tela de
+// detalhe quebra ao tentar renderizar os itens da versao ativa.
 func (r *EstruturaRepositorio) ListarPorProduto(ctx context.Context, produtoAcabadoID int64) ([]estrutura.Estrutura, error) {
 	linhas, err := r.pool.Query(ctx,
 		`SELECT `+colunasEstrutura+` FROM estrutura_produto WHERE produto_acabado_id = $1 ORDER BY versao DESC`,
@@ -131,7 +137,8 @@ func (r *EstruturaRepositorio) ListarPorProduto(ctx context.Context, produtoAcab
 	}
 	defer linhas.Close()
 
-	itens := make([]estrutura.Estrutura, 0)
+	historico := make([]estrutura.Estrutura, 0)
+	ids := make([]int64, 0)
 	for linhas.Next() {
 		var e estrutura.Estrutura
 		if err := linhas.Scan(
@@ -140,9 +147,48 @@ func (r *EstruturaRepositorio) ListarPorProduto(ctx context.Context, produtoAcab
 		); err != nil {
 			return nil, err
 		}
-		itens = append(itens, e)
+		historico = append(historico, e)
+		ids = append(ids, e.ID)
 	}
-	return itens, linhas.Err()
+	if err := linhas.Err(); err != nil {
+		return nil, err
+	}
+	if len(ids) == 0 {
+		return historico, nil
+	}
+
+	itensPorEstrutura, err := r.itensDeVariasEstruturas(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
+	for i := range historico {
+		historico[i].Itens = itensPorEstrutura[historico[i].ID]
+	}
+	return historico, nil
+}
+
+// itensDeVariasEstruturas carrega os itens de varias estruturas numa unica
+// query (batching), agrupados por estrutura_produto_id.
+func (r *EstruturaRepositorio) itensDeVariasEstruturas(ctx context.Context, estruturaIDs []int64) (map[int64][]estrutura.Item, error) {
+	linhas, err := r.pool.Query(ctx,
+		`SELECT estrutura_produto_id, `+colunasItemEstrutura+`
+		 FROM itens_estrutura_produto WHERE estrutura_produto_id = ANY($1) ORDER BY estrutura_produto_id, id`,
+		estruturaIDs)
+	if err != nil {
+		return nil, fmt.Errorf("buscar itens das estruturas: %w", err)
+	}
+	defer linhas.Close()
+
+	porEstrutura := make(map[int64][]estrutura.Item, len(estruturaIDs))
+	for linhas.Next() {
+		var estruturaID int64
+		var item estrutura.Item
+		if err := linhas.Scan(&estruturaID, &item.ID, &item.PartePecaID, &item.Quantidade); err != nil {
+			return nil, err
+		}
+		porEstrutura[estruturaID] = append(porEstrutura[estruturaID], item)
+	}
+	return porEstrutura, linhas.Err()
 }
 
 // Versionar substitui a estrutura ativa em idAtual: apura a proxima versao,
@@ -161,7 +207,7 @@ func (r *EstruturaRepositorio) Versionar(
 
 	var maxVersao int
 	if err := tx.QueryRow(ctx,
-		`SELECT max(versao) FROM estrutura_produto WHERE produto_acabado_id = $1`, nova.ProdutoAcabadoID,
+		`SELECT coalesce(max(versao), 0) FROM estrutura_produto WHERE produto_acabado_id = $1`, nova.ProdutoAcabadoID,
 	).Scan(&maxVersao); err != nil {
 		return nil, fmt.Errorf("apurar versao atual: %w", err)
 	}
@@ -199,6 +245,9 @@ func (r *EstruturaRepositorio) Versionar(
 			nova.ID, item.PartePecaID, item.Quantidade,
 		).Scan(&nova.Itens[i].ID)
 		if err != nil {
+			if violouIndiceUnico(err, "uk_estrutura_pp") {
+				return nil, estrutura.ErrItemDuplicado
+			}
 			if violouChaveEstrangeira(err) {
 				return nil, estrutura.ErrPartePecaInexistente
 			}

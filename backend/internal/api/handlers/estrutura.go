@@ -21,6 +21,7 @@ var errosEstrutura = mapaDeErros{
 	{estrutura.ErrItensObrigatorios, http.StatusBadRequest, httpx.CodigoErroValidacao},
 	{estrutura.ErrQuantidadeInvalida, http.StatusBadRequest, httpx.CodigoErroValidacao},
 	{estrutura.ErrPartePecaInexistente, http.StatusBadRequest, httpx.CodigoErroValidacao},
+	{estrutura.ErrItemDuplicado, http.StatusBadRequest, httpx.CodigoErroValidacao},
 	{estrutura.ErrDataVigenciaObrigatoria, http.StatusBadRequest, httpx.CodigoErroValidacao},
 	{estrutura.ErrDataVigenciaFimInvalida, http.StatusBadRequest, httpx.CodigoErroValidacao},
 }

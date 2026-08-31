@@ -7,7 +7,6 @@ package estrutura
 
 import (
 	"errors"
-	"strings"
 	"time"
 
 	"github.com/gustavoflandal/pcp-lev/backend/internal/platform/tempo"
@@ -19,8 +18,12 @@ var (
 	ErrItensObrigatorios         = errors.New("informe ao menos um item")
 	ErrQuantidadeInvalida        = errors.New("a quantidade de cada item deve ser maior que zero")
 	ErrPartePecaInexistente      = errors.New("uma das pecas informadas nao existe")
-	ErrDataVigenciaObrigatoria   = errors.New("informe a data de inicio da vigencia")
-	ErrDataVigenciaFimInvalida   = errors.New("a data de fim da vigencia deve ser posterior ao inicio")
+	// ErrItemDuplicado cobre a mesma peca aparecendo duas vezes na lista de
+	// itens -- o schema (uk_estrutura_pp) tambem barra isso, mas validar aqui
+	// devolve 400 em vez de vazar um 500 generico do banco.
+	ErrItemDuplicado           = errors.New("a mesma peca nao pode aparecer duas vezes na estrutura")
+	ErrDataVigenciaObrigatoria = errors.New("informe a data de inicio da vigencia")
+	ErrDataVigenciaFimInvalida = errors.New("a data de fim da vigencia deve ser posterior ao inicio")
 	// ErrVigenciaAnteriorAAtual e devolvido por Versionar quando a nova data
 	// de inicio de vigencia nao e posterior a vigencia da estrutura sendo
 	// substituida -- evita gravar um intervalo de datas invertido no historico.
@@ -80,10 +83,15 @@ func (d Dados) Validar() error {
 	if len(d.Itens) == 0 {
 		return ErrItensObrigatorios
 	}
+	vistas := make(map[int64]struct{}, len(d.Itens))
 	for _, item := range d.Itens {
 		if item.Quantidade <= 0 {
 			return ErrQuantidadeInvalida
 		}
+		if _, repetida := vistas[item.PartePecaID]; repetida {
+			return ErrItemDuplicado
+		}
+		vistas[item.PartePecaID] = struct{}{}
 	}
 	if d.DataVigenciaInicio.IsZero() {
 		return ErrDataVigenciaObrigatoria
@@ -101,11 +109,4 @@ func (d Dados) ValidarProduto() error {
 		return ErrProdutoAcabadoObrigatorio
 	}
 	return nil
-}
-
-// Normalizar nao precisa limpar strings (nenhum campo de texto livre nesta
-// tarefa), mas existe pela simetria com os outros dominios e para um lugar
-// unico crescer se um campo de texto for adicionado depois.
-func (d *Dados) Normalizar() {
-	_ = strings.TrimSpace // no-op hoje; mantido por simetria com outros dominios
 }

@@ -97,4 +97,33 @@ describe('NovaEstruturaProduto', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('estrutura ativa');
   });
+
+  it('rejeita a mesma peca em dois itens sem enviar a requisicao', async () => {
+    servidor.responder([
+      { metodo: 'get', url: '/produtos-acabados/1/boms', status: 200, corpo: { sucesso: true, dados: [] } },
+      { metodo: 'get', url: '/partes-pecas', status: 200, corpo: PECAS },
+    ]);
+    renderizar();
+    await screen.findByText('Criar estrutura');
+
+    await userEvent.type(screen.getByLabelText(/Vigência/), '2026-09-01');
+    await userEvent.selectOptions(screen.getAllByLabelText(/Parte\/peça/)[0], 'RES-10K — Resistor');
+    await userEvent.click(screen.getByRole('button', { name: 'Adicionar item' }));
+    await userEvent.selectOptions(screen.getAllByLabelText(/Parte\/peça/)[1], 'RES-10K — Resistor');
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar' }));
+
+    expect(await screen.findByText('Esta peça já foi adicionada')).toBeInTheDocument();
+    expect(servidor.requisicoes.find((r) => r.url === '/boms')).toBeUndefined();
+  });
+
+  it('historico indisponivel mostra mensagem de erro em vez do formulario', async () => {
+    servidor.responder([
+      { metodo: 'get', url: '/produtos-acabados/1/boms', status: 500, corpo: { sucesso: false, erro: { codigo: 'ERRO_INTERNO', mensagem: 'falha' } } },
+      { metodo: 'get', url: '/partes-pecas', status: 200, corpo: PECAS },
+    ]);
+    renderizar();
+
+    expect(await screen.findByText('Não foi possível carregar o histórico da estrutura.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Salvar' })).not.toBeInTheDocument();
+  });
 });

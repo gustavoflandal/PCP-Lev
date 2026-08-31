@@ -12,6 +12,7 @@ import (
 	"github.com/gustavoflandal/pcp-lev/backend/internal/platform/tempo"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/testsupport"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -173,4 +174,45 @@ func TestListarPorProdutoTrazHistoricoMaisRecentePrimeiro(t *testing.T) {
 	require.Len(t, historico, 2)
 	require.Equal(t, 2, historico[0].Versao)
 	require.Equal(t, 1, historico[1].Versao)
+}
+
+// TestListarPorProdutoTrazOsItensDeCadaVersao evita regressao de um bug real:
+// ListarPorProduto chegou a devolver o cabecalho de cada versao sem os itens
+// (so BuscarPorID os carregava) -- o frontend quebra ao renderizar
+// ativa.itens quando isso acontece.
+func TestListarPorProdutoTrazOsItensDeCadaVersao(t *testing.T) {
+	ctx := context.Background()
+	servico, pool := servicoComBanco(t)
+	produtoID := criarProdutoDeTeste(ctx, t, pool)
+	pecaID := criarPecaDeTeste(ctx, t, pool)
+
+	dados := dadosDeTeste(pecaID, "2026-09-01")
+	dados.ProdutoAcabadoID = produtoID
+	primeira, err := servico.Criar(ctx, dados, "gestor01")
+	require.NoError(t, err)
+	_, err = servico.Versionar(ctx, primeira.ID, dadosDeTeste(pecaID, "2026-10-01"), "gestor01")
+	require.NoError(t, err)
+
+	historico, err := servico.ListarPorProduto(ctx, produtoID)
+
+	require.NoError(t, err)
+	require.Len(t, historico, 2)
+	require.Len(t, historico[0].Itens, 1, "versao 2 deve trazer seus itens")
+	assert.Equal(t, pecaID, historico[0].Itens[0].PartePecaID)
+	require.Len(t, historico[1].Itens, 1, "versao 1 (superada) tambem deve trazer seus itens")
+}
+
+func TestCriarRejeitaPecaDuplicadaNosItens(t *testing.T) {
+	ctx := context.Background()
+	servico, pool := servicoComBanco(t)
+	produtoID := criarProdutoDeTeste(ctx, t, pool)
+	pecaID := criarPecaDeTeste(ctx, t, pool)
+
+	dados := dadosDeTeste(pecaID, "2026-09-01")
+	dados.ProdutoAcabadoID = produtoID
+	dados.Itens = append(dados.Itens, estrutura.ItemDados{PartePecaID: pecaID, Quantidade: 1})
+
+	_, err := servico.Criar(ctx, dados, "gestor01")
+
+	require.ErrorIs(t, err, estrutura.ErrItemDuplicado)
 }
