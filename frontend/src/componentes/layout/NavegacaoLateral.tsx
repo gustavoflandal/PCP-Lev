@@ -35,7 +35,10 @@ const ESTOQUE: ItemNavegacao[] = [{ rota: '/estoque', rotulo: 'Estoque', icone: 
 // So Administrador edita (o backend recusa PUT de outro perfil com 403) --
 // esconder o link evita levar quem nao pode editar a uma tela que so vai
 // mostrar "acesso restrito".
-const CONFIGURACOES: ItemNavegacao[] = [{ rota: '/configuracoes/empresa', rotulo: 'Dados da empresa', icone: 'building' }];
+const CONFIGURACOES: ItemNavegacao[] = [
+  { rota: '/configuracoes/empresa', rotulo: 'Dados da empresa', icone: 'building' },
+  { rota: '/configuracoes/auditoria', rotulo: 'Auditoria', icone: 'history' },
+];
 
 // Ficam visiveis de proposito: quem usa o sistema precisa saber que estes
 // modulos vao existir, e em que ordem chegam.

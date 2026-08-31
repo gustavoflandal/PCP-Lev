@@ -7,6 +7,7 @@ import (
 	"github.com/gustavoflandal/pcp-lev/backend/internal/api/handlers"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/api/middleware"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/config"
+	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/auditoria"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/auth"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/cotacao"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/empresa"
@@ -55,6 +56,10 @@ func NovoRoteador(dep Dependencias) *echo.Echo {
 			echo.HeaderAccept, echo.HeaderAuthorization},
 		AllowCredentials: true,
 	}))
+	// Global (nao por rota): fixa a conexao que os repositorios usam durante
+	// toda a requisicao, para que os triggers de auditoria (migration 007)
+	// vejam o usuario/IP corretos -- ver middleware.ConexaoDeAuditoria.
+	e.Use(middleware.ConexaoDeAuditoria(dep.Pool, dep.Tokens))
 
 	v1 := e.Group("/api/v1")
 
@@ -137,6 +142,10 @@ func registrarCompras(v1 *echo.Group, dep Dependencias, autenticacao echo.Middle
 func registrarConfiguracoes(v1 *echo.Group, dep Dependencias, autenticacao echo.MiddlewareFunc) {
 	handlers.NovoEmpresaHandler(
 		empresa.NovoServico(repository.NovoEmpresaRepositorio(dep.Pool)),
+	).Registrar(v1, autenticacao)
+
+	handlers.NovoAuditoriaHandler(
+		auditoria.NovoServico(repository.NovoAuditoriaRepositorio(dep.Pool)),
 	).Registrar(v1, autenticacao)
 }
 

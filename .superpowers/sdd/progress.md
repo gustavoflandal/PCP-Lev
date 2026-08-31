@@ -909,3 +909,30 @@ Fase 4.2 (Dados da Empresa) fechada -- backend e frontend, 12 achados de revisao
 (Restante do Modulo de Configuracoes) tem mais 2 sub-itens pendentes (Parametros
 regionais e de negocio; Seguranca avancada/integracoes/backup/notificacoes, este
 ultimo majoritariamente decisao operacional/DevOps, nao codigo).
+
+# Decisao de planejamento — Cronograma v2.1 (31/08/2026)
+
+O Proprietario do projeto decidiu priorizar o fechamento completo da Fase 4 (Restante
+do Modulo de Configuracoes) antes de abrir a Fase 2.3 (Clientes/Centros de Trabalho) ou
+qualquer trabalho novo de Producao. Documentado em `docs/6_CRONOGRAMA_TECNICO.md`
+(revisao v2.1) apos analise e recomendacao apresentadas na conversa.
+
+Sequencia acordada das sub-entregas restantes da Fase 4:
+1. Auditoria (doc 0, secao 4.6.9) -- tela de consulta sobre a trilha `log_auditoria`
+   que ja existe no banco desde a migration 007.
+2. Parametros regionais (secao 4.6.4).
+3. Fatia de Seguranca/Banco de Dados (secao 4.6.6) -- tela somente-leitura + headers
+   de seguranca + rate limiting, sem Vault/rotacao de credenciais (decisao de infra).
+4. Fatia de Parametros de Negocio (secao 4.6.5) -- so Estoque e Compras, sem Producao
+   (Fase 3 nao existe ainda) e sem numeracao automatica de documentos (decisao de
+   stakeholder pendente).
+5. Fatia de Integracoes (secao 4.6.7) -- so SMTP + teste de envio.
+
+Adiado para depois da Fase 4: Backup/Manutencao (secao 4.6.8) e Notificacoes/Alertas
+(secao 4.6.10, depende em parte da Producao existir).
+
+A Fase 2.2 (RBAC) continua bloqueada esperando a sessao com o Gestor de Operacoes --
+decisao explicita de nao travar o resto da Fase 4 esperando essa sessao; as duas
+frentes correm em paralelo, idealmente a sessao acontecendo durante a janela da Fase 4.
+
+Proximo passo: iniciar a sub-entrega 1 (Auditoria).

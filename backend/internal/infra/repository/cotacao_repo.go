@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/cotacao"
+	"github.com/gustavoflandal/pcp-lev/backend/internal/infra/db"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/platform/consulta"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/platform/dinheiro"
 	"github.com/jackc/pgx/v5"
@@ -31,7 +32,7 @@ func NovoCotacaoRepositorio(pool *pgxpool.Pool) *CotacaoRepositorio {
 // item nao faz sentido (RF3.1 exige ao menos um), entao as duas gravacoes
 // tem que ter tudo ou nada.
 func (r *CotacaoRepositorio) Criar(ctx context.Context, c *cotacao.Cotacao, autor string) error {
-	tx, err := r.pool.Begin(ctx)
+	tx, err := db.DoContexto(ctx, r.pool).Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("iniciar transacao: %w", err)
 	}
@@ -81,7 +82,7 @@ func (r *CotacaoRepositorio) Criar(ctx context.Context, c *cotacao.Cotacao, auto
 // Atualizar substitui os dados e os itens de uma cotacao (so chamado em
 // Rascunho — a guarda de status vive no Servico).
 func (r *CotacaoRepositorio) Atualizar(ctx context.Context, c *cotacao.Cotacao, autor string) error {
-	tx, err := r.pool.Begin(ctx)
+	tx, err := db.DoContexto(ctx, r.pool).Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("iniciar transacao: %w", err)
 	}
@@ -138,7 +139,7 @@ func (r *CotacaoRepositorio) Atualizar(ctx context.Context, c *cotacao.Cotacao, 
 // BuscarPorID devolve a cotacao com os seus itens.
 func (r *CotacaoRepositorio) BuscarPorID(ctx context.Context, id int64) (*cotacao.Cotacao, error) {
 	var c cotacao.Cotacao
-	err := r.pool.QueryRow(ctx, `SELECT `+colunasCotacao+` FROM cotacoes WHERE id = $1`, id).Scan(
+	err := db.DoContexto(ctx, r.pool).QueryRow(ctx, `SELECT `+colunasCotacao+` FROM cotacoes WHERE id = $1`, id).Scan(
 		&c.ID, &c.NumeroCotacao, &c.FornecedorID, &c.DataEmissao, &c.DataValidade,
 		&c.DataResposta, &c.ValorTotal, &c.Status, &c.Observacoes,
 		&c.CreatedAt, &c.UpdatedAt, &c.CreatedBy, &c.UpdatedBy,
@@ -159,7 +160,7 @@ func (r *CotacaoRepositorio) BuscarPorID(ctx context.Context, id int64) (*cotaca
 }
 
 func (r *CotacaoRepositorio) itensDaCotacao(ctx context.Context, cotacaoID int64) ([]cotacao.ItemCotacao, error) {
-	linhas, err := r.pool.Query(ctx,
+	linhas, err := db.DoContexto(ctx, r.pool).Query(ctx,
 		`SELECT `+colunasItemCotacao+` FROM itens_cotacao WHERE cotacao_id = $1 ORDER BY id`, cotacaoID)
 	if err != nil {
 		return nil, fmt.Errorf("buscar itens da cotacao: %w", err)
@@ -183,7 +184,7 @@ func (r *CotacaoRepositorio) Listar(ctx context.Context, params consulta.Paramet
 	filtros, argumentos := filtrosDeCompras(params, "numero_cotacao")
 
 	var total int
-	if err := r.pool.QueryRow(ctx,
+	if err := db.DoContexto(ctx, r.pool).QueryRow(ctx,
 		`SELECT count(*) FROM cotacoes `+filtros, argumentos...).Scan(&total); err != nil {
 		return nil, 0, fmt.Errorf("contar cotacoes: %w", err)
 	}
@@ -193,7 +194,7 @@ func (r *CotacaoRepositorio) Listar(ctx context.Context, params consulta.Paramet
 		len(argumentos)+1, len(argumentos)+2)
 	argumentos = append(argumentos, params.Limite, params.Offset())
 
-	linhas, err := r.pool.Query(ctx, sql, argumentos...)
+	linhas, err := db.DoContexto(ctx, r.pool).Query(ctx, sql, argumentos...)
 	if err != nil {
 		return nil, 0, fmt.Errorf("listar cotacoes: %w", err)
 	}
@@ -216,7 +217,7 @@ func (r *CotacaoRepositorio) Listar(ctx context.Context, params consulta.Paramet
 
 // AtualizarStatus troca so o status (enviar/cancelar).
 func (r *CotacaoRepositorio) AtualizarStatus(ctx context.Context, id int64, status string, autor string) error {
-	etiqueta, err := r.pool.Exec(ctx,
+	etiqueta, err := db.DoContexto(ctx, r.pool).Exec(ctx,
 		`UPDATE cotacoes SET status = $2, updated_by = $3 WHERE id = $1`, id, status, autor)
 	if err != nil {
 		return fmt.Errorf("atualizar status da cotacao: %w", err)
@@ -230,7 +231,7 @@ func (r *CotacaoRepositorio) AtualizarStatus(ctx context.Context, id int64, stat
 // RegistrarResposta atualiza o preco de cada item, recalcula o valor total e
 // marca a cotacao como respondida — tudo na mesma transacao.
 func (r *CotacaoRepositorio) RegistrarResposta(ctx context.Context, id int64, resposta cotacao.RespostaDados, autor string) (*cotacao.Cotacao, error) {
-	tx, err := r.pool.Begin(ctx)
+	tx, err := db.DoContexto(ctx, r.pool).Begin(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("iniciar transacao: %w", err)
 	}
