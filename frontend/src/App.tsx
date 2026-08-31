@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Navigate, Route, Routes } from 'react-router-dom';
+import { AplicarBrandingEmpresa } from '@/componentes/layout/AplicarBrandingEmpresa';
 import { RotaProtegida } from '@/componentes/layout/RotaProtegida';
 import { Shell } from '@/componentes/layout/Shell';
 import { Fornecedores } from '@/paginas/cadastros/Fornecedores';
@@ -36,6 +37,7 @@ const queryClient = new QueryClient({
 export function App() {
   return (
     <QueryClientProvider client={queryClient}>
+      <AplicarBrandingEmpresa />
       <Routes>
         <Route path="/login" element={<Login />} />
 
