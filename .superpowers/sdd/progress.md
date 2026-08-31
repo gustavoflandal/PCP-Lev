@@ -936,3 +936,70 @@ decisao explicita de nao travar o resto da Fase 4 esperando essa sessao; as duas
 frentes correm em paralelo, idealmente a sessao acontecendo durante a janela da Fase 4.
 
 Proximo passo: iniciar a sub-entrega 1 (Auditoria).
+
+# Ledger — Fase 4, sub-entrega 1: Auditoria (feat/auditoria)
+
+Plano: docs/superpowers/plans/2026-08-31-auditoria.md
+Decisoes de pre-voo: branch empilhada sobre feat/dados-empresa (PR ainda aberto).
+
+**Achado que mudou o escopo (commit d43aac7)**: os triggers de auditoria da migration
+007 leem `usuario_id`/`endereco_ip` de variaveis de sessao do Postgres
+(`current_setting('pcp.usuario_id'/'pcp.endereco_ip')`) que o codigo Go nunca definiu --
+confirmado por busca no repositorio inteiro. Toda linha de auditoria gravada ate hoje
+tem usuario e IP sempre NULL, apesar do doc 0 (secao 4.6.9) exigir essa cobertura como
+obrigatoria. Usuario decidiu (via AskUserQuestion) corrigir isso antes da tela de
+consulta, em vez de entregar uma tela com a coluna "usuario" sempre vazia.
+
+## Progresso
+
+Task B0 (correcao do pinning de conexao, nao estava no plano original de outras fases
+-- adicionada por este achado):
+- commit 5f3784b: `db.Executor` (subconjunto de `*pgxpool.Pool`/`*pgxpool.Conn`) +
+  `db.ComExecutor`/`db.DoContexto` (novo pacote `internal/infra/db/executor.go`).
+  Todos os ~15 arquivos de repositorio trocados mecanicamente de `r.pool.Exec/Query/
+  QueryRow/Begin(ctx, ...)` para `db.DoContexto(ctx, r.pool).Exec/Query/QueryRow/
+  Begin(ctx, ...)` -- nenhuma assinatura de metodo mudou, nenhum teste existente
+  precisou de ajuste (o fallback e identico ao comportamento de antes).
+- commit f54e323: `middleware.ConexaoDeAuditoria`, registrado globalmente em
+  `NovoRoteador` (nao depende da ordem de outros middlewares por rota -- decodifica o
+  JWT por conta propria). Fixa uma conexao do pool por requisicao, grava nela as
+  variaveis de sessao, e reseta antes de devolver ao pool. Teste de ponta a ponta via
+  `api.NovoRoteador` real: login -> criar um fornecedor autenticado -> a linha de
+  auditoria correspondente tem `usuario_id` e `endereco_ip` corretos (antes da
+  correcao, sempre NULL).
+- Custo aceito conscientemente: cada requisicao HTTP passa a segurar uma conexao do
+  pool durante toda a sua duracao. Com `DB_MAX_CONNS=20` (padrao) e o perfil de uso do
+  projeto (~20 operadores + 1 gestor), a concorrencia esperada fica bem abaixo do
+  limite do pool.
+- Suite completa do backend roda sem nenhuma regressao apos a troca mecanica.
+
+Task B1 (commit fcefbb3): dominio `auditoria`, so leitura. `TabelasAuditadas` (lista
+fechada, espelha a migration 007) e `OperacoesValidas` para validar os filtros;
+`Filtros` com paginacao + periodo/usuario/tabela/operacao.
+Task B2 (commit 9023213): `AuditoriaRepositorio.Listar`/`ListarParaExportar`, com
+`LEFT JOIN usuarios` para resolver o nome de quem fez a acao; filtros compostos
+dinamicamente (mesmo padrao de outros repositorios de listagem).
+Task B3 (commit e847149): `GET /auditoria` (paginado) e `GET /auditoria/exportar`
+(CSV, sem paginacao), restritos a perfil Administrador -- mesmo nivel de Dados da
+Empresa.
+
+Task F1 (commit a5c68c7): tipos e servico (`listarAuditoria`,
+`queryDeExportacaoAuditoria` -- monta a query string do CSV a partir dos filtros, ja
+que `baixarArquivo` so aceita URL pronta).
+Task F2 (commit 784c72d): tela `Auditoria.tsx`. Filtros por periodo/tabela/acao;
+"Ver detalhes" abre um modal com o diff campo a campo (nao o JSON cru), calculado de
+forma uniforme para INSERT/UPDATE/DELETE (`calcularDiferencas`); Exportar CSV respeita
+os filtros aplicados na tela. Restrita a `perfil === 'ADMIN'`.
+Task F3 (commit bf45123): rota `/configuracoes/auditoria`, link na secao
+"Configuracoes" da navegacao lateral (visivel so para Admin) e ajuda contextual.
+Novo icone `history` (Lucide) adicionado ao registro `icones.ts`.
+
+Suite apos F1-F3: backend 100% dos pacotes ok (build/vet/gofmt limpos); frontend
+393/393 testes, eslint/tsc/build limpos.
+
+**Pausa de processo**: a pedido explicito do usuario ("pare o desenvolvimento por
+hora"), o trabalho foi commitado e enviado (push) neste ponto, mas a Task F4
+(verificacao final: agente `code-reviewer`, roteiro Playwright, screenshots,
+atualizacao do manual de operacao, aplicacao de achados de revisao, commit final e
+link de PR) **ainda nao foi executada**. Retomar a partir da Task F4 do plano quando
+o usuario pedir -- B0-B3 e F1-F3 nao precisam ser repetidos.
