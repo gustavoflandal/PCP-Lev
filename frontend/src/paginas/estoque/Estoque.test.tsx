@@ -1,6 +1,6 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderizarComProvedores, instalarServidorFalso, type ServidorFalso } from '@/testes/utilitarios';
 import { useToasts } from '@/componentes/ui/Toast';
 import { Estoque } from './Estoque';
@@ -83,5 +83,22 @@ describe('Estoque', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('saldo negativo');
     expect(screen.getByRole('dialog')).toBeInTheDocument();
+  });
+
+  it('exportar CSV baixa o relatorio de estoque', async () => {
+    URL.createObjectURL = () => 'blob:teste';
+    URL.revokeObjectURL = () => {};
+    const cliqueEspiao = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+    servidor.responder([
+      { metodo: 'get', url: '/estoque', status: 200, corpo: { dados: [ITEM], paginacao: { pagina: 1, limite: 20, total: 1, total_paginas: 1 } } },
+      { metodo: 'get', url: '/estoque/relatorio.csv', status: 200, corpo: new Blob(['codigo,descricao']) },
+    ]);
+    renderizarComProvedores(<Estoque />);
+    await screen.findByText('CON-001');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Exportar CSV' }));
+
+    await waitFor(() => expect(cliqueEspiao).toHaveBeenCalledTimes(1));
+    cliqueEspiao.mockRestore();
   });
 });

@@ -11,6 +11,7 @@ import { Tabela, type Coluna } from '@/componentes/ui/Tabela';
 import { useToasts } from '@/componentes/ui/Toast';
 import type { NomeIcone } from '@/componentes/ui/icones';
 import { useListagemEstoque } from '@/hooks/useListagemEstoque';
+import { baixarArquivo } from '@/lib/arquivos';
 import { separarErro } from '@/lib/errosDeFormulario';
 import { ajustarEstoque } from '@/servicos/estoque';
 import type { SaldoEstoque, StatusEstoque } from '@/tipos/estoque';
@@ -35,6 +36,10 @@ export function Estoque() {
   const [quantidade, definirQuantidade] = useState('');
   const [motivo, definirMotivo] = useState('');
   const [observacoes, definirObservacoes] = useState('');
+
+  const mutacaoExportar = useMutation({
+    mutationFn: () => baixarArquivo('/estoque/relatorio.csv', 'estoque.csv'),
+  });
 
   const mutacaoAjuste = useMutation({
     mutationFn: () =>
@@ -105,14 +110,25 @@ export function Estoque() {
         </p>
       </div>
 
-      <div className="w-[200px]">
-        <Selecao
-          rotulo="Situação"
-          opcoes={OPCOES_STATUS}
-          placeholder="Todos"
-          value={lista.status ?? ''}
-          onChange={(evento) => lista.definirStatus(evento.target.value || null)}
-        />
+      <div className="flex items-end justify-between gap-4">
+        <div className="w-[200px]">
+          <Selecao
+            rotulo="Situação"
+            opcoes={OPCOES_STATUS}
+            placeholder="Todos"
+            value={lista.status ?? ''}
+            onChange={(evento) => lista.definirStatus(evento.target.value || null)}
+          />
+        </div>
+        <Botao
+          variante="secundaria"
+          icone="save"
+          ocupado={mutacaoExportar.isPending}
+          rotuloOcupado="Exportando…"
+          onClick={() => mutacaoExportar.mutate()}
+        >
+          Exportar CSV
+        </Botao>
       </div>
 
       <div>

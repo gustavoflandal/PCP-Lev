@@ -110,4 +110,23 @@ describe('PedidosCompra', () => {
       expect(servidor.requisicoes.at(-1)?.params).toMatchObject({ status: 'Concluido' }),
     );
   });
+
+  it('exportar CSV baixa o relatorio de pedidos de compra', async () => {
+    URL.createObjectURL = () => 'blob:teste';
+    URL.revokeObjectURL = () => {};
+    const cliqueEspiao = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+    servidor.responder([
+      { metodo: 'get', url: '/pedidos-compra/em-atraso', status: 200, corpo: { sucesso: true, dados: [] } },
+      { metodo: 'get', url: '/pedidos-compra', status: 200, corpo: paginaComUmPedido },
+      { metodo: 'get', url: '/fornecedores', status: 200, corpo: paginaFornecedores },
+      { metodo: 'get', url: '/pedidos-compra/relatorio.csv', status: 200, corpo: new Blob(['numero_pc,fornecedor']) },
+    ]);
+    renderizarComProvedores(<PedidosCompra />);
+    await screen.findByText('PC-2026-001');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Exportar CSV' }));
+
+    await waitFor(() => expect(cliqueEspiao).toHaveBeenCalledTimes(1));
+    cliqueEspiao.mockRestore();
+  });
 });
