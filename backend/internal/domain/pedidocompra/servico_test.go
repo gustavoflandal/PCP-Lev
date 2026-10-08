@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/estoque"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/fornecedor"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/peca"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/pedidocompra"
@@ -20,7 +21,8 @@ import (
 func servicoComBanco(t *testing.T) (*pedidocompra.Servico, *pgxpool.Pool) {
 	t.Helper()
 	pool := testsupport.BancoMigrado(t)
-	return pedidocompra.NovoServico(repository.NovoPedidoCompraRepositorio(pool)), pool
+	estoqueServico := estoque.NovoServico(repository.NovoEstoqueRepositorio(pool))
+	return pedidocompra.NovoServico(repository.NovoPedidoCompraRepositorio(pool), estoqueServico), pool
 }
 
 func params(t *testing.T) consulta.Parametros {
@@ -104,7 +106,7 @@ func TestCriarComNumeroRepetidoFalha(t *testing.T) {
 	require.ErrorIs(t, err, pedidocompra.ErrNumeroPCDuplicado)
 }
 
-func TestEmitirMudaStatusParaEmitido(t *testing.T) {
+func TestEmitirVaiDiretoParaAguardandoEntrega(t *testing.T) {
 	ctx := context.Background()
 	servico, pool := servicoComBanco(t)
 	fornecedorID := criarFornecedorDeTeste(ctx, t, pool)
@@ -115,7 +117,7 @@ func TestEmitirMudaStatusParaEmitido(t *testing.T) {
 	emitido, err := servico.Emitir(ctx, criado.ID, "gestor01")
 
 	require.NoError(t, err)
-	assert.Equal(t, pedidocompra.StatusEmitido, emitido.Status)
+	assert.Equal(t, pedidocompra.StatusAguardandoEntrega, emitido.Status)
 }
 
 func TestEmitirForaDeRascunhoFalha(t *testing.T) {
@@ -179,8 +181,8 @@ func TestListarFiltraPorStatus(t *testing.T) {
 	require.NoError(t, err)
 
 	p := params(t)
-	emitido := pedidocompra.StatusEmitido
-	p.FiltroStatus = &emitido
+	aguardandoEntrega := pedidocompra.StatusAguardandoEntrega
+	p.FiltroStatus = &aguardandoEntrega
 
 	itens, total, err := servico.Listar(ctx, p)
 
@@ -188,6 +190,93 @@ func TestListarFiltraPorStatus(t *testing.T) {
 	assert.Equal(t, 1, total)
 	require.Len(t, itens, 1)
 	assert.Equal(t, "PC-2026-001", itens[0].NumeroPC)
+}
+
+func TestRegistrarRecebimentoParcialNaoFechaOPedido(t *testing.T) {
+	ctx := context.Background()
+	servico, pool := servicoComBanco(t)
+	fornecedorID := criarFornecedorDeTeste(ctx, t, pool)
+	pecaID := criarPecaDeTeste(ctx, t, pool)
+	criado, err := servico.Criar(ctx, dadosDeTeste(fornecedorID, pecaID), "gestor01")
+	require.NoError(t, err)
+	_, err = servico.Emitir(ctx, criado.ID, "gestor01")
+	require.NoError(t, err)
+
+	recebido, err := servico.RegistrarRecebimento(ctx, criado.ID,
+		[]pedidocompra.ItemRecebimentoDados{{PartePecaID: pecaID, QuantidadeRecebida: 40}}, "gestor01")
+
+	require.NoError(t, err)
+	assert.Equal(t, pedidocompra.StatusRecebidoParcial, recebido.Status)
+}
+
+func TestRegistrarRecebimentoSomaSobreOAnterior(t *testing.T) {
+	ctx := context.Background()
+	servico, pool := servicoComBanco(t)
+	fornecedorID := criarFornecedorDeTeste(ctx, t, pool)
+	pecaID := criarPecaDeTeste(ctx, t, pool)
+	criado, err := servico.Criar(ctx, dadosDeTeste(fornecedorID, pecaID), "gestor01")
+	require.NoError(t, err)
+	_, err = servico.Emitir(ctx, criado.ID, "gestor01")
+	require.NoError(t, err)
+	_, err = servico.RegistrarRecebimento(ctx, criado.ID,
+		[]pedidocompra.ItemRecebimentoDados{{PartePecaID: pecaID, QuantidadeRecebida: 40}}, "gestor01")
+	require.NoError(t, err)
+
+	concluido, err := servico.RegistrarRecebimento(ctx, criado.ID,
+		[]pedidocompra.ItemRecebimentoDados{{PartePecaID: pecaID, QuantidadeRecebida: 60}}, "gestor01")
+
+	require.NoError(t, err)
+	assert.Equal(t, pedidocompra.StatusConcluido, concluido.Status)
+	assert.False(t, concluido.DataEntregaReal.IsZero())
+}
+
+func TestRegistrarRecebimentoAcimaDoSolicitadoFalha(t *testing.T) {
+	ctx := context.Background()
+	servico, pool := servicoComBanco(t)
+	fornecedorID := criarFornecedorDeTeste(ctx, t, pool)
+	pecaID := criarPecaDeTeste(ctx, t, pool)
+	criado, err := servico.Criar(ctx, dadosDeTeste(fornecedorID, pecaID), "gestor01")
+	require.NoError(t, err)
+	_, err = servico.Emitir(ctx, criado.ID, "gestor01")
+	require.NoError(t, err)
+
+	_, err = servico.RegistrarRecebimento(ctx, criado.ID,
+		[]pedidocompra.ItemRecebimentoDados{{PartePecaID: pecaID, QuantidadeRecebida: 200}}, "gestor01")
+
+	require.ErrorIs(t, err, pedidocompra.ErrQuantidadeRecebidaExcedeSolicitada)
+}
+
+func TestRegistrarRecebimentoForaDeAguardandoEntregaFalha(t *testing.T) {
+	ctx := context.Background()
+	servico, pool := servicoComBanco(t)
+	fornecedorID := criarFornecedorDeTeste(ctx, t, pool)
+	pecaID := criarPecaDeTeste(ctx, t, pool)
+	criado, err := servico.Criar(ctx, dadosDeTeste(fornecedorID, pecaID), "gestor01") // fica em Rascunho
+	require.NoError(t, err)
+
+	_, err = servico.RegistrarRecebimento(ctx, criado.ID, nil, "gestor01")
+
+	require.ErrorIs(t, err, pedidocompra.ErrStatusInvalidoParaAcao)
+}
+
+func TestRegistrarRecebimentoDaEntradaNoEstoque(t *testing.T) {
+	ctx := context.Background()
+	servico, pool := servicoComBanco(t)
+	fornecedorID := criarFornecedorDeTeste(ctx, t, pool)
+	pecaID := criarPecaDeTeste(ctx, t, pool)
+	criado, err := servico.Criar(ctx, dadosDeTeste(fornecedorID, pecaID), "gestor01")
+	require.NoError(t, err)
+	_, err = servico.Emitir(ctx, criado.ID, "gestor01")
+	require.NoError(t, err)
+
+	_, err = servico.RegistrarRecebimento(ctx, criado.ID,
+		[]pedidocompra.ItemRecebimentoDados{{PartePecaID: pecaID, QuantidadeRecebida: 30}}, "gestor01")
+	require.NoError(t, err)
+
+	estoqueRepo := repository.NovoEstoqueRepositorio(pool)
+	saldo, err := estoqueRepo.BuscarSaldo(ctx, pecaID)
+	require.NoError(t, err)
+	assert.Equal(t, 30, saldo.QuantidadeAtual)
 }
 
 func TestEmAtrasoTrazSoOsVencidosENaoTerminais(t *testing.T) {

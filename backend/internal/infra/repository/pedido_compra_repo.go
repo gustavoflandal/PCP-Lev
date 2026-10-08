@@ -7,6 +7,7 @@ import (
 
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/pedidocompra"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/platform/consulta"
+	"github.com/gustavoflandal/pcp-lev/backend/internal/platform/tempo"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -254,4 +255,75 @@ func (r *PedidoCompraRepositorio) EmAtraso(ctx context.Context, statusTerminais 
 		itens = append(itens, p)
 	}
 	return itens, linhas.Err()
+}
+
+// RegistrarRecebimento soma quantidade_recebida por item (com FOR UPDATE
+// para evitar corrida entre duas chamadas concorrentes), recalcula o status
+// do pedido e devolve o pedido atualizado -- tudo na mesma transacao.
+func (r *PedidoCompraRepositorio) RegistrarRecebimento(
+	ctx context.Context, id int64, itens []pedidocompra.ItemRecebimentoDados, autor string,
+) (*pedidocompra.PedidoCompra, error) {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("iniciar transacao: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	for _, item := range itens {
+		if item.QuantidadeRecebida <= 0 {
+			continue
+		}
+		var recebidaAtual, solicitada int
+		err := tx.QueryRow(ctx,
+			`SELECT quantidade_recebida, quantidade_solicitada FROM itens_pedido_compra
+			 WHERE pedido_compra_id = $1 AND parte_peca_id = $2 FOR UPDATE`,
+			id, item.PartePecaID,
+		).Scan(&recebidaAtual, &solicitada)
+		if err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				return nil, pedidocompra.ErrFornecedorOuPecaInexistente
+			}
+			return nil, fmt.Errorf("travar item do pedido: %w", err)
+		}
+
+		novaRecebida := recebidaAtual + item.QuantidadeRecebida
+		if novaRecebida > solicitada {
+			return nil, pedidocompra.ErrQuantidadeRecebidaExcedeSolicitada
+		}
+
+		if _, err := tx.Exec(ctx,
+			`UPDATE itens_pedido_compra SET quantidade_recebida = $1
+			 WHERE pedido_compra_id = $2 AND parte_peca_id = $3`,
+			novaRecebida, id, item.PartePecaID,
+		); err != nil {
+			return nil, fmt.Errorf("atualizar quantidade recebida: %w", err)
+		}
+	}
+
+	var pendentes int
+	if err := tx.QueryRow(ctx,
+		`SELECT count(*) FROM itens_pedido_compra WHERE pedido_compra_id = $1 AND quantidade_recebida < quantidade_solicitada`,
+		id).Scan(&pendentes); err != nil {
+		return nil, fmt.Errorf("verificar itens pendentes: %w", err)
+	}
+
+	novoStatus := pedidocompra.StatusRecebidoParcial
+	var dataEntregaReal tempo.Data
+	if pendentes == 0 {
+		novoStatus = pedidocompra.StatusConcluido
+		dataEntregaReal = tempo.Hoje()
+	}
+
+	if _, err := tx.Exec(ctx,
+		`UPDATE pedidos_compra SET status = $2, data_entrega_real = $3, updated_by = $4 WHERE id = $1`,
+		id, novoStatus, dataEntregaReal, autor,
+	); err != nil {
+		return nil, fmt.Errorf("atualizar status do pedido apos recebimento: %w", err)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("confirmar recebimento: %w", err)
+	}
+
+	return r.BuscarPorID(ctx, id)
 }

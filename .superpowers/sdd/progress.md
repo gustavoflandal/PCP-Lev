@@ -197,3 +197,169 @@ verificado sem -race (255/255 em #1, 336/336 em #2) e por analise do mecanismo e
 deadlock a partir dos logs de execucao reais da CI. Aguardando a CI confirmar em ambas as
 PRs.
 
+---
+
+# Ledger — Sprint 4: Recebimento e Estoque (feat/sprint4-recebimento-estoque)
+
+Plano: docs/superpowers/plans/2026-08-30-sprint4-recebimento-estoque.md
+Spec: docs/superpowers/specs/2026-08-30-sprint4-estoque-recebimento-design.md
+Decisoes de pre-voo:
+- Branch empilhada sobre feat/sprint3-cotacoes-pedidos-compra (PR #2 ainda aberta).
+- Escopo EXCLUI relatorio de estoque/movimentacoes em PDF/CSV (Sprint 5, mesma
+  infraestrutura de exportacao de compras/producao), reserva/bloqueio de estoque por OP e
+  entrada de PA por conclusao de OP (Sprint 6, dependem de Ordem de Producao que nao existe
+  ainda), geracao automatica de necessidade de compra (Sprint 5, precisa de OPs+BOM).
+- Descoberta: peca_repo.go.Criar ja grava a linha de saldo_estoque zerada/CRITICO na mesma
+  transacao da peca desde o Sprint 2 -- nenhuma migration ou codigo novo precisou disso.
+- Emitir um PC vai direto para "Aguardando Entrega" (nao mais "Emitido") -- nao ha, em
+  nenhum requisito, um passo de "confirmar aceite do fornecedor".
+- Duplicacao deliberada confirmada com o usuario (pre-flight do subagent-driven-development):
+  estoque.SituacaoDoSaldo duplica peca.PartePeca.SituacaoDoSaldo (RN5), e useListagemEstoque
+  duplica a forma de useListagemCompras -- em ambos os casos, mantidos como o plano manda,
+  para nao acoplar os pacotes de dominio/hooks por uma coincidencia de formato.
+
+Base do branch: 4dfa866 (topo de feat/sprint3-cotacoes-pedidos-compra na hora da criacao)
+
+## Progresso
+
+Task B1: complete (commits 3263648..01baacb, review clean -- so achados Minor ja
+conhecidos: duplicacao de SituacaoDoSaldo com peca.go, aprovada previamente com o usuario).
+Dominio estoque: Saldo, Movimentacao, AjusteDados, constantes de status/tipo/motivo,
+Validar/Normalizar. 8/8 testes.
+Task B2: complete (commits 95f6a53..ccbc3e7, review encontrou 2 Important reais na
+primeira rodada -- bug do proprio plano, nao do implementador: ListarMovimentacoes
+reusava filtrosDeCadastro, o que deixaria WHERE ativo=$1 ambiguo assim que o LEFT JOIN
+usuarios entrasse (partes_pecas e usuarios tem coluna ativo); e Scan de Movimentacao
+duplicado em 2 call sites sem o helper que Saldo ja tinha. Corrigido: ListarMovimentacoes
+passa a listar sem filtro nesta sprint (nenhuma rota ainda envia data/motivo/parte_peca_id),
+e escanearMovimentacao extraido mirror de escanearSaldo. Reaprovado limpo). estoque.Servico +
+EstoqueRepositorio: AplicarMovimento com FOR UPDATE, Ajustar, ListarSaldo/Criticos/
+Movimentacoes. 10/10 testes (2 servico + 8 repositorio).
+Task B3: complete (commits fefc9a6..b8eb2fb, review clean). Handler HTTP de estoque:
+GET /estoque, GET /estoque/:parte_peca_id, GET /estoque/criticos (registrada antes de
+:parte_peca_id), POST /estoque/ajuste (Admin/Gestor), GET /movimentacoes,
+GET /movimentacoes/:id. errosEstoque mapeia as 7 sentinelas do dominio. 8/8 testes novos
+(98/98 no pacote handlers).
+Task B4: complete (commits 9d58a3b..75aa0db, review clean). Emitir vai direto para
+Aguardando Entrega; NovoServico(repo, estoqueServico) muda assinatura (4 chamadas
+atualizadas: routes.go, cotacoes_test.go, pedidos_compra_test.go, servico_test.go);
+RegistrarRecebimento (servico+repositorio) soma quantidade_recebida cumulativo com FOR
+UPDATE, fecha o PC (Concluido + data_entrega_real via tempo.Hoje()) ou deixa Recebido
+Parcial, aciona estoque.AplicarMovimento depois do PC commitado (no essa ordem, nao ao
+contrario -- ver risco documentado no plano). Consequencia mecanica corrigida: 3 testes
+pre-existentes que checavam o status "Emitido" literal passaram a checar "Aguardando
+Entrega". Achados Minor da revisao (nao bloqueiam, registrados para referencia futura):
+reuso de ErrFornecedorOuPecaInexistente para "item nao pertence a este PC" (decisao do
+proprio brief); ordem de lock por item segue a ordem do slice recebido -- risco teorico
+de deadlock com chamadas concorrentes que informem itens em ordens diferentes, sem teste
+de concorrencia (nao exigido pelo brief); reenvio de recebimento parcial com multiplos
+itens, se um item no meio do laco de estoque falhar, poderia contaritens ja recebidos
+de novo se o operador reenviar a lista inteira em vez de so o que faltou. Suite completa
+do backend (go build/vet/test ./...) verde. routes.go recebeu uma instancia local de
+estoque.Servico so para compilar -- Task B6 deve compartilhar a mesma instancia, nao
+duplicar.
+Task B5: complete (commits ec8821d..a499669, review clean). Rota POST
+/pedidos-compra/:id/registrar-recebimento (Admin/Gestor), errosPedidoCompra ganha
+ErrQuantidadeRecebidaExcedeSolicitada->400. 4/4 testes novos (93/93 no pacote handlers).
+Ajuste fora do brief: fixture criarFornecedorEPecaDeApoio (compartilhado com
+cotacoes_test.go) ganhou INSERT em saldo_estoque -- sem isso o teste de recebimento dava
+500 (fixture antigo pulava a abertura de saldo que peca.Servico.Criar faz em producao).
+Achado Minor para a revisao final da branch triar: esse INSERT grava status='OK' a mao,
+inconsistente com a RN5 (saldo 0 <= estoque_minimo 0 deveria nascer CRITICO, como o
+fixture irmao criarPecaDeApoio em estoque_test.go ja faz corretamente) -- inocuo hoje
+porque AplicarMovimento recalcula o status na primeira movimentacao e nenhum teste le o
+status antes disso, mas vale alinhar os dois fixtures.
+Task B6: complete (commits 6a926f6..253829c, review clean -- so achado Menor cosmetico
+de comentario). registrarEstoque(v1, dep, autenticacao) monta o estoque.Servico, registra
+/estoque e /movimentacoes, e devolve o servico; registrarCompras passa a receber esse
+servico por parametro em vez de montar o proprio (consolida o que a Task B4 tinha criado
+so para compilar -- agora e uma unica instancia por boot). go build/vet/gofmt/test ./...
+limpos: 371 testes em 21 pacotes. Fluxo manual de 15 passos contra Postgres real
+confirmado ponta a ponta (peca -> estoque critico -> cotacao -> enviar -> resposta ->
+converter-pc -> emitir -> Aguardando Entrega -> recebimento parcial -> Recebido Parcial ->
+recebimento total -> Concluido + data_entrega_real -> saldo somado -> ajuste negativo
+demais -> 409).
+
+Backend da Sprint 4 fechado (Tasks B1-B6). Frontend (Tasks F1-F6) a seguir.
+
+Task F1: complete (commits a7e9f5b..69115f1, review clean). tipos/estoque.ts +
+servicos/estoque.ts (mirror de compras.ts): listarEstoque/obterEstoque/
+listarEstoqueCriticos/ajustarEstoque/listarMovimentacoes. 7/7 testes.
+Task F2: complete (commits b5b50f4..0c3ae6c, review clean). useListagemEstoque: mesma
+forma de useListagemCompras, sem busca/debounce (decisao deliberada, ja aprovada -- sem
+acoplar estoque a compras por coincidencia de formato). 6/6 testes.
+Task F3: complete (commits eda859e..9b32122, review clean). Tela /estoque (sem rota ainda
+-- isso e a Task F5): lista com filtro de situacao, badge por status, modal de ajuste
+manual com noValidate desde o primeiro commit, erro 409 mantem o modal aberto. Desvio
+necessario do teste do brief: 4 linhas de getByLabelText('Quantidade'/'Motivo') (string
+exata) trocadas para regex, porque Campo com obrigatorio acrescenta um "*" visivel ao
+rotulo -- mesmo padrao ja usado em Campo.test.tsx/PartesPecas.test.tsx, confirmado pela
+revisao. Enunciado do brief tinha contagem errada (dizia 6 casos, o codigo real tem 5) --
+imprecisao do proprio plano, nao do implementador. 5/5 testes. Achado Minor para a revisao
+final triar (heranca do brief, nao do implementador): o alerta do modal de ajuste so
+mostra o erro geral, nunca erro por campo (separarErro().porCampo nunca repassado aos
+Campo), e nao ha validacao client-side antes do submit (noValidate desliga a nativa).
+Task F4: complete (commits 5f4fbc7..b11b550, review clean). Etapa "Concluido" da trilha do
+PC vira pendente-acionavel quando Aguardando Entrega/Recebido Parcial, abre
+ModalRegistrarRecebimento (mirror de ModalRegistrarResposta da cotacao), filtra itens com
+quantidade_recebida<=0 antes de enviar. Correcao necessaria do brief: fixture inventado
+PEDIDO_AGUARDANDO_ENTREGA nao existe -- usado o padrao real (funcao fabrica pedidoBase(status,
+extra) + helper renderizar() ja existentes no arquivo). Os 6 testes originais de
+DetalhePedidoCompra.test.tsx continuam intactos, 2 novos + 1 em compras.test.ts. Suite
+inteira do frontend 296/296. Achados Minor (nao bloqueiam): cobertura do filtro de
+zero/negativos nao exercida com multiplos itens; titulo do modal e rotulo do botao
+identicos (heranca do brief); invalidacao de query redundante (heranca do brief); sem
+clamping client-side de quantidade pendente por item (mesmo padrao ja aceito em
+ModalRegistrarResposta/DetalheCotacao, confirmado pela revisao).
+Task F5: complete (commits cce0d7f..7feb2c3, review clean). Rota /estoque em App.tsx,
+secao "Estoque" na navegacao lateral (icone 'boxes' -- 'warehouse' nao existe no registro
+de icones, confirmado antes de implementar), conteudo de Ajuda para /estoque, widget do
+Painel trocado de placeholder estatico para listarEstoqueCriticos() real (mesmo padrao de
+"Pedidos em atraso"). 2 testes pre-existentes de Painel.test.tsx adaptados (nao so
+adicionados) porque dependiam do widget estatico substituido -- revisao confirmou que
+preservam a intencao original, sem enfraquecer cobertura. Suite inteira do frontend
+300/300.
+Task F6: complete (commits 936b5fb..9a087b8, review encontrou 1 Importante real na
+primeira rodada, reaprovado limpo depois). Suite/lint/build verdes, roteiro de navegador
+real via Playwright 30/30 passos confirmados (peca -> ajuste +/- -> 409 -> cotacao ->
+enviar -> resposta -> converter-pc -> emitir (nasce em Aguardando Entrega) -> recebimento
+parcial -> recebimento total -> saldo em /estoque -> escala de cinza -> so teclado ->
+800px). 2 achados reais corrigidos: (1) trilha do PC nao diferenciava "Aguardando Entrega"
+de "Recebido Parcial" visualmente (mesmo estado pendente-acionavel) -- badge textual
+adicionado acima da trilha so para esses dois status, sem tocar TrilhaEtapas.tsx; (2)
+"tirar um acessorio" -- coluna "Reservado" removida de /estoque (sempre 0 nesta sprint,
+Disponivel mantido). Corrigido apos revisao: o badge novo usava tom/icone diferentes do
+mapa TOM_STATUS ja existente em PedidosCompra.tsx para os mesmos status (mesmo pedido
+comunicando significado diferente dependendo da tela) -- alinhado ('Aguardando Entrega'
+-> blocked/shield-alert, 'Recebido Parcial' -> warning/alert-triangle, batendo com
+PedidosCompra.tsx). Nota: o subagente de correcao caiu por limite de gasto da conta a
+meio caminho (ja tinha o diff certo e 8/8 testes passando) -- controlador verificou
+lint/tsc e fechou o commit diretamente, sem redigitar a correcao.
+
+Frontend da Sprint 4 fechado (Tasks F1-F6). Falta so a Task 21 (documentacao/entrega).
+
+## Fechamento final da Sprint 4 (pos-revisao de branch completa)
+
+Revisao final do branch inteiro (36 commits) encontrou 3 Importantes: (1) pagina
+/movimentacoes ausente -- backend (GET /movimentacoes, listarMovimentacoes) pronto desde
+a Task B3/F1 mas sem tela; (2) referencias supostamente quebradas no cronograma; (3)
+commits de planejamento (roteiro v2.0 + spec/plano do BOM) no mesmo branch/PR da Sprint 4.
+
+Resolucoes: (1) Criada pagina minima `frontend/src/paginas/estoque/Movimentacoes.tsx`
+(so leitura, sem busca/filtro -- o backend so aceita paginacao) + rota /movimentacoes em
+App.tsx + link "Ver historico de movimentacoes" em Estoque.tsx + 3 testes em
+Movimentacoes.test.tsx. Suite completa 303/303, lint/tsc/build limpos. (2) Nao era bug:
+`docs/0_SUMARIO_EXECUTIVO.md` tinha 534 linhas editadas direto no disco pelo usuario (v1.1
+completo) nunca commitadas -- commit `924878b` fechou a lacuna, cronograma nao precisou
+mudar. (3) Usuario confirmou via AskUserQuestion manter tudo no mesmo PR (Recomendado) --
+sem acao necessaria.
+
+Dados de teste de exercicios anteriores (F6-*/ITEM TESTE*/PC-B6-*) limpos do Postgres
+compartilhado antes do fechamento (DELETE transacional, FKs verificadas antes).
+Screenshots 24 (estoque) e 28 (painel/estoque critico) recapturados via Playwright contra
+o frontend do Docker (localhost:3010) apos a limpeza.
+
+Sprint 4 (Recebimento e Estoque) fechada. Proximo passo (confirmado pelo usuario): Fase
+2.1 -- Estrutura de Produto/BOM, branch `feat/estrutura-produto-bom` empilhada sobre esta,
+plano ja escrito em `docs/superpowers/plans/2026-08-30-estrutura-produto-bom.md`.
+

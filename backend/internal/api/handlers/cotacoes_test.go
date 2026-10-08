@@ -6,6 +6,7 @@ import (
 
 	"github.com/gustavoflandal/pcp-lev/backend/internal/api/handlers"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/cotacao"
+	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/estoque"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/pedidocompra"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/usuario"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/infra/repository"
@@ -20,7 +21,8 @@ func apiCotacoes(t *testing.T) (*apiProtegida, int64, int64) {
 	api := novaAPIProtegida(t, pool)
 
 	cotacaoServico := cotacao.NovoServico(repository.NovoCotacaoRepositorio(pool))
-	pedidoServico := pedidocompra.NovoServico(repository.NovoPedidoCompraRepositorio(pool))
+	estoqueServico := estoque.NovoServico(repository.NovoEstoqueRepositorio(pool))
+	pedidoServico := pedidocompra.NovoServico(repository.NovoPedidoCompraRepositorio(pool), estoqueServico)
 
 	handlers.NovoCotacaoHandler(cotacaoServico, pedidoServico).Registrar(api.echo.Group("/api/v1"), api.autenticacao())
 	handlers.NovoPedidoCompraHandler(pedidoServico).Registrar(api.echo.Group("/api/v1"), api.autenticacao())

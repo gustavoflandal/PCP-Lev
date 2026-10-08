@@ -2,7 +2,9 @@ package pedidocompra
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/estoque"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/platform/consulta"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/platform/dinheiro"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/platform/tempo"
@@ -31,16 +33,30 @@ type Repositorio interface {
 	Listar(ctx context.Context, params consulta.Parametros) ([]PedidoCompra, int, error)
 	AtualizarStatus(ctx context.Context, id int64, status string, autor string) error
 	EmAtraso(ctx context.Context, statusTerminais []string) ([]PedidoCompra, error)
+	RegistrarRecebimento(ctx context.Context, id int64, itens []ItemRecebimentoDados, autor string) (*PedidoCompra, error)
 }
 
-// Servico reune os casos de uso de pedidos de compra.
+// Servico reune os casos de uso de pedidos de compra. A dependencia direta
+// de *estoque.Servico (tipo concreto, nao uma interface nova) e o mesmo
+// padrao de acoplamento que CotacaoHandler ja usa sobre *pedidocompra.Servico
+// -- o recebimento precisa dar entrada em estoque.
 type Servico struct {
-	repo Repositorio
+	repo    Repositorio
+	estoque *estoque.Servico
 }
 
-// NovoServico monta o servico sobre o repositorio informado.
-func NovoServico(repo Repositorio) *Servico {
-	return &Servico{repo: repo}
+// NovoServico monta o servico sobre o repositorio e o servico de estoque
+// informados -- recebimento precisa dar entrada em estoque.
+func NovoServico(repo Repositorio, estoqueServico *estoque.Servico) *Servico {
+	return &Servico{repo: repo, estoque: estoqueServico}
+}
+
+// ItemRecebimentoDados e um item recebido nesta chamada -- a quantidade e a
+// desta chamada, nao o acumulado (o acumulado vive em
+// ItemPedido.QuantidadeRecebida e e somado pelo repositorio).
+type ItemRecebimentoDados struct {
+	PartePecaID        int64
+	QuantidadeRecebida int
 }
 
 func calcularItens(itens []ItemDados) ([]ItemPedido, dinheiro.Dinheiro) {
@@ -131,7 +147,10 @@ func (s *Servico) Listar(ctx context.Context, params consulta.Parametros) ([]Ped
 	return s.repo.Listar(ctx, params)
 }
 
-// Emitir marca o pedido de compra como emitido ao fornecedor.
+// Emitir marca o pedido de compra como emitido e ja aguardando a entrega --
+// nao existe, em nenhum requisito, um passo separado de "o fornecedor
+// confirmou o aceite" (Emitido/Aceito ficam no enum por fidelidade ao CHECK
+// do banco, mas inalcancaveis).
 func (s *Servico) Emitir(ctx context.Context, id int64, autor string) (*PedidoCompra, error) {
 	p, err := s.repo.BuscarPorID(ctx, id)
 	if err != nil {
@@ -140,10 +159,10 @@ func (s *Servico) Emitir(ctx context.Context, id int64, autor string) (*PedidoCo
 	if p.Status != StatusRascunho {
 		return nil, ErrStatusInvalidoParaAcao
 	}
-	if err := s.repo.AtualizarStatus(ctx, id, StatusEmitido, autor); err != nil {
+	if err := s.repo.AtualizarStatus(ctx, id, StatusAguardandoEntrega, autor); err != nil {
 		return nil, err
 	}
-	p.Status = StatusEmitido
+	p.Status = StatusAguardandoEntrega
 	return p, nil
 }
 
@@ -164,4 +183,46 @@ func (s *Servico) Cancelar(ctx context.Context, id int64, autor string) error {
 // EmAtraso devolve os pedidos com entrega vencida e ainda nao encerrados.
 func (s *Servico) EmAtraso(ctx context.Context) ([]PedidoCompra, error) {
 	return s.repo.EmAtraso(ctx, statusTerminais)
+}
+
+// RegistrarRecebimento soma quantidade_recebida por item (cumulativo -- uma
+// segunda chamada parcial soma sobre a primeira), da entrada no estoque para
+// cada item recebido nesta chamada, e recalcula o status do pedido: todos os
+// itens completos -> Concluido (grava data_entrega_real); ao menos um item
+// com recebimento parcial -> Recebido Parcial.
+//
+// Ordem deliberada: o repositorio grava a atualizacao do PC (itens + status)
+// primeiro, numa unica transacao; so depois, ja fora dela, a entrada em
+// estoque e aplicada item a item. Se a etapa de estoque falhar no meio, o PC
+// ja registrou o recebimento (nao gera dupla contagem numa nova tentativa) e
+// a discrepancia de saldo fica visivel e corrigivel por um ajuste manual --
+// o inverso (estoque primeiro) arriscaria aplicar a entrada duas vezes se o
+// passo do PC falhasse depois e o operador tentasse de novo.
+func (s *Servico) RegistrarRecebimento(ctx context.Context, id int64, itens []ItemRecebimentoDados, autor string) (*PedidoCompra, error) {
+	p, err := s.repo.BuscarPorID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if p.Status != StatusAguardandoEntrega && p.Status != StatusRecebidoParcial {
+		return nil, ErrStatusInvalidoParaAcao
+	}
+
+	atualizado, err := s.repo.RegistrarRecebimento(ctx, id, itens, autor)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, item := range itens {
+		if item.QuantidadeRecebida <= 0 {
+			continue
+		}
+		if _, err := s.estoque.AplicarMovimento(
+			ctx, item.PartePecaID, item.QuantidadeRecebida, estoque.TipoEntrada, estoque.MotivoCompra,
+			&atualizado.NumeroPC, "", autor,
+		); err != nil {
+			return nil, fmt.Errorf("dar entrada em estoque apos recebimento: %w", err)
+		}
+	}
+
+	return atualizado, nil
 }

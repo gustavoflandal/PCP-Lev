@@ -10,6 +10,7 @@ import {
   listar,
   listarPedidosEmAtraso,
   obterCompra,
+  registrarRecebimentoPedidoCompra,
   registrarRespostaCotacao,
 } from './compras';
 import type { Cotacao, PedidoCompra } from '@/tipos/compras';
@@ -179,6 +180,21 @@ describe('servico de compras', () => {
     const cancelado = await cancelarPedidoCompra(1);
 
     expect(cancelado.status).toBe('Cancelado');
+  });
+
+  it('registrarRecebimentoPedidoCompra envia POST para .../registrar-recebimento', async () => {
+    servidor.responder([
+      {
+        metodo: 'post',
+        url: '/pedidos-compra/1/registrar-recebimento',
+        status: 200,
+        corpo: { sucesso: true, dados: { ...pedido, status: 'Recebido Parcial' } },
+      },
+    ]);
+
+    await registrarRecebimentoPedidoCompra(1, { itens: [{ parte_peca_id: 10, quantidade_recebida: 5 }] });
+
+    expect(servidor.requisicoes[0].corpo).toEqual({ itens: [{ parte_peca_id: 10, quantidade_recebida: 5 }] });
   });
 
   it('listarPedidosEmAtraso desembrulha a lista sem paginacao', async () => {

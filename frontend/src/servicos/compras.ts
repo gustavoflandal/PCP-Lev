@@ -119,3 +119,15 @@ export async function listarPedidosEmAtraso(): Promise<PedidoCompra[]> {
   const { data } = await api.get<{ dados: PedidoCompra[] }>('/pedidos-compra/em-atraso');
   return data.dados;
 }
+
+export interface CorpoRegistrarRecebimento {
+  itens: { parte_peca_id: number; quantidade_recebida: number }[];
+}
+
+export async function registrarRecebimentoPedidoCompra(
+  id: number,
+  corpo: CorpoRegistrarRecebimento,
+): Promise<PedidoCompra> {
+  const { data } = await api.post<EnvelopeItem<PedidoCompra>>(`/pedidos-compra/${id}/registrar-recebimento`, corpo);
+  return data.dados;
+}

@@ -1,28 +1,52 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Badge } from '@/componentes/ui/Badge';
+import { Badge, type TomBadge } from '@/componentes/ui/Badge';
 import { Botao } from '@/componentes/ui/Botao';
+import { Campo } from '@/componentes/ui/Campo';
 import { Confirmacao } from '@/componentes/ui/Confirmacao';
+import { Modal } from '@/componentes/ui/Modal';
 import { Tabela, type Coluna } from '@/componentes/ui/Tabela';
 import { useToasts } from '@/componentes/ui/Toast';
 import { TrilhaEtapas, type Etapa, type EstadoEtapa } from '@/componentes/ui/TrilhaEtapas';
+import type { NomeIcone } from '@/componentes/ui/icones';
 import { useFornecedoresAtivos } from '@/hooks/useFornecedoresAtivos';
 import { usePartesPecasAtivas } from '@/hooks/usePartesPecasAtivas';
+import { separarErro } from '@/lib/errosDeFormulario';
 import { formatarData, formatarMoeda } from '@/lib/formato';
-import { cancelarPedidoCompra, emitirPedidoCompra, obterCompra } from '@/servicos/compras';
+import { cancelarPedidoCompra, emitirPedidoCompra, obterCompra, registrarRecebimentoPedidoCompra } from '@/servicos/compras';
 import type { ItemPedidoCompra, PedidoCompra } from '@/tipos/compras';
 
-type ModalAberto = 'emitir' | 'cancelar' | null;
+type ModalAberto = 'emitir' | 'cancelar' | 'recebimento' | null;
 
 const STATUS_TERMINAIS = ['Concluido', 'Cancelado'];
+
+// A trilha (§5) so distingue concluida/pendente-acionavel/pendente-futura na
+// etapa "Concluido" -- "Aguardando Entrega" e "Recebido Parcial" caem no
+// mesmo estado visual (mesma cor, mesmo icone, mesmo rotulo "Pendente ·
+// iniciar"), entao sem essa marca a pessoa nao sabe se ja chegou parte da
+// mercadoria sem abrir o modal de recebimento. Cobre so os dois status que a
+// trilha nao diferencia; os demais ja sao claros pela etapa correspondente.
+// Tom/icone alinhados com TOM_STATUS em PedidosCompra.tsx: "Aguardando
+// Entrega" usa "blocked" porque e uma dependencia externa do fornecedor, nao
+// uma pendencia do operador; "Recebido Parcial" usa "warning" por ser um
+// estado de atencao/acompanhamento.
+const STATUS_AMBIGUO_NA_TRILHA: Partial<Record<PedidoCompra['status'], { tom: TomBadge; icone: NomeIcone; rotulo: string }>> = {
+  'Aguardando Entrega': { tom: 'blocked', icone: 'shield-alert', rotulo: 'Aguardando entrega — nenhum item recebido ainda' },
+  'Recebido Parcial': { tom: 'warning', icone: 'alert-triangle', rotulo: 'Recebido parcial' },
+};
 
 function estadoDaEtapaEmitido(status: PedidoCompra['status']): EstadoEtapa {
   return status === 'Rascunho' ? 'pendente-acionavel' : 'concluida';
 }
 
+// A etapa "Concluido" fica acionavel enquanto ha recebimento pendente
+// (aguardando entrega ou ja parcialmente recebido); antes disso e uma etapa
+// futura, sem acao possivel.
 function estadoDaEtapaConcluido(status: PedidoCompra['status']): EstadoEtapa {
-  return status === 'Concluido' ? 'concluida' : 'pendente-futura';
+  if (status === 'Concluido') return 'concluida';
+  if (status === 'Aguardando Entrega' || status === 'Recebido Parcial') return 'pendente-acionavel';
+  return 'pendente-futura';
 }
 
 export function DetalhePedidoCompra() {
@@ -61,6 +85,17 @@ export function DetalhePedidoCompra() {
     },
   });
 
+  const mutacaoRecebimento = useMutation({
+    mutationFn: (corpo: Parameters<typeof registrarRecebimentoPedidoCompra>[1]) =>
+      registrarRecebimentoPedidoCompra(pedidoId, corpo),
+    onSuccess: () => {
+      invalidar();
+      void clienteQuery.invalidateQueries({ queryKey: ['pedidos-compra', pedidoId] });
+      mostrarToast('Recebimento registrado');
+      definirModalAberto(null);
+    },
+  });
+
   if (consulta.isPending) {
     return <p className="text-body text-texto-secondary">Carregando…</p>;
   }
@@ -84,6 +119,7 @@ export function DetalhePedidoCompra() {
       nome: 'Concluído',
       estado: estadoDaEtapaConcluido(pedido.status),
       timestamp: pedido.data_entrega_real ? formatarData(pedido.data_entrega_real) : undefined,
+      aoAcionar: () => definirModalAberto('recebimento'),
     },
   ];
 
@@ -124,7 +160,18 @@ export function DetalhePedidoCompra() {
           Pedido cancelado em {formatarData(pedido.updated_at)}
         </Badge>
       ) : (
-        <TrilhaEtapas rotulo="Status do pedido de compra" etapas={etapas} />
+        <>
+          {STATUS_AMBIGUO_NA_TRILHA[pedido.status] && (
+            <Badge
+              tom={STATUS_AMBIGUO_NA_TRILHA[pedido.status]!.tom}
+              icone={STATUS_AMBIGUO_NA_TRILHA[pedido.status]!.icone}
+              className="self-start"
+            >
+              {STATUS_AMBIGUO_NA_TRILHA[pedido.status]!.rotulo}
+            </Badge>
+          )}
+          <TrilhaEtapas rotulo="Status do pedido de compra" etapas={etapas} />
+        </>
       )}
 
       <Tabela<ItemPedidoCompra>
@@ -167,6 +214,82 @@ export function DetalhePedidoCompra() {
         aoConfirmar={() => mutacaoCancelar.mutate()}
         aoCancelar={() => definirModalAberto(null)}
       />
+
+      {modalAberto === 'recebimento' && (
+        <ModalRegistrarRecebimento
+          pedido={pedido}
+          pecaPorId={pecaPorId}
+          ocupado={mutacaoRecebimento.isPending}
+          erro={separarErro(mutacaoRecebimento.error).geral}
+          aoFechar={() => definirModalAberto(null)}
+          aoEnviar={(corpo) => mutacaoRecebimento.mutate(corpo)}
+        />
+      )}
     </div>
+  );
+}
+
+interface ModalRegistrarRecebimentoProps {
+  pedido: PedidoCompra;
+  pecaPorId: Map<number, string>;
+  ocupado: boolean;
+  erro: string | null;
+  aoFechar: () => void;
+  aoEnviar: (corpo: Parameters<typeof registrarRecebimentoPedidoCompra>[1]) => void;
+}
+
+function ModalRegistrarRecebimento({ pedido, pecaPorId, ocupado, erro, aoFechar, aoEnviar }: ModalRegistrarRecebimentoProps) {
+  const [receberAgora, definirReceberAgora] = useState<Record<number, string>>(
+    Object.fromEntries(pedido.itens.map((item) => [item.parte_peca_id, ''])),
+  );
+
+  return (
+    <Modal aberto aoFechar={aoFechar} titulo="Registrar recebimento">
+      <div className="flex flex-col gap-4">
+        {erro && (
+          <p role="alert" className="rounded-campo border border-estado-pending bg-estado-pending-bg px-3 py-2 text-body text-estado-pending">
+            {erro}
+          </p>
+        )}
+        {pedido.itens.map((item) => {
+          const pendente = item.quantidade_solicitada - item.quantidade_recebida;
+          return (
+            <div key={item.id} className="flex flex-col gap-1">
+              <Campo
+                rotulo={`${pecaPorId.get(item.parte_peca_id) ?? item.parte_peca_id} — receber agora`}
+                tipoDado="quantidade"
+                ajuda={`Já recebido: ${item.quantidade_recebida} de ${item.quantidade_solicitada}. Pendente: ${pendente}.`}
+                value={receberAgora[item.parte_peca_id] ?? ''}
+                onChange={(evento) =>
+                  definirReceberAgora((atual) => ({ ...atual, [item.parte_peca_id]: evento.target.value }))
+                }
+              />
+            </div>
+          );
+        })}
+        <div className="flex items-center justify-end gap-2">
+          <Botao variante="secundaria" onClick={aoFechar} disabled={ocupado}>
+            Cancelar
+          </Botao>
+          <Botao
+            icone="save"
+            ocupado={ocupado}
+            rotuloOcupado="Registrando…"
+            onClick={() =>
+              aoEnviar({
+                itens: pedido.itens
+                  .map((item) => ({
+                    parte_peca_id: item.parte_peca_id,
+                    quantidade_recebida: Number(receberAgora[item.parte_peca_id] ?? 0),
+                  }))
+                  .filter((item) => item.quantidade_recebida > 0),
+              })
+            }
+          >
+            Registrar recebimento
+          </Botao>
+        </div>
+      </div>
+    </Modal>
   );
 }

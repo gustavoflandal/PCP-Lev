@@ -16,6 +16,7 @@ describe('Painel', () => {
     servidor.responder([
       { metodo: 'get', url: '/saude', status: 200, corpo: saudeOk },
       { metodo: 'get', url: '/pedidos-compra/em-atraso', status: 200, corpo: { sucesso: true, dados: [] } },
+      { metodo: 'get', url: '/estoque/criticos', status: 200, corpo: { dados: [] } },
     ]);
   });
 
@@ -34,11 +35,10 @@ describe('Painel', () => {
     expect(screen.getByRole('heading', { name: 'Conexão com o servidor' })).toBeInTheDocument();
   });
 
-  it('os widgets sem modulo ainda dizem em que sprint o dado passa a existir', () => {
+  it('o widget sem modulo ainda diz em que sprint o dado passa a existir', () => {
     renderizarComProvedores(<Painel />);
 
     expect(screen.getByText(/O módulo de produção entra na Sprint 6/)).toBeInTheDocument();
-    expect(screen.getByText(/O controle de estoque entra na Sprint 3/)).toBeInTheDocument();
   });
 
   it('pedidos de compra em atraso mostra dado real, nao mais um placeholder', async () => {
@@ -63,19 +63,45 @@ describe('Painel', () => {
     expect(await screen.findByText('Nenhum pedido de compra em atraso.')).toBeInTheDocument();
   });
 
-  it('os dois widgets sem modulo ainda continuam vazios de proposito', () => {
+  it('nenhum widget mostra numero como se fosse medicao quando esta vazio', async () => {
     const { container } = renderizarComProvedores(<Painel />);
 
-    // `text-dado-lg` e a classe da quantidade em destaque. Enquanto nao houver
-    // dado real, nenhum widget pode mostrar numero como se fosse medicao.
+    // Espera os dados reais assentarem antes de contar, senao os widgets
+    // ainda estao em "Verificando..." e nao tem data-widget-vazio.
+    await screen.findByText('Nenhum pedido de compra em atraso.');
+    await screen.findByText('Nenhum insumo em estoque crítico.');
+
+    // `text-dado-lg` e a classe da quantidade em destaque.
     expect(container.querySelectorAll('.text-dado-lg')).toHaveLength(0);
-    expect(container.querySelectorAll('[data-widget-vazio]').length).toBeGreaterThanOrEqual(2);
+    expect(container.querySelectorAll('[data-widget-vazio]').length).toBeGreaterThanOrEqual(3);
   });
 
   it('mostra o estado real da conexao', async () => {
     renderizarComProvedores(<Painel />);
 
     expect(await screen.findByText(/Operacional · ambiente test/)).toBeInTheDocument();
+  });
+
+  it('mostra "Nenhum insumo em estoque crítico." quando a lista vem vazia', async () => {
+    servidor.responder([
+      { metodo: 'get', url: '/saude', status: 200, corpo: saudeOk },
+      { metodo: 'get', url: '/pedidos-compra/em-atraso', status: 200, corpo: { dados: [] } },
+      { metodo: 'get', url: '/estoque/criticos', status: 200, corpo: { dados: [] } },
+    ]);
+    renderizarComProvedores(<Painel />);
+
+    expect(await screen.findByText('Nenhum insumo em estoque crítico.')).toBeInTheDocument();
+  });
+
+  it('mostra a contagem de insumos criticos quando ha itens', async () => {
+    servidor.responder([
+      { metodo: 'get', url: '/saude', status: 200, corpo: saudeOk },
+      { metodo: 'get', url: '/pedidos-compra/em-atraso', status: 200, corpo: { dados: [] } },
+      { metodo: 'get', url: '/estoque/criticos', status: 200, corpo: { dados: [{ id: 1 }, { id: 2 }] } },
+    ]);
+    renderizarComProvedores(<Painel />);
+
+    expect(await screen.findByText('2 insumos em estoque crítico.')).toBeInTheDocument();
   });
 
   it('servidor fora do ar aparece como falha', async () => {

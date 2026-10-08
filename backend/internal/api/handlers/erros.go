@@ -41,6 +41,12 @@ func idDaRota(c echo.Context) (int64, error) {
 	return strconv.ParseInt(c.Param("id"), 10, 64)
 }
 
+// idDaRotaComNome le um parametro de rota com nome diferente de "id" —
+// /estoque/:parte_peca_id, por exemplo.
+func idDaRotaComNome(c echo.Context, nome string) (int64, error) {
+	return strconv.ParseInt(c.Param(nome), 10, 64)
+}
+
 // autorDaRequisicao devolve o username da sessao, usado nas colunas de
 // auditoria created_by / updated_by.
 func autorDaRequisicao(c echo.Context) string {
