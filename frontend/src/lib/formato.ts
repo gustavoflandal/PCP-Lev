@@ -21,3 +21,16 @@ export function formatarMoeda(valor: number): string {
 export function formatarDias(dias: number): string {
   return dias === 1 ? '1 dia' : `${dias} dias`;
 }
+
+/**
+ * Converte a data do contrato da API (AAAA-MM-DD, ou um timestamp com essa
+ * data na frente) para o formato de exibicao pt-BR. Ausente vira travessao —
+ * o mesmo convite vazio usado no resto do sistema, nunca string vazia.
+ */
+export function formatarData(data: string | undefined): string {
+  if (!data) {
+    return '—';
+  }
+  const [ano, mes, dia] = data.slice(0, 10).split('-');
+  return `${dia}/${mes}/${ano}`;
+}

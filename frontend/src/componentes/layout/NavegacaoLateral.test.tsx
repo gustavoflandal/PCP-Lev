@@ -31,11 +31,18 @@ describe('NavegacaoLateral', () => {
     expect(screen.getByRole('link', { name: 'Painel' })).not.toHaveAttribute('aria-current');
   });
 
+  it('compras ja sao links reais', () => {
+    renderizarEm('/');
+
+    expect(screen.getByRole('link', { name: 'Cotações' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Pedidos de compra' })).toBeInTheDocument();
+  });
+
   it('modulos de sprint futura aparecem, mas nao sao links', () => {
     renderizarEm('/');
 
-    expect(screen.queryByRole('link', { name: /Compras/ })).not.toBeInTheDocument();
-    expect(screen.getByText('Compras')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Produção/ })).not.toBeInTheDocument();
+    expect(screen.getByText('Produção')).toBeInTheDocument();
     expect(screen.getAllByText('Próxima sprint').length).toBeGreaterThan(0);
   });
 
@@ -43,5 +50,11 @@ describe('NavegacaoLateral', () => {
     renderizarEm('/');
 
     expect(screen.getByRole('navigation', { name: 'Módulos do sistema' })).toBeInTheDocument();
+  });
+
+  it('estoque ja e um link real', () => {
+    renderizarEm('/');
+
+    expect(screen.getByRole('link', { name: 'Estoque' })).toHaveAttribute('href', '/estoque');
   });
 });
