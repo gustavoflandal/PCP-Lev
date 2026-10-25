@@ -339,6 +339,7 @@ docs/                         especificação, manual, implantação, segurança
 | [Implantação](docs/10_IMPLANTACAO.md) | Runbook de produção |
 | [Roteiro de homologação](docs/11_ROTEIRO_HOMOLOGACAO.md) | 16 cenários de aceite por perfil |
 | [Treinamento](docs/12_TREINAMENTO.md) | Trilhas por perfil |
+| [Landing page](landing-page/index.html) | Apresentação do sistema: diferenciais e galeria de telas (abre direto no navegador) |
 | [`docs/superpowers/specs/`](docs/superpowers/specs/) | Especificação de cada entrega |
 
 ---
