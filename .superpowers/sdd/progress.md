@@ -1769,3 +1769,18 @@ tela, inclusive as futuras, e mantem tabelas/graficos vetoriais.
   ou altura do container do recharts faz ele redesenhar durante a impressao e sair em branco -- conferido
   gerando PDFs reais (page.pdf) de lista, painel, detalhe de OP, dialogo e tema escuro.
 - E2E: roteiro-paineis +2 passos (botao e midia de impressao). Frontend 693 testes. Manual secao 2.
+
+## Landing page (24/10/2026) -- branch feat/landing-page
+
+Pedido: landing page de apresentacao do PCP-Lev com os diferenciais e todas as telas (miniaturas com
+descricao), paleta suave e profissional, fonte legivel em projecao; sem citar o segmento de origem.
+
+- `landing-page/`: index.html estatico (abre via file://, sem build), estilos.css, visor.js (dialog com
+  setas do teclado), fonte Inter auto-hospedada (OFL). 72 telas em WebP: miniaturas 640px (recorte do
+  topo, 16:10) e telas ampliadas ate 1600px (~5,3 MB no total).
+- Excluidas 6 capturas de telas que nao existem mais (03, 04, 16, 28 painel antigo; 26, 27 recebimento
+  direto no PC).
+- Sem `<link rel=preload>` da fonte: com crossorigin ele falha por CORS em file://.
+- Conferido com Playwright em 390, 1440 e 1920 px: sem rolagem horizontal, sem erros de console.
+- Pendencia: algumas capturas trazem dados de demonstracao com "RADAR" no codigo do produto/OP; para
+  neutralizar e preciso recapturar com outra massa de dados.
