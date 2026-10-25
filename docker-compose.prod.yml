@@ -1,0 +1,125 @@
+# Producao: docker compose -f docker-compose.prod.yml --env-file deploy/.env.prod up -d --build
+# Runbook completo em docs/10_IMPLANTACAO.md.
+#
+# Diferencas para o docker-compose.yml (desenvolvimento):
+# - so o Caddy publica portas (80/443, HTTPS). Banco, API e nginx ficam so na
+#   rede interna; o nginx confia no X-Forwarded-For porque so o Caddy chega
+#   nele (deploy/nginx-proxy.conf);
+# - a API conecta com um papel comum (dono do banco, sem superusuario), criado
+#   na primeira subida por deploy/initdb/; o superusuario fica so para
+#   manutencao e backup;
+# - segredos sem valor padrao: o Compose se recusa a subir sem eles;
+# - healthchecks, limite de log e backup diario do banco.
+x-log: &log
+  logging:
+    driver: json-file
+    options: { max-size: "20m", max-file: "5" }
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_ADMIN_USER:-pcp_admin}
+      POSTGRES_PASSWORD: ${DB_ADMIN_PASSWORD:?defina DB_ADMIN_PASSWORD em deploy/.env.prod}
+      POSTGRES_DB: ${DB_NAME:-pcp_db}
+      APP_DB_USER: ${DB_USER:-pcp_app}
+      APP_DB_PASSWORD: ${DB_PASSWORD:?defina DB_PASSWORD em deploy/.env.prod}
+      TZ: America/Sao_Paulo
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./deploy/initdb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    <<: *log
+
+  backend:
+    build: { context: ./backend }
+    image: pcp-backend:${PCP_VERSAO:-local}
+    restart: unless-stopped
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${DB_USER:-pcp_app}
+      DB_PASSWORD: ${DB_PASSWORD:?defina DB_PASSWORD em deploy/.env.prod}
+      DB_NAME: ${DB_NAME:-pcp_db}
+      DB_SSLMODE: disable
+      JWT_SECRET: ${JWT_SECRET:?defina JWT_SECRET (openssl rand -base64 48)}
+      JWT_EXPIRE_HOURS: ${JWT_EXPIRE_HOURS:-8}
+      API_PORT: 8000
+      API_ENV: production
+      CORS_ORIGENS: https://${PCP_DOMINIO:?defina PCP_DOMINIO}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      RATE_LIMIT_RPS: ${RATE_LIMIT_RPS:-20}
+      RATE_LIMIT_RAJADA: ${RATE_LIMIT_RAJADA:-60}
+      RATE_LIMIT_LOGIN_POR_MINUTO: ${RATE_LIMIT_LOGIN_POR_MINUTO:-5}
+      CHAVE_MESTRA_SEGREDOS: ${CHAVE_MESTRA_SEGREDOS:?defina CHAVE_MESTRA_SEGREDOS (openssl rand -base64 32)}
+    depends_on:
+      postgres: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8000/api/v1/saude"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    <<: *log
+
+  frontend:
+    build: { context: ./frontend }
+    image: pcp-frontend:${PCP_VERSAO:-local}
+    restart: unless-stopped
+    volumes:
+      - ./deploy/nginx-proxy.conf:/etc/nginx/conf.d/00-proxy.conf:ro
+    depends_on:
+      backend: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    <<: *log
+
+  caddy:
+    image: caddy:2.8-alpine
+    restart: unless-stopped
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    environment:
+      PCP_DOMINIO: ${PCP_DOMINIO:?defina PCP_DOMINIO}
+      PCP_TLS: ${PCP_TLS:-internal}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./deploy/certs:/certs:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      frontend: { condition: service_healthy }
+    <<: *log
+
+  backup:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      PGHOST: postgres
+      PGUSER: ${DB_ADMIN_USER:-pcp_admin}
+      PGPASSWORD: ${DB_ADMIN_PASSWORD:?defina DB_ADMIN_PASSWORD em deploy/.env.prod}
+      PGDATABASE: ${DB_NAME:-pcp_db}
+      BACKUP_HORA: ${BACKUP_HORA:-02}
+      BACKUP_RETENCAO_DIAS: ${BACKUP_RETENCAO_DIAS:-14}
+      TZ: America/Sao_Paulo
+    volumes:
+      - ./deploy/backup.sh:/backup.sh:ro
+      - ${BACKUP_DIR:-./backups}:/backups
+    entrypoint: ["sh", "/backup.sh"]
+    depends_on:
+      postgres: { condition: service_healthy }
+    <<: *log
+
+volumes:
+  postgres_data:
+  caddy_data:
+  caddy_config:

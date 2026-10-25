@@ -1,0 +1,86 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: pcp_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-pcp_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-senha_segura}
+      POSTGRES_DB: ${DB_NAME:-pcp_db}
+      TZ: America/Sao_Paulo
+    ports:
+      # So em loopback: publicado na rede, qualquer maquina da LAN entraria no
+      # banco com o superusuario.
+      - "127.0.0.1:${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-pcp_user} -d ${DB_NAME:-pcp_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: pcp_backend
+    restart: unless-stopped
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${DB_USER:-pcp_user}
+      DB_PASSWORD: ${DB_PASSWORD:-senha_segura}
+      DB_NAME: ${DB_NAME:-pcp_db}
+      DB_SSLMODE: disable
+      # Sem valor padrao: um segredo publicado no repositorio deixaria qualquer
+      # um forjar um token de administrador. Gere o seu no .env:
+      #   openssl rand -base64 48
+      JWT_SECRET: ${JWT_SECRET:?defina JWT_SECRET no .env (openssl rand -base64 48)}
+      JWT_EXPIRE_HOURS: ${JWT_EXPIRE_HOURS:-8}
+      API_PORT: 8000
+      API_ENV: ${API_ENV:-development}
+      CORS_ORIGENS: ${CORS_ORIGENS:-http://localhost:3010,http://localhost:5173}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      RATE_LIMIT_RPS: ${RATE_LIMIT_RPS:-20}
+      RATE_LIMIT_RAJADA: ${RATE_LIMIT_RAJADA:-60}
+      RATE_LIMIT_LOGIN_POR_MINUTO: ${RATE_LIMIT_LOGIN_POR_MINUTO:-5}
+      # Cifra a senha do SMTP em repouso (AES-256-GCM). SEM valor padrao de
+      # proposito: uma chave publicada no repositorio cifraria as senhas de
+      # qualquer ambiente que esquecesse de definir a sua. Defina no .env
+      # (openssl rand -base64 32); vazia, o sistema so nao grava senha de SMTP.
+      CHAVE_MESTRA_SEGREDOS: ${CHAVE_MESTRA_SEGREDOS:-}
+    ports:
+      # So em loopback: a API e acessada pelo nginx do frontend (rede do
+      # Compose). Publicada para a rede, um cliente chegaria com o IP do
+      # gateway do Docker (privado, logo confiavel) e poderia forjar
+      # X-Forwarded-For para escapar do rate limiting.
+      - "127.0.0.1:${API_PORT:-8000}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: pcp_frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-3010}:80"
+    depends_on:
+      - backend
+
+
+  # Servidor SMTP de teste com caixa de entrada web (http://localhost:8025).
+  # So no perfil dev: docker compose --profile dev up -d mailpit. Na tela de
+  # Integracoes, use host "mailpit", porta 1025, sem criptografia.
+  mailpit:
+    image: axllent/mailpit:v1.21
+    container_name: pcp_mailpit
+    profiles: ["dev"]
+    ports:
+      - "127.0.0.1:8025:8025"
+
+volumes:
+  postgres_data:

@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# Adaptado de subagent-driven-development/scripts/task-brief para rotulos
+# alfanumericos de tarefa (Task B1, Task F3, ...), nao so numeros puros --
+# mesma logica, regex generalizado.
+set -euo pipefail
+plan=$1
+label=$2
+out=${3:-.superpowers/sdd/task-${label}-brief.md}
+
+awk -v n="$label" '
+  /^```/ { infence = !infence }
+  !infence && /^#+[ \t]+Task[ \t]+[A-Za-z0-9]+/ {
+    intask = ($0 ~ ("^#+[ \t]+Task[ \t]+" n "([^A-Za-z0-9]|$)"))
+  }
+  intask { print }
+' "$plan" > "$out"
+
+if [ ! -s "$out" ]; then
+  echo "task ${label} not found in ${plan}" >&2
+  exit 3
+fi
+echo "wrote ${out}: $(wc -l < "$out" | tr -d ' ') lines"

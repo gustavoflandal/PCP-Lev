@@ -1,0 +1,38 @@
+# Stack isolada para a suite E2E: projeto proprio (pcp-e2e), banco novo a cada
+# execucao e nomes/portas que nao colidem com o ambiente de desenvolvimento.
+# Uso: e2e/run.sh (nao suba este arquivo sozinho).
+services:
+  postgres:
+    container_name: pcp_e2e_postgres
+    ports: !override
+      - "127.0.0.1:5543:5432"
+  backend:
+    container_name: pcp_e2e_backend
+    ports: !override
+      - "127.0.0.1:8100:8000"
+    environment:
+      JWT_SECRET: e2e_segredo_jwt_somente_para_testes_automatizados
+      CORS_ORIGENS: http://frontend
+      # O navegador da suite e um unico IP: com os limites de producao os
+      # roteiros seguidos esbarrariam no rate limit (o roteiro de seguranca
+      # testa o bloqueio de login por conta propria).
+      RATE_LIMIT_RPS: "200"
+      RATE_LIMIT_RAJADA: "400"
+  frontend:
+    container_name: pcp_e2e_frontend
+    ports: !override
+      - "127.0.0.1:3110:80"
+  mailpit:
+    container_name: pcp_e2e_mailpit
+    profiles: !reset []
+    ports: !override
+      - "127.0.0.1:8125:8025"
+
+# Sub-rede conhecida: run.sh da a cada roteiro um IP proprio. Com IPs
+# reaproveitados pelo Docker, um roteiro herdaria o limite de tentativas de
+# login (por IP) que o anterior esgotou de proposito (roteiro de seguranca).
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.30.240.0/24

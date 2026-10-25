@@ -1,0 +1,133 @@
+/* Tokens do Sistema de Design — PCP Enterprise.
+   Fonte unica de verdade das cores. Componentes usam as classes Tailwind
+   mapeadas em tailwind.config.js, nunca estes valores diretamente. */
+
+:root {
+  /* Controla a paleta nativa do navegador (scrollbar, controles de
+     formulario) -- precisa acompanhar data-tema, nao ficar fixo em
+     "light" (era assim antes da Fase 4.1, quando so existia tema claro). */
+  color-scheme: light;
+
+  /* Superficies e texto — tema claro, padrao de galpao */
+  --surface-base: #f7f8fa;
+  --surface-raised: #ffffff;
+  --surface-sunken: #eceff3;
+  --border-subtle: #dde2e8;
+  --border-strong: #9aa4b0;
+  --text-primary: #111827;
+  --text-secondary: #4b5563;
+  --text-disabled: #9ca3af;
+
+  /* Marca e acao */
+  --brand: #0b4f8f;
+  --brand-hover: #083f73;
+  --brand-subtle: #e7eff8;
+  --focus-ring: #1d7dd9;
+
+  /* Estados semanticos — significado unico em todo o sistema */
+  --state-done: #0f7b44;
+  --state-done-bg: #e3f3ea;
+  --state-pending: #b42318;
+  --state-pending-bg: #fde8e6;
+  --state-warning: #b54708;
+  --state-warning-bg: #fef0e3;
+  --state-blocked: #6941c6;
+  --state-blocked-bg: #f1ebfc;
+  --state-neutral: #4b5563;
+  --state-neutral-bg: #eef1f4;
+
+  /* Densidade de layout (Fase 4.1) — altura da linha de tabela/navegacao.
+     Compacta (2.5rem = 40px) e o padrao: e o valor que ja estava fixo em
+     tailwind.config.js antes desta fase existir, preservado para nao mudar
+     o visual de quem nunca mexeu na preferencia. Confortavel (3rem = 48px,
+     doc 7 secao 4: densidade de tablet) fica como opt-in. Em `rem`, nao
+     `px`, para acompanhar Tamanho de Fonte — sem isso a linha ficaria
+     cravada num tamanho fixo enquanto todo o resto (fontSize/spacing/
+     minHeight do tailwind.config.js) escala. */
+  --altura-linha: 2.5rem;
+
+  /* Painel de marca da tela de entrada: azul industrial profundo, o mesmo
+     nos dois temas (e uma faixa de identidade, nao uma superficie de
+     trabalho). Brilhos estaticos -- sem animacao decorativa (doc 7). */
+  --painel-marca-inicio: #051729;
+  --painel-marca-meio: #0a2d52;
+  --painel-marca-fim: #0b4f8f;
+  --painel-marca-brilho-1: rgba(29, 125, 217, 0.38);
+  --painel-marca-brilho-2: rgba(74, 158, 239, 0.22);
+}
+
+/* Tema escuro (Fase 4.1) — mesmo papel semantico de cada token, cores
+   diferentes. Aplicado via atributo no <html>, nunca por classe de
+   componente (nenhum componente sabe que tema escuro existe). */
+:root[data-tema='escuro'] {
+  color-scheme: dark;
+
+  --surface-base: #0b0f14;
+  --surface-raised: #151b23;
+  --surface-sunken: #1c232c;
+  --border-subtle: #2a323d;
+  --border-strong: #4b5563;
+  --text-primary: #f3f4f6;
+  --text-secondary: #b0b8c1;
+  --text-disabled: #6b7280;
+
+  --brand: #4a9eef;
+  --brand-hover: #6ab0f2;
+  --brand-subtle: #16324d;
+  --focus-ring: #4a9eef;
+
+  --state-done: #3fbd77;
+  --state-done-bg: #103322;
+  --state-pending: #f2685c;
+  --state-pending-bg: #3a1512;
+  --state-warning: #f0a04b;
+  --state-warning-bg: #3a2510;
+  --state-blocked: #a78bfa;
+  --state-blocked-bg: #241a3a;
+  --state-neutral: #b0b8c1;
+  --state-neutral-bg: #232a33;
+}
+
+/* Alto contraste (Fase 4.1) — eixo independente do tema, combina com claro
+   ou escuro. So reforca texto/borda/foco -- nao redefine estado (o par
+   done/pending ja tem contraste suficiente por design, §2 do sistema). */
+:root[data-alto-contraste='true'] {
+  --text-primary: #000000;
+  --text-secondary: #1f2937;
+  --border-strong: #000000;
+  --focus-ring: #000000;
+}
+:root[data-tema='escuro'][data-alto-contraste='true'] {
+  --surface-base: #000000;
+  --surface-raised: #000000;
+  --surface-sunken: #000000;
+  --text-primary: #ffffff;
+  --text-secondary: #e5e7eb;
+  --border-strong: #ffffff;
+  --focus-ring: #ffffff;
+}
+
+/* Densidade (Fase 4.1) — confortavel (opt-in) aumenta a linha de tabela/
+   navegacao; compacta (padrao, ver :root acima) mantem o valor que ja
+   existia antes desta fase. */
+:root[data-densidade='confortavel'] {
+  --altura-linha: 3rem;
+}
+
+/* Tamanho de fonte (Fase 4.1) — escala tudo que usa `rem` (fontSize,
+   spacing e minHeight do tailwind.config.js) proporcionalmente, sem tocar
+   nenhum componente. 100% = tamanho padrao, identico ao de antes desta
+   fase (px e rem coincidem na raiz de 16px). */
+:root[data-fonte='grande'] {
+  font-size: 112.5%;
+}
+:root[data-fonte='extra-grande'] {
+  font-size: 125%;
+}
+
+/* Modo TV dos paineis -- fonte maior para leitura a distancia. Vem depois
+   de data-fonte de proposito: na TV, prevalece sobre a preferencia do
+   usuario. Escala tudo que usa `rem`, inclusive a altura dos graficos. */
+:root[data-modo-tv='true'] {
+  font-size: 137.5%;
+}

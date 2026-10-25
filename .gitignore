@@ -1,0 +1,52 @@
+# Dependências
+node_modules/
+vendor/
+
+# Build
+dist/
+build/
+*.exe
+/backend/bin/
+
+# Ambiente
+.env
+.env.local
+*.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# Cobertura de testes
+coverage/
+*.out
+
+# IDE / SO
+.idea/
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+Thumbs.db
+
+# Dados do Postgres (volume local)
+.docker-data/
+
+# Certificado CA local para builds Docker atras de inspecao TLS (antivirus/
+# proxy corporativo) -- especifico de cada maquina, nunca commitar
+backend/.docker-ca/*
+frontend/.docker-ca/*
+!backend/.docker-ca/.gitkeep
+!frontend/.docker-ca/.gitkeep
+
+# Build incremental do TypeScript
+*.tsbuildinfo
+
+# Producao (segredos, certificados e backups ficam so no servidor)
+deploy/.env.prod
+deploy/certs/*
+!deploy/certs/.gitkeep
+backups/
+
+# Estado local do Claude Code
+.claude/scheduled_tasks.lock
+.claude/settings.local.json

@@ -1,0 +1,16 @@
+# HTTPS na frente do sistema. PCP_TLS escolhe o certificado:
+#   internal                        -> autoridade propria do Caddy (rede interna;
+#                                      instale a raiz nos navegadores, ver runbook)
+#   seu-email@empresa.com.br        -> Let's Encrypt (dominio publico na internet)
+#   /certs/cert.pem /certs/key.pem  -> certificado da empresa em deploy/certs/
+{$PCP_DOMINIO} {
+	tls {$PCP_TLS}
+	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		-Server
+	}
+	# O Caddy define o X-Forwarded-For com o IP real do cliente (nao repassa o
+	# que vem de fora) e o nginx do frontend confia nele (nginx-proxy.conf).
+	reverse_proxy frontend:80
+}

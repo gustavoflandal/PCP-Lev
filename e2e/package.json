@@ -1,0 +1,9 @@
+{
+  "name": "pcp-e2e",
+  "private": true,
+  "description": "Suite E2E (Playwright) do Sistema PCP -- rode com e2e/run.sh",
+  "type": "module",
+  "dependencies": {
+    "playwright": "1.49.1"
+  }
+}

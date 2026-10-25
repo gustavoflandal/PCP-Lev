@@ -1,0 +1,150 @@
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/jetbrains-mono';
+@import './estilos/tokens.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    color-scheme: light;
+  }
+
+  body {
+    @apply bg-surface-base text-texto-primary font-sans text-body antialiased;
+  }
+
+  /* Foco de teclado sempre visivel, 2px — requisito de acessibilidade. */
+  :focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+
+  /* Quantidades e codigos alinham digito a digito. */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Movimento so quando comunica algo — e nem isso sob reducao de movimento. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer components {
+  /* Painel de marca da tela de entrada (Login). */
+  .painel-marca {
+    background:
+      radial-gradient(60% 50% at 15% 10%, var(--painel-marca-brilho-1) 0%, transparent 70%),
+      radial-gradient(55% 45% at 90% 95%, var(--painel-marca-brilho-2) 0%, transparent 70%),
+      linear-gradient(155deg, var(--painel-marca-inicio) 0%, var(--painel-marca-meio) 55%, var(--painel-marca-fim) 100%);
+  }
+}
+
+/* Impressao / PDF (botao "Imprimir / PDF" e Ctrl+P): o conteudo da tela, sem
+   menu, filtros nem botoes, numa folha A4 clara -- tambem no tema escuro. */
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm 10mm;
+  }
+
+  :root,
+  :root[data-tema='escuro'] {
+    color-scheme: light;
+    --surface-base: #ffffff;
+    --surface-raised: #ffffff;
+    --surface-sunken: #eceff3;
+    --border-subtle: #c9d0d8;
+    --border-strong: #9aa4b0;
+    --text-primary: #111827;
+    --text-secondary: #4b5563;
+    --text-disabled: #6b7280;
+    --brand: #0b4f8f;
+    --brand-subtle: #e7eff8;
+    --state-done: #0f7b44;
+    --state-done-bg: #e3f3ea;
+    --state-pending: #b42318;
+    --state-pending-bg: #fde8e6;
+    --state-warning: #b54708;
+    --state-warning-bg: #fef0e3;
+    --state-blocked: #6941c6;
+    --state-blocked-bg: #f1ebfc;
+    --state-neutral: #4b5563;
+    --state-neutral-bg: #eef1f4;
+  }
+
+  html {
+    /* Um pouco mais denso que a tela; ignora o tamanho de fonte preferido. */
+    font-size: 13px !important;
+  }
+
+  body {
+    background: #fff !important;
+    /* Selos e cartoes de estado mantem a cor no papel. */
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  main {
+    padding: 0 !important;
+  }
+
+  /* Botoes sao acao, nao dado. Excecao: o que carrega informacao (etapas da
+     trilha) leva data-imprimir. */
+  /* Botao com icone e acao (Novo, Editar, Exportar, Ver dados...); botao so
+     de texto costuma ser dado clicavel (numero do pedido) e fica. Dado com
+     icone (etapas da trilha, titulo de coluna ordenavel) leva data-imprimir. */
+  main button:has(svg):not([data-imprimir]),
+  [role='dialog'] button:has(svg):not([data-imprimir]) {
+    display: none !important;
+  }
+
+  /* Graficos: sem a dica e o realce de quando o mouse estava em cima. */
+  .recharts-tooltip-wrapper,
+  .recharts-tooltip-cursor {
+    display: none !important;
+  }
+
+  /* Tabelas inteiras na largura da folha, cabecalho repetido a cada pagina. */
+  .overflow-x-auto,
+  .overflow-y-auto {
+    overflow: visible !important;
+  }
+  table {
+    width: 100% !important;
+  }
+  thead {
+    display: table-header-group;
+  }
+  tr,
+  img,
+  svg,
+  section,
+  [role='group'],
+  [role='region'] {
+    break-inside: avoid;
+  }
+
+  /* Dialogo aberto: e ele que vai para o papel. */
+  body:has([role='dialog']) #root {
+    display: none !important;
+  }
+  [role='dialog'] {
+    position: static !important;
+    transform: none !important;
+    max-height: none !important;
+    max-width: none !important;
+    width: auto !important;
+    overflow: visible !important;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+}
