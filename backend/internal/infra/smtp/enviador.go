@@ -17,6 +17,7 @@ import (
 	"net/textproto"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/email"
@@ -208,7 +209,7 @@ func categorizar(err error) error {
 		return errors.New("o certificado TLS do servidor nao e valido ou nao e confiavel")
 	case errors.As(err, &erroRede) && erroRede.Timeout(), errors.Is(err, context.DeadlineExceeded):
 		return errors.New("o servidor nao respondeu a tempo")
-	case strings.Contains(err.Error(), "connection refused"):
+	case conexaoRecusada(err):
 		return errors.New("conexao recusada -- confira servidor e porta")
 	case strings.Contains(err.Error(), "no such host"):
 		return errors.New("servidor nao encontrado -- confira o nome (host)")
@@ -241,4 +242,19 @@ func montar(msg email.Mensagem) []byte {
 // remetente ou no assunto).
 func semQuebraDeLinha(texto string) string {
 	return strings.NewReplacer("\r", " ", "\n", " ").Replace(texto)
+}
+
+// wsaeConnRefused e o codigo do Windows (WSAECONNREFUSED): la o erro nao e
+// igual a syscall.ECONNREFUSED e o texto vem no idioma do sistema, entao
+// comparar a mensagem em ingles nao basta.
+const wsaeConnRefused = 10061
+
+// conexaoRecusada diz se a falha foi uma conexao recusada pelo destino, em
+// qualquer sistema operacional.
+func conexaoRecusada(err error) bool {
+	var errno syscall.Errno
+	if errors.As(err, &errno) && (errno == syscall.ECONNREFUSED || uintptr(errno) == wsaeConnRefused) {
+		return true
+	}
+	return strings.Contains(err.Error(), "connection refused")
 }
