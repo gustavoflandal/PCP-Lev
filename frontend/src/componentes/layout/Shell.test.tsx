@@ -34,6 +34,15 @@ describe('Shell', () => {
     expect(screen.getByRole('navigation', { name: 'Módulos do sistema' })).toBeInTheDocument();
   });
 
+  it('a janela fica fixa: o menu lateral e o conteudo rolam cada um por conta propria', async () => {
+    const { container } = renderizar();
+    await screen.findByText('conteudo da tela');
+
+    expect(container.firstElementChild).toHaveClass('h-screen', 'overflow-hidden');
+    expect(screen.getByRole('navigation', { name: 'Módulos do sistema' })).toHaveClass('overflow-y-auto');
+    expect(screen.getByRole('main')).toHaveClass('overflow-y-auto');
+  });
+
   it('no modo TV, so o conteudo fica na tela', async () => {
     useModoTV.setState({ ativo: true });
     renderizar();
