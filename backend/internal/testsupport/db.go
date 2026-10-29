@@ -81,12 +81,32 @@ func PoolLimpo(t *testing.T) *pgxpool.Pool {
 	return pool
 }
 
+// migrationMassaDemo e o id de migrations/023_demo_data.sql.
+const migrationMassaDemo = 23
+
 // BancoMigrado devolve um pool com o schema exclusivo ja migrado — o ponto de
 // partida dos testes de repositorio.
+//
+// A migration 023 (massa de dados de demonstracao) e registrada como ja
+// aplicada: os testes partem de um banco com so os dados iniciais (perfis,
+// permissoes, administrador), e a massa demo (listas com varios registros,
+// OPs, notas) faria falhar toda assercao sobre "o unico registro criado".
 func BancoMigrado(t *testing.T) *pgxpool.Pool {
 	t.Helper()
 	pool := PoolLimpo(t)
-	if err := db.Aplicar(context.Background(), pool); err != nil {
+	ctx := context.Background()
+	if _, err := pool.Exec(ctx, `CREATE TABLE IF NOT EXISTS schema_version (
+		id INT PRIMARY KEY,
+		descricao VARCHAR(255) NOT NULL,
+		data_aplicacao TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)`); err != nil {
+		t.Fatalf("criar schema_version no banco de teste: %v", err)
+	}
+	if _, err := pool.Exec(ctx,
+		`INSERT INTO schema_version (id, descricao) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+		migrationMassaDemo, "demo_data (ignorada nos testes)"); err != nil {
+		t.Fatalf("registrar migration da massa demo: %v", err)
+	}
+	if err := db.Aplicar(ctx, pool); err != nil {
 		t.Fatalf("aplicar migrations no banco de teste: %v", err)
 	}
 	return pool
