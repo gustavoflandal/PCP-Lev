@@ -20,6 +20,7 @@ import { icones } from '@/componentes/ui/icones';
 import { t, td } from '@/i18n';
 import { cn } from '@/lib/cn';
 import { formatarValor, formatarValorEixo, type FormatoValor } from '@/lib/paineis';
+import { useModoTV } from '@/store/modoTV';
 import type { Ponto } from '@/tipos/paineis';
 
 /** Uma serie do grafico: nome (legenda e coluna da tabela) e os pontos. */
@@ -140,6 +141,9 @@ function Grafico({
 
   const formatarEixo = (v: unknown) => formatarValorEixo(Number(v), formato);
   const formatarCompleto = (v: unknown) => formatarValor(Number(v), formato);
+  // No modo TV o grafico ocupa a celula da grade (que reparte a altura da tela
+  // entre as linhas) em vez de ter altura fixa: assim todos cabem na tela.
+  const modoTV = useModoTV((estado) => estado.ativo);
   const legenda = series.length > 1;
   const comRotulosNasBarras = tipo === 'barras-horizontais' || (tipo === 'barras' && linhas.length <= 8);
 
@@ -168,6 +172,7 @@ function Grafico({
             type="category"
             dataKey="exibicao"
             tick={TICK}
+            interval={0}
             width={168}
             tickFormatter={(v: unknown) => encurtar(String(v))}
             stroke={COR_GRADE}
@@ -271,13 +276,16 @@ function Grafico({
     <section
       aria-labelledby={idTitulo}
       aria-busy={estado === 'carregando' || undefined}
-      className="flex flex-col gap-3 rounded-cartao border border-borda-subtle bg-surface-raised p-4"
+      className={cn(
+        'flex flex-col gap-3 rounded-cartao border border-borda-subtle bg-surface-raised p-4',
+        modoTV && 'h-full min-h-0 gap-2',
+      )}
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 id={idTitulo} className="text-subtitle text-texto-primary">
           {titulo}
         </h2>
-        {estado === 'dados' && (
+        {estado === 'dados' && !modoTV && (
           <Botao
             variante="fantasma"
             icone={verDados ? 'eye-off' : 'eye'}
@@ -305,7 +313,11 @@ function Grafico({
       )}
 
       {estado === 'carregando' && (
-        <div data-testid="esqueleto-grafico" className="w-full rounded-campo bg-surface-sunken" style={{ height: altura }} />
+        <div
+          data-testid="esqueleto-grafico"
+          className={cn('w-full rounded-campo bg-surface-sunken', modoTV && 'min-h-0 flex-1')}
+          style={modoTV ? undefined : { height: altura }}
+        />
       )}
 
       {estado === 'vazio' && (
@@ -317,13 +329,22 @@ function Grafico({
       {estado === 'dados' && (
         <>
           {/* O desenho e so visual: a mesma informacao esta na tabela "Ver dados". */}
-          <div aria-hidden="true" className="w-full" style={{ height: altura }}>
-            <ResponsiveContainer width="100%" height="100%">
-              {desenhar()}
-            </ResponsiveContainer>
+          <div
+            aria-hidden="true"
+            data-grafico-desenho
+            className={cn('w-full', modoTV && 'relative min-h-0 flex-1')}
+            style={modoTV ? undefined : { height: altura }}
+          >
+            {/* No modo TV a area e preenchida por posicionamento absoluto: o
+                ResponsiveContainer so mede bem dentro de uma caixa de tamanho definido. */}
+            <div className={modoTV ? 'absolute inset-0' : 'h-full w-full'}>
+              <ResponsiveContainer width="100%" height="100%">
+                {desenhar()}
+              </ResponsiveContainer>
+            </div>
           </div>
 
-          <div id={idTabela} hidden={!verDados} className="overflow-x-auto border border-borda-subtle">
+          <div id={idTabela} hidden={!verDados || modoTV} className="overflow-x-auto border border-borda-subtle">
             <table className="w-full border-collapse">
               <caption className="sr-only">{titulo}</caption>
               <thead>
