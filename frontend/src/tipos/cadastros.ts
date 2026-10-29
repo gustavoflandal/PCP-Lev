@@ -62,6 +62,11 @@ export interface ProdutoAcabado extends RegistroCadastro, Partial<FlagsControle>
   lead_time_producao: number;
   /** Radar sujeito ao Inmetro (metrologia por unidade). */
   exige_metrologia?: boolean;
+  /**
+   * Produto pode compor a BOM de outro produto acabado.
+   * Quando ativo, o sistema mantém automaticamente um registro espelho em partes/peças.
+   */
+  pode_ser_componente?: boolean;
   /** Ausente quando o produto ainda nao tem BOM cadastrada. */
   estrutura_ativa?: EstruturaResumo;
   /** Miniatura assinada da foto principal (5 min); ausente sem foto. */

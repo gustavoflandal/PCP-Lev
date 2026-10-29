@@ -33,14 +33,15 @@ func (s *Servico) Criar(ctx context.Context, dados Dados, autor string) (*Produt
 	}
 
 	p := &ProdutoAcabado{
-		Codigo:           dados.Codigo,
-		Descricao:        dados.Descricao,
-		UnidadeMedida:    dados.UnidadeMedida,
-		PrecoVenda:       dados.PrecoVenda,
-		LeadTimeProducao: dados.LeadTimeProducao,
-		ExigeMetrologia:  dados.ExigeMetrologia,
-		Flags:            dados.Controle,
-		Ativo:            ativo,
+		Codigo:            dados.Codigo,
+		Descricao:         dados.Descricao,
+		UnidadeMedida:     dados.UnidadeMedida,
+		PrecoVenda:        dados.PrecoVenda,
+		LeadTimeProducao:  dados.LeadTimeProducao,
+		ExigeMetrologia:   dados.ExigeMetrologia,
+		PodeSerComponente: dados.PodeSerComponente,
+		Flags:             dados.Controle,
+		Ativo:             ativo,
 	}
 
 	if err := s.repo.Criar(ctx, p, autor); err != nil {
@@ -61,12 +62,16 @@ func (s *Servico) Atualizar(ctx context.Context, id int64, dados Dados, autor st
 		return nil, err
 	}
 
+	// Guarda o valor antigo antes de sobrescrever com os novos dados.
+	oldPodeSerComponente := p.PodeSerComponente
+
 	p.Codigo = dados.Codigo
 	p.Descricao = dados.Descricao
 	p.UnidadeMedida = dados.UnidadeMedida
 	p.PrecoVenda = dados.PrecoVenda
 	p.LeadTimeProducao = dados.LeadTimeProducao
 	p.ExigeMetrologia = dados.ExigeMetrologia
+	p.PodeSerComponente = dados.PodeSerComponente
 	p.Flags = dados.Controle
 	if dados.Ativo != nil {
 		p.Ativo = *dados.Ativo
@@ -75,6 +80,31 @@ func (s *Servico) Atualizar(ctx context.Context, id int64, dados Dados, autor st
 	if err := s.repo.Atualizar(ctx, p, autor); err != nil {
 		return nil, err
 	}
+
+	// Gerencia o registro espelho em partes_pecas conforme a transição do flag.
+	switch {
+	case !oldPodeSerComponente && p.PodeSerComponente:
+		if err := s.repo.CriarOuReativarEspelho(ctx, p, autor); err != nil {
+			return nil, err
+		}
+	case oldPodeSerComponente && !p.PodeSerComponente:
+		emUso, err := s.repo.EspelhoEmUsoBOM(ctx, p.ID)
+		if err != nil {
+			return nil, err
+		}
+		if emUso {
+			return nil, ErrUsadoNaBOM
+		}
+		if err := s.repo.DesativarEspelho(ctx, p.ID, autor); err != nil {
+			return nil, err
+		}
+	case oldPodeSerComponente && p.PodeSerComponente:
+		// Mantém espelho sincronizado se código, descrição ou unidade mudaram.
+		if err := s.repo.SincronizarEspelho(ctx, p, autor); err != nil {
+			return nil, err
+		}
+	}
+
 	return p, nil
 }
 

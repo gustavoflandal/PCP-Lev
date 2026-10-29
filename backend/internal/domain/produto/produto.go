@@ -26,6 +26,12 @@ var (
 	ErrNaoEncontrado = errors.New("produto acabado nao encontrado")
 	// ErrPossuiVendas bloqueia a exclusao de PA com historico de vendas (RF1.1).
 	ErrPossuiVendas = errors.New("o produto possui pedidos de venda e nao pode ser excluido")
+	// ErrUsadoNaBOM bloqueia remover pode_ser_componente enquanto o espelho
+	// estiver referenciado em alguma estrutura de produto ativa.
+	ErrUsadoNaBOM = errors.New("o produto esta em uso na estrutura de outro produto; remova-o das BOMs antes de desativar o uso como componente")
+	// ErrCodigoEspelhoDuplicado indica que ja existe uma parte/peca com o mesmo
+	// codigo, impedindo a criacao do registro espelho.
+	ErrCodigoEspelhoDuplicado = errors.New("ja existe uma parte/peca com este codigo; use um codigo diferente ou remova a parte/peca antes de ativar o produto como componente")
 )
 
 // ProdutoAcabado e o produto final vendido ao cliente.
@@ -39,6 +45,9 @@ type ProdutoAcabado struct {
 	// ExigeMetrologia: radares sujeitos ao Inmetro -- cada unidade precisa da
 	// verificacao metrologica antes de sair de Testes (doc 0, 5.1.B).
 	ExigeMetrologia bool `json:"exige_metrologia"`
+	// PodeSerComponente: produto pode compor a BOM de outro produto acabado.
+	// Ao ativar, o sistema cria automaticamente um registro espelho em partes_pecas.
+	PodeSerComponente bool `json:"pode_ser_componente"`
 	controle.Flags
 	// FotoURL: miniatura assinada da foto principal (preenchida pelo handler).
 	FotoURL   string    `json:"foto_url,omitempty"`
@@ -66,13 +75,14 @@ func (p ProdutoAcabado) PrevisaoDeConclusao(inicio time.Time) time.Time {
 
 // Dados sao os campos informados na criacao e na edicao.
 type Dados struct {
-	Codigo           string
-	Descricao        string
-	UnidadeMedida    string
-	PrecoVenda       dinheiro.Dinheiro
-	LeadTimeProducao int
-	ExigeMetrologia  bool
-	Controle         controle.Flags
+	Codigo            string
+	Descricao         string
+	UnidadeMedida     string
+	PrecoVenda        dinheiro.Dinheiro
+	LeadTimeProducao  int
+	ExigeMetrologia   bool
+	PodeSerComponente bool
+	Controle          controle.Flags
 	// Ativo nil significa "nao informado": na criacao o produto nasce ativo,
 	// na edicao a situacao atual e preservada.
 	Ativo *bool
