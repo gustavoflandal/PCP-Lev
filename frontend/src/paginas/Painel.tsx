@@ -6,6 +6,7 @@ import { GradeIndicadores } from '@/componentes/paineis/PaginaPainel';
 import { Botao } from '@/componentes/ui/Botao';
 import { Cartao } from '@/componentes/ui/Cartao';
 import { icones } from '@/componentes/ui/icones';
+import { t } from '@/i18n';
 import { rotuloEtapa } from '@/lib/paineis';
 import { PERMISSOES, usePode } from '@/lib/permissoes';
 import { api } from '@/servicos/api';
@@ -64,9 +65,9 @@ export function Painel() {
     <div className="mx-auto flex max-w-[1400px] flex-col gap-4">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-title text-texto-primary">Painel</h1>
+          <h1 className="text-title text-texto-primary">{t('Painel')}</h1>
           <p className="text-body text-texto-secondary">
-            {usuario ? `Sessão aberta como ${usuario.nome}.` : 'Sessão aberta.'}
+            {usuario ? t('Sessão aberta como {nome}.', { nome: usuario.nome }) : t('Sessão aberta.')}
           </p>
         </div>
         <BarraAtualizacao
@@ -80,10 +81,10 @@ export function Painel() {
         <div role="alert" className="flex flex-col items-start gap-2 rounded-cartao border border-borda-subtle bg-surface-raised p-4">
           <p className="flex items-center gap-2 text-body text-estado-pending">
             <IconeFalha size={16} aria-hidden="true" />
-            Não foi possível carregar os indicadores. Verifique a conexão e tente de novo.
+            {t('Não foi possível carregar os indicadores. Verifique a conexão e tente de novo.')}
           </p>
           <Botao variante="secundaria" icone="refresh-cw" onClick={() => void inicio.refetch()}>
-            Tentar de novo
+            {t('Tentar de novo')}
           </Botao>
         </div>
       ) : (
@@ -94,27 +95,27 @@ export function Painel() {
               className="flex items-center gap-2 rounded-campo border border-estado-warning bg-estado-warning-bg px-3 py-2 text-body text-estado-warning"
             >
               <IconeFalha size={16} aria-hidden="true" />
-              Não foi possível atualizar agora. Os números mostrados são os da última atualização.
+              {t('Não foi possível atualizar agora. Os números mostrados são os da última atualização.')}
             </p>
           )}
 
           {nenhumBloco ? (
             <p className="text-body text-texto-secondary">
-              Nenhum indicador disponível para o seu perfil. Peça ao administrador acesso aos módulos que você acompanha.
+              {t('Nenhum indicador disponível para o seu perfil. Peça ao administrador acesso aos módulos que você acompanha.')}
             </p>
           ) : (
             <GradeIndicadores>
               {mostra('producao') && (
                 <>
                   <CartaoIndicador
-                    rotulo="OPs em atraso"
+                    rotulo={t('OPs em atraso')}
                     valor={dados?.producao?.ops_em_atraso}
                     tom="warning"
                     para={link('producao', '/producao/ops')}
                     carregando={carregando}
                   />
                   <CartaoIndicador
-                    rotulo="Metrologia vencendo em 30 dias"
+                    rotulo={t('Metrologia vencendo em 30 dias')}
                     valor={dados?.producao?.metrologia_a_vencer_30}
                     tom="warning"
                     para={link('producao', '/producao/metrologia')}
@@ -125,13 +126,13 @@ export function Painel() {
               {mostra('compras') && (
                 <>
                   <CartaoIndicador
-                    rotulo="PCs a receber"
+                    rotulo={t('PCs a receber')}
                     valor={dados?.compras?.pcs_a_receber}
                     para={link('compras', '/pedidos-compra')}
                     carregando={carregando}
                   />
                   <CartaoIndicador
-                    rotulo="PCs em atraso"
+                    rotulo={t('PCs em atraso')}
                     valor={dados?.compras?.pcs_em_atraso}
                     tom="warning"
                     para={link('compras', '/pedidos-compra')}
@@ -142,14 +143,14 @@ export function Painel() {
               {mostra('estoque') && (
                 <>
                   <CartaoIndicador
-                    rotulo="Insumos críticos"
+                    rotulo={t('Insumos críticos')}
                     valor={dados?.estoque?.itens_criticos}
                     tom="warning"
                     para={link('estoque', '/estoque')}
                     carregando={carregando}
                   />
                   <CartaoIndicador
-                    rotulo="Lotes vencendo em 30 dias"
+                    rotulo={t('Lotes vencendo em 30 dias')}
                     valor={dados?.estoque?.lotes_a_vencer_30}
                     tom="warning"
                     para={link('estoque', '/lotes')}
@@ -159,9 +160,9 @@ export function Painel() {
               )}
               {mostra('notas') && (
                 <CartaoIndicador
-                  rotulo="Notas aguardando efetivação"
+                  rotulo={t('Notas aguardando efetivação')}
                   valor={dados?.notas?.pendentes}
-                  complemento="Rascunho ou conferida"
+                  complemento={t('Rascunho ou conferida')}
                   para={link('notas', '/notas-entrada')}
                   carregando={carregando}
                 />
@@ -169,19 +170,19 @@ export function Painel() {
               {mostra('vendas') && (
                 <>
                   <CartaoIndicador
-                    rotulo="Pedidos de venda em produção"
+                    rotulo={t('Pedidos de venda em produção')}
                     valor={dados?.vendas?.em_producao}
                     para={link('vendas', '/pedidos-venda')}
                     carregando={carregando}
                   />
                   <CartaoIndicador
-                    rotulo="Pedidos prontos para envio"
+                    rotulo={t('Pedidos prontos para envio')}
                     valor={dados?.vendas?.prontos_para_envio}
                     para={link('vendas', '/pedidos-venda')}
                     carregando={carregando}
                   />
                   <CartaoIndicador
-                    rotulo="Pedidos entregues hoje"
+                    rotulo={t('Pedidos entregues hoje')}
                     valor={dados?.vendas?.entregues_hoje}
                     para={link('vendas', '/pedidos-venda')}
                     carregando={carregando}
@@ -193,31 +194,31 @@ export function Painel() {
 
           {mostra('producao') && (
             <GraficoBarras
-              titulo="OPs por etapa"
-              series={[{ nome: 'OPs', pontos: dados?.producao?.ops_por_etapa ?? [] }]}
+              titulo={t('OPs por etapa')}
+              series={[{ nome: t('OPs'), pontos: dados?.producao?.ops_por_etapa ?? [] }]}
               formatarRotulo={rotuloEtapa}
-              rotuloCategoria="Etapa"
-              vazio="Nenhuma OP aberta ou em andamento."
+              rotuloCategoria={t('Etapa')}
+              vazio={t('Nenhuma OP aberta ou em andamento.')}
               carregando={carregando}
             />
           )}
         </>
       )}
 
-      <Cartao titulo="Conexão com o servidor">
-        {saude.isPending && <p className="text-body text-texto-secondary">Verificando…</p>}
+      <Cartao titulo={t('Conexão com o servidor')}>
+        {saude.isPending && <p className="text-body text-texto-secondary">{t('Verificando…')}</p>}
 
         {saude.isError && (
           <p className="flex items-center gap-2 text-body text-estado-pending">
             <IconeFalha size={16} aria-hidden="true" />
-            Servidor indisponível. As telas de operação não funcionarão até a conexão voltar.
+            {t('Servidor indisponível. As telas de operação não funcionarão até a conexão voltar.')}
           </p>
         )}
 
         {saude.data && (
           <p className="flex items-center gap-2 text-body text-estado-done">
             <IconeOk size={16} aria-hidden="true" />
-            Operacional · ambiente {saude.data.ambiente}
+            {t('Operacional · ambiente {ambiente}', { ambiente: saude.data.ambiente })}
           </p>
         )}
       </Cartao>

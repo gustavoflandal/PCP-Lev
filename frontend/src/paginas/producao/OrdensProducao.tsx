@@ -5,6 +5,7 @@ import { Campo } from '@/componentes/ui/Campo';
 import { Paginacao } from '@/componentes/ui/Paginacao';
 import { Selecao } from '@/componentes/ui/Selecao';
 import { Tabela, type Coluna } from '@/componentes/ui/Tabela';
+import { t, td, useIdioma } from '@/i18n';
 import { useListagemCompras } from '@/hooks/useListagemCompras';
 import { formatarData } from '@/lib/formato';
 import {
@@ -17,10 +18,11 @@ import {
   type StatusOP,
 } from '@/tipos/producao';
 
-const OPCOES_STATUS = (Object.keys(ROTULO_STATUS_OP) as StatusOP[]).map((s) => ({ valor: s, rotulo: ROTULO_STATUS_OP[s] }));
-const OPCOES_ETAPA = ETAPAS_OP.map((e) => ({ valor: e, rotulo: ROTULO_ETAPA_OP[e] }));
+const opcoesStatus = () => (Object.keys(ROTULO_STATUS_OP) as StatusOP[]).map((s) => ({ valor: s, rotulo: td(ROTULO_STATUS_OP[s]) }));
+const opcoesEtapa = () => ETAPAS_OP.map((e) => ({ valor: e, rotulo: td(ROTULO_ETAPA_OP[e]) }));
 
 export function OrdensProducao() {
+  useIdioma();
   const navegar = useNavigate();
   const [etapa, definirEtapa] = useState('');
   const lista = useListagemCompras<OrdemProducao>('ops', 'data_conclusao_prevista', { etapa });
@@ -29,7 +31,7 @@ export function OrdensProducao() {
   const colunas: Coluna<OrdemProducao>[] = [
     {
       chave: 'numero_op',
-      rotulo: 'OP',
+      rotulo: t('OP'),
       ordenavel: true,
       renderizar: (op) => (
         <button type="button" onClick={() => navegar(`/producao/ops/${op.id}`)} className="font-mono text-brand hover:underline">
@@ -39,7 +41,7 @@ export function OrdensProducao() {
     },
     {
       chave: 'produto',
-      rotulo: 'Produto',
+      rotulo: t('Produto'),
       renderizar: (op) => (
         <span className="flex flex-col">
           <span className="font-mono">{op.produto_codigo}</span>
@@ -47,10 +49,10 @@ export function OrdensProducao() {
         </span>
       ),
     },
-    { chave: 'quantidade', rotulo: 'Qtd.', alinhamento: 'direita', renderizar: (op) => <span className="tabular">{op.quantidade}</span> },
+    { chave: 'quantidade', rotulo: t('Qtd.'), alinhamento: 'direita', renderizar: (op) => <span className="tabular">{op.quantidade}</span> },
     {
       chave: 'pedido',
-      rotulo: 'Pedido / cliente',
+      rotulo: t('Pedido / cliente'),
       renderizar: (op) => (
         <span className="flex flex-col">
           <span className="font-mono">{op.numero_pedido}</span>
@@ -60,57 +62,57 @@ export function OrdensProducao() {
     },
     {
       chave: 'data_conclusao_prevista',
-      rotulo: 'Prazo',
+      rotulo: t('Prazo'),
       ordenavel: true,
       renderizar: (op) => (
         <span className="flex flex-wrap items-center gap-2">
           {formatarData(op.data_conclusao_prevista)}
-          {opAtrasada(op, hoje) && <SeloAtraso>Atrasada</SeloAtraso>}
+          {opAtrasada(op, hoje) && <SeloAtraso>{t('Atrasada')}</SeloAtraso>}
         </span>
       ),
     },
     {
       chave: 'etapa_atual',
-      rotulo: 'Etapa',
+      rotulo: t('Etapa'),
       ordenavel: true,
       renderizar: (op) => (op.status === 'Liberada' ? <NomeEtapa etapa={op.etapa_atual} /> : '—'),
     },
-    { chave: 'status', rotulo: 'Situação', ordenavel: true, renderizar: (op) => <BadgeStatusOP status={op.status} /> },
+    { chave: 'status', rotulo: t('Situação'), ordenavel: true, renderizar: (op) => <BadgeStatusOP status={op.status} /> },
   ];
 
   return (
     <div className="mx-auto flex max-w-[1400px] flex-col gap-4">
       <div>
-        <h1 className="text-title text-texto-primary">Ordens de produção</h1>
+        <h1 className="text-title text-texto-primary">{t('Ordens de produção')}</h1>
         <p className="text-body text-texto-secondary">
-          Cada OP produz um item de pedido de venda. Gere a OP no pedido; libere, aponte e avance aqui.
+          {t('Cada OP produz um item de pedido de venda. Gere a OP no pedido; libere, aponte e avance aqui.')}
         </p>
       </div>
 
       <div className="flex flex-wrap items-end gap-4">
         <div className="w-[320px] max-w-full">
           <Campo
-            rotulo="Buscar por OP, pedido, produto ou cliente"
+            rotulo={t('Buscar por OP, pedido, produto ou cliente')}
             value={lista.busca}
             onChange={(evento) => lista.definirBusca(evento.target.value)}
-            placeholder="Digite para filtrar"
+            placeholder={t('Digite para filtrar')}
           />
         </div>
         <div className="w-[200px]">
           <Selecao
-            rotulo="Situação"
-            opcoes={OPCOES_STATUS}
-            placeholder="Todas"
+            rotulo={t('Situação')}
+            opcoes={opcoesStatus()}
+            placeholder={t('Todas')}
             value={lista.status ?? ''}
             onChange={(evento) => lista.definirStatus(evento.target.value || null)}
           />
         </div>
         <div className="w-[200px]">
           <Selecao
-            rotulo="Etapa"
-            opcoes={OPCOES_ETAPA}
-            placeholder="Todas"
-            ajuda={etapa ? 'Só OPs liberadas' : undefined}
+            rotulo={t('Etapa')}
+            opcoes={opcoesEtapa()}
+            placeholder={t('Todas')}
+            ajuda={etapa ? t('Só OPs liberadas') : undefined}
             value={etapa}
             onChange={(evento) => definirEtapa(evento.target.value)}
           />
@@ -119,7 +121,7 @@ export function OrdensProducao() {
 
       <div>
         <Tabela<OrdemProducao>
-          rotulo="Ordens de produção"
+          rotulo={t('Ordens de produção')}
           colunas={colunas}
           itens={lista.itens}
           chaveDe={(op) => op.id}
@@ -129,7 +131,7 @@ export function OrdensProducao() {
           carregando={lista.carregando}
           erro={lista.erro}
           aoTentarDeNovo={lista.recarregar}
-          vazio="Nenhuma ordem de produção encontrada. Gere OPs a partir dos itens de um pedido de venda."
+          vazio={t('Nenhuma ordem de produção encontrada. Gere OPs a partir dos itens de um pedido de venda.')}
         />
         <Paginacao
           pagina={lista.paginacao.pagina}

@@ -36,6 +36,18 @@
   --state-neutral: #4b5563;
   --state-neutral-bg: #eef1f4;
 
+  /* Paleta categorica dos graficos -- 8 matizes distintos entre si e
+     distinguiveis por daltonicos (base Okabe-Ito). Sao cores de categoria,
+     nao de estado: verde/vermelho aqui nao significam "ok"/"problema". */
+  --grafico-1: #0b6fb8;
+  --grafico-2: #e0792b;
+  --grafico-3: #1f9d6b;
+  --grafico-4: #8a5cd0;
+  --grafico-5: #d13f6b;
+  --grafico-6: #b8941f;
+  --grafico-7: #14a3b8;
+  --grafico-8: #6b7685;
+
   /* Densidade de layout (Fase 4.1) — altura da linha de tabela/navegacao.
      Compacta (2.5rem = 40px) e o padrao: e o valor que ja estava fixo em
      tailwind.config.js antes desta fase existir, preservado para nao mudar
@@ -86,6 +98,15 @@
   --state-blocked-bg: #241a3a;
   --state-neutral: #b0b8c1;
   --state-neutral-bg: #232a33;
+
+  --grafico-1: #4a9eef;
+  --grafico-2: #f0a04b;
+  --grafico-3: #3fbd77;
+  --grafico-4: #a78bfa;
+  --grafico-5: #f2799b;
+  --grafico-6: #e3c04d;
+  --grafico-7: #3cc6d9;
+  --grafico-8: #9aa4b0;
 }
 
 /* Alto contraste (Fase 4.1) — eixo independente do tema, combina com claro

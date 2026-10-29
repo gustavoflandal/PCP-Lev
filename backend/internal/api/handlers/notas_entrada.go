@@ -14,6 +14,7 @@ import (
 	"github.com/gustavoflandal/pcp-lev/backend/internal/platform/consulta"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/platform/dinheiro"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/platform/httpx"
+	"github.com/gustavoflandal/pcp-lev/backend/internal/platform/i18n"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/platform/tempo"
 	"github.com/labstack/echo/v4"
 )
@@ -97,10 +98,10 @@ func (h *NotaEntradaHandler) responder(c echo.Context, err error) error {
 			if x.ItemOrdem != nil {
 				campo = fmt.Sprintf("item %d", *x.ItemOrdem)
 			}
-			detalhes = append(detalhes, httpx.CampoInvalido{Campo: campo, Mensagem: "[" + x.Nivel + "] " + x.Mensagem})
+			detalhes = append(detalhes, httpx.CampoInvalido{Campo: campo, Mensagem: "[" + x.Nivel + "] " + i18n.T(c, x.Mensagem)})
 		}
 		return c.JSON(http.StatusConflict, httpx.RespostaErro{Erro: httpx.DetalheErro{
-			Codigo: CodigoPendencias, Mensagem: err.Error(), Detalhes: detalhes,
+			Codigo: CodigoPendencias, Mensagem: i18n.T(c, err.Error()), Detalhes: detalhes,
 		}})
 	}
 	return errosNota.responder(c, err)

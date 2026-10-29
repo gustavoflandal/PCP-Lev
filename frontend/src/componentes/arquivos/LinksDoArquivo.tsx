@@ -1,6 +1,7 @@
 import { cn } from '@/lib/cn';
 import { icones } from '@/componentes/ui/icones';
 import type { Anexo } from '@/tipos/arquivos';
+import { t } from '@/i18n';
 
 /** Mesmo desenho do Botao secundario: o link precisa parecer acao, nao texto. */
 const ESTILO_LINK_ACAO =
@@ -16,7 +17,7 @@ export function LinkAbrir({ anexo, rotulo }: { anexo: Anexo; rotulo: string }) {
   return (
     <a href={anexo.url} target="_blank" rel="noopener noreferrer" aria-label={rotulo} className={cn(ESTILO_LINK_ACAO, 'print:hidden')}>
       <Icone size={16} aria-hidden="true" />
-      Abrir
+      {t('Abrir')}
     </a>
   );
 }
@@ -31,7 +32,7 @@ export function LinkBaixar({ anexo, rotulo }: { anexo: Anexo; rotulo: string }) 
   return (
     <a href={anexo.url} download={anexo.arquivo.nome_original} aria-label={rotulo} className={cn(ESTILO_LINK_ACAO, 'print:hidden')}>
       <Icone size={16} aria-hidden="true" />
-      Baixar
+      {t('Baixar')}
     </a>
   );
 }

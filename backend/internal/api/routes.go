@@ -36,6 +36,7 @@ import (
 	"github.com/gustavoflandal/pcp-lev/backend/internal/infra/smtp"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/platform/cripto"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/platform/httpx"
+	"github.com/gustavoflandal/pcp-lev/backend/internal/platform/i18n"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/labstack/echo/v4"
 	echomw "github.com/labstack/echo/v4/middleware"
@@ -74,6 +75,9 @@ func NovoRoteador(dep Dependencias) *echo.Echo {
 	e.Use(echomw.Recover())
 	e.Use(echomw.RequestID())
 	e.Use(middleware.Log())
+	// Idioma da resposta (Accept-Language): antes do limitador e da autorizacao,
+	// para que os erros deles tambem saiam no idioma do usuario.
+	e.Use(i18n.Middleware())
 	// Cabecalhos de seguranca (doc 0, secao 4.7.6). A API so devolve JSON,
 	// CSV e imagens -- nada dela deve ser interpretado como documento, entao a
 	// CSP nega tudo. HSTS so sai quando a requisicao chegou por HTTPS (o Echo

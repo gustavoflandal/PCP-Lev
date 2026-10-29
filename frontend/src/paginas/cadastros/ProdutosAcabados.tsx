@@ -14,6 +14,7 @@ import { formatarDias, formatarMoeda } from '@/lib/formato';
 import { PERMISSOES, usePode } from '@/lib/permissoes';
 import type { ProdutoAcabado } from '@/tipos/cadastros';
 import { FormularioProduto } from './FormularioProduto';
+import { t } from '@/i18n';
 
 export function ProdutosAcabados() {
   const podeIncluir = usePode(PERMISSOES.produtosIncluir);
@@ -22,9 +23,9 @@ export function ProdutosAcabados() {
 
   const lista = useListagem<ProdutoAcabado>('produtos-acabados', 'codigo');
   const crud = useCadastroCrud<ProdutoAcabado>('produtos-acabados', {
-    criado: 'Produto cadastrado',
-    atualizado: 'Produto atualizado',
-    inativado: 'Produto inativado',
+    criado: t('Produto cadastrado'),
+    atualizado: t('Produto atualizado'),
+    inativado: t('Produto inativado'),
   });
 
   const [emMidia, definirEmMidia] = useState<ProdutoAcabado | null>(null);
@@ -32,67 +33,67 @@ export function ProdutosAcabados() {
   const colunas: Coluna<ProdutoAcabado>[] = [
     {
       chave: 'foto',
-      rotulo: 'Foto',
-      renderizar: (p) => <Miniatura url={p.foto_url} alt={`Foto do produto ${p.codigo}`} critico={p.item_critico} />,
+      rotulo: t('Foto'),
+      renderizar: (p) => <Miniatura url={p.foto_url} alt={t('Foto do produto {codigo}', { codigo: p.codigo })} critico={p.item_critico} />,
     },
     {
       chave: 'codigo',
-      rotulo: 'Código',
+      rotulo: t('Código'),
       ordenavel: true,
       renderizar: (p) => <span className="font-mono">{p.codigo}</span>,
     },
     {
       chave: 'descricao',
-      rotulo: 'Descrição',
+      rotulo: t('Descrição'),
       ordenavel: true,
       renderizar: (p) => p.descricao,
     },
     {
       chave: 'unidade_medida',
-      rotulo: 'Unidade',
+      rotulo: t('Unidade'),
       renderizar: (p) => p.unidade_medida,
     },
     {
       chave: 'preco_venda',
-      rotulo: 'Preço de venda',
+      rotulo: t('Preço de venda'),
       ordenavel: true,
       alinhamento: 'direita',
       renderizar: (p) => formatarMoeda(p.preco_venda),
     },
     {
       chave: 'lead_time_producao',
-      rotulo: 'Lead time',
+      rotulo: t('Lead time'),
       ordenavel: true,
       alinhamento: 'direita',
       renderizar: (p) => formatarDias(p.lead_time_producao),
     },
-    { chave: 'ativo', rotulo: 'Situação', renderizar: (p) => <BadgeSituacao ativo={p.ativo} /> },
+    { chave: 'ativo', rotulo: t('Situação'), renderizar: (p) => <BadgeSituacao ativo={p.ativo} /> },
   ];
 
   return (
     <div className="mx-auto flex max-w-[1400px] flex-col gap-4">
       <div>
-        <h1 className="text-title text-texto-primary">Produtos acabados</h1>
-        <p className="text-body text-texto-secondary">O que é vendido ao cliente.</p>
+        <h1 className="text-title text-texto-primary">{t('Produtos acabados')}</h1>
+        <p className="text-body text-texto-secondary">{t('O que é vendido ao cliente.')}</p>
       </div>
 
       <BarraDeFiltros
         busca={lista.busca}
         aoBuscar={lista.definirBusca}
-        rotuloBusca="Buscar por código ou descrição"
+        rotuloBusca={t('Buscar por código ou descrição')}
         filtroAtivo={lista.filtroAtivo}
         aoFiltrarSituacao={lista.definirFiltroAtivo}
       >
         {podeIncluir && (
           <Botao icone="plus" onClick={crud.abrirNovo}>
-            Novo produto
+            {t('Novo produto')}
           </Botao>
         )}
       </BarraDeFiltros>
 
       <div>
         <Tabela<ProdutoAcabado>
-          rotulo="Produtos acabados"
+          rotulo={t('Produtos acabados')}
           colunas={colunas}
           itens={lista.itens}
           chaveDe={(p) => p.id}
@@ -102,35 +103,35 @@ export function ProdutosAcabados() {
           carregando={lista.carregando}
           erro={lista.erro}
           aoTentarDeNovo={lista.recarregar}
-          vazio="Nenhum produto acabado cadastrado. Cadastre o primeiro para começar."
+          vazio={t('Nenhum produto acabado cadastrado. Cadastre o primeiro para começar.')}
           acoes={(p) => (
             <span className="flex items-center justify-end gap-2">
               <Botao
                 variante="fantasma"
                 icone="file-text"
-                aria-label={`Mídia e documentos de ${p.codigo}`}
+                aria-label={t('Mídia e documentos de {codigo}', { codigo: p.codigo })}
                 onClick={() => definirEmMidia(p)}
               >
-                Mídia e documentos
+                {t('Mídia e documentos')}
               </Botao>
               {podeEditar && (
                 <Botao
                   variante="fantasma"
                   icone="pencil"
-                  aria-label={`Editar ${p.codigo}`}
+                  aria-label={t('Editar {codigo}', { codigo: p.codigo })}
                   onClick={() => crud.abrirEdicao(p)}
                 >
-                  Editar
+                  {t('Editar')}
                 </Botao>
               )}
               {podeInativar && p.ativo && (
                 <Botao
                   variante="fantasma"
                   icone="trash-2"
-                  aria-label={`Inativar ${p.codigo}`}
+                  aria-label={t('Inativar {codigo}', { codigo: p.codigo })}
                   onClick={() => crud.pedirInativacao(p)}
                 >
-                  Inativar
+                  {t('Inativar')}
                 </Botao>
               )}
             </span>
@@ -147,8 +148,8 @@ export function ProdutosAcabados() {
       <Modal
         aberto={crud.formularioAberto}
         aoFechar={crud.fecharFormulario}
-        titulo={crud.emEdicao ? 'Editar produto' : 'Novo produto'}
-        descricao="Campos com * são obrigatórios."
+        titulo={crud.emEdicao ? t('Editar produto') : t('Novo produto')}
+        descricao={t('Campos com * são obrigatórios.')}
       >
         <FormularioProduto
           // A chave remonta o formulario ao trocar de registro: sem isso os
@@ -166,7 +167,7 @@ export function ProdutosAcabados() {
       <Modal
         aberto={emMidia !== null}
         aoFechar={() => definirEmMidia(null)}
-        titulo={emMidia ? `Mídia e documentos — ${emMidia.codigo}` : 'Mídia e documentos'}
+        titulo={emMidia ? t('Mídia e documentos — {codigo}', { codigo: emMidia.codigo }) : t('Mídia e documentos')}
         descricao={emMidia?.descricao}
         largura="larga"
       >
@@ -183,14 +184,14 @@ export function ProdutosAcabados() {
 
       <Confirmacao
         aberto={crud.aInativar !== null}
-        titulo="Inativar produto"
+        titulo={t('Inativar produto')}
         mensagem={
           crud.aInativar
-            ? `Inativar o produto ${crud.aInativar.codigo}? Ele deixa de aparecer nas listas de seleção. O histórico é preservado.`
+            ? t('Inativar o produto {codigo}? Ele deixa de aparecer nas listas de seleção. O histórico é preservado.', { codigo: crud.aInativar.codigo })
             : ''
         }
-        rotuloConfirmar="Inativar"
-        rotuloOcupado="Inativando…"
+        rotuloConfirmar={t('Inativar')}
+        rotuloOcupado={t('Inativando…')}
         ocupado={crud.inativando}
         aoConfirmar={crud.confirmarInativacao}
         aoCancelar={crud.cancelarInativacao}

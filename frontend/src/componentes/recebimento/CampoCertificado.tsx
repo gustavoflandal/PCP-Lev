@@ -3,6 +3,7 @@ import { useId, useRef, useState } from 'react';
 import { Badge } from '@/componentes/ui/Badge';
 import { Botao } from '@/componentes/ui/Botao';
 import { mensagemDeErro } from '@/componentes/arquivos/comum';
+import { t } from '@/i18n';
 import { enviarArquivo, obterUrlArquivo } from '@/servicos/arquivos';
 import { LIMITE_PDF_BYTES, TIPO_PDF } from '@/tipos/arquivos';
 
@@ -31,23 +32,23 @@ export function CampoCertificado({ rotulo, arquivoId, aoMudar, desabilitado }: C
       definirNome(arquivo.nome_original);
       aoMudar(arquivo.id);
     },
-    onError: (e) => definirErro(mensagemDeErro(e, 'Não foi possível enviar o certificado. Tente de novo.')),
+    onError: (e) => definirErro(mensagemDeErro(e, t('Não foi possível enviar o certificado. Tente de novo.'))),
   });
 
   const abrir = useMutation({
     mutationFn: () => obterUrlArquivo(arquivoId ?? ''),
     onSuccess: (u) => window.open(u.url, '_blank', 'noopener'),
-    onError: (e) => definirErro(mensagemDeErro(e, 'Não foi possível abrir o certificado.')),
+    onError: (e) => definirErro(mensagemDeErro(e, t('Não foi possível abrir o certificado.'))),
   });
 
   function escolher(arquivo: File | undefined) {
     if (!arquivo) return;
     if (arquivo.type && arquivo.type !== TIPO_PDF) {
-      definirErro('Envie o certificado em PDF.');
+      definirErro(t('Envie o certificado em PDF.'));
       return;
     }
     if (arquivo.size > LIMITE_PDF_BYTES) {
-      definirErro('O PDF passa de 25 MB: reduza o arquivo e envie de novo.');
+      definirErro(t('O PDF passa de 25 MB: reduza o arquivo e envie de novo.'));
       return;
     }
     envio.mutate(arquivo);
@@ -55,19 +56,19 @@ export function CampoCertificado({ rotulo, arquivoId, aoMudar, desabilitado }: C
 
   return (
     <div className="flex flex-col gap-1">
-      <span className="text-label text-texto-secondary">Certificado de conformidade</span>
+      <span className="text-label text-texto-secondary">{t('Certificado de conformidade')}</span>
       <div className="flex flex-wrap items-center gap-2">
         {arquivoId ? (
           <>
             <Badge tom="done" icone="check-circle-2">
-              {nome ? `Anexado: ${nome}` : 'Certificado anexado'}
+              {nome ? t('Anexado: {nome}', { nome }) : t('Certificado anexado')}
             </Badge>
             {/* Link (nao botao): continua acionavel com a nota em so leitura,
                 dentro do fieldset desabilitado. */}
             <a
               href="#certificado"
               role="button"
-              aria-label={`Abrir certificado — ${rotulo}`}
+              aria-label={t('Abrir certificado — {rotulo}', { rotulo })}
               aria-busy={abrir.isPending || undefined}
               onClick={(e) => {
                 e.preventDefault();
@@ -75,23 +76,23 @@ export function CampoCertificado({ rotulo, arquivoId, aoMudar, desabilitado }: C
               }}
               className="text-body text-brand hover:underline"
             >
-              Abrir
+              {t('Abrir')}
             </a>
             {!desabilitado && (
-              <Botao variante="fantasma" icone="x" aria-label={`Remover certificado — ${rotulo}`} onClick={() => aoMudar(null)}>
-                Remover
+              <Botao variante="fantasma" icone="x" aria-label={t('Remover certificado — {rotulo}', { rotulo })} onClick={() => aoMudar(null)}>
+                {t('Remover')}
               </Botao>
             )}
           </>
         ) : (
           <Badge tom="warning" icone="alert-triangle">
-            Falta o certificado
+            {t('Falta o certificado')}
           </Badge>
         )}
         {!desabilitado && (
           <>
             <label htmlFor={idCampo} className="sr-only">
-              {`Arquivo do certificado — ${rotulo}`}
+              {t('Arquivo do certificado — {rotulo}', { rotulo })}
             </label>
             <input
               id={idCampo}
@@ -108,10 +109,10 @@ export function CampoCertificado({ rotulo, arquivoId, aoMudar, desabilitado }: C
               variante="secundaria"
               icone="upload"
               ocupado={envio.isPending}
-              rotuloOcupado="Enviando…"
+              rotuloOcupado={t('Enviando…')}
               onClick={() => entradaRef.current?.click()}
             >
-              {arquivoId ? 'Trocar PDF' : 'Enviar PDF'}
+              {arquivoId ? t('Trocar PDF') : t('Enviar PDF')}
             </Botao>
           </>
         )}

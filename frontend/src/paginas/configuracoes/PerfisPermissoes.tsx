@@ -6,6 +6,7 @@ import { Campo } from '@/componentes/ui/Campo';
 import { Confirmacao } from '@/componentes/ui/Confirmacao';
 import { Modal } from '@/componentes/ui/Modal';
 import { Selecao } from '@/componentes/ui/Selecao';
+import { t, td } from '@/i18n';
 import { useToasts } from '@/componentes/ui/Toast';
 import { cn } from '@/lib/cn';
 import { separarErro } from '@/lib/errosDeFormulario';
@@ -24,6 +25,8 @@ import type { PerfilAcesso, PermissaoCatalogo } from '@/tipos/acesso';
 
 const CLASSE_AVISO =
   'rounded-campo border border-estado-pending bg-estado-pending-bg px-3 py-2 text-body text-estado-pending';
+
+const textoUsuarios = (n: number) => (n === 1 ? t('1 usuário') : t('{n} usuários', { n }));
 
 function mesmoConjunto(a: Set<string>, b: string[]): boolean {
   return a.size === b.length && b.every((p) => a.has(p));
@@ -61,9 +64,9 @@ function MatrizDoPerfil({
       void queryClient.invalidateQueries({ queryKey: chavePerfis });
       // A sessao de quem esta editando pode depender deste perfil.
       void queryClient.invalidateQueries({ queryKey: ['auth', 'eu'] });
-      mostrarToast(`Perfil ${nome} salvo`);
+      mostrarToast(t('Perfil {nome} salvo', { nome }));
     },
-    onError: (erro) => mostrarToast(separarErro(erro).geral ?? 'Não foi possível salvar o perfil.', 'pending'),
+    onError: (erro) => mostrarToast(separarErro(erro).geral ?? t('Não foi possível salvar o perfil.'), 'pending'),
   });
 
   const excluir = useMutation({
@@ -71,9 +74,9 @@ function MatrizDoPerfil({
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: chavePerfis });
       void queryClient.invalidateQueries({ queryKey: ['auth', 'eu'] });
-      mostrarToast(`Perfil ${perfil.nome} excluído`);
+      mostrarToast(t('Perfil {nome} excluído', { nome: perfil.nome }));
     },
-    onError: (erro) => mostrarToast(separarErro(erro).geral ?? 'Não foi possível excluir o perfil.', 'pending'),
+    onError: (erro) => mostrarToast(separarErro(erro).geral ?? t('Não foi possível excluir o perfil.'), 'pending'),
     onSettled: () => definirConfirmandoExclusao(false),
   });
 
@@ -92,10 +95,10 @@ function MatrizDoPerfil({
   }
 
   return (
-    <form aria-label={`Permissões do perfil ${perfil.nome}`} className="flex flex-col gap-4" onSubmit={aoEnviar}>
+    <form aria-label={t('Permissões do perfil {nome}', { nome: td(perfil.nome) })} className="flex flex-col gap-4" onSubmit={aoEnviar}>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h2 className="text-subtitle text-texto-primary">{perfil.nome}</h2>
+          <h2 className="text-subtitle text-texto-primary">{td(perfil.nome)}</h2>
           <p className="font-mono text-label text-texto-secondary">{perfil.codigo}</p>
         </div>
         {!somenteLeitura && (
@@ -109,11 +112,11 @@ function MatrizDoPerfil({
                 aria-describedby={perfil.usuarios > 0 ? 'motivo-sem-excluir' : undefined}
                 onClick={() => definirConfirmandoExclusao(true)}
               >
-                Excluir perfil
+                {t('Excluir perfil')}
               </Botao>
             )}
             <Botao type="submit" icone="save" disabled={!sujo} ocupado={salvar.isPending} rotuloOcupado="Salvando…">
-              Salvar
+              {t('Salvar')}
             </Botao>
           </div>
         )}
@@ -121,26 +124,25 @@ function MatrizDoPerfil({
 
       {!perfil.sistema && perfil.usuarios > 0 && (
         <p id="motivo-sem-excluir" className="text-label text-texto-secondary">
-          Para excluir este perfil, mude antes o perfil dos usuários que o usam.
+          {t('Para excluir este perfil, mude antes o perfil dos usuários que o usam.')}
         </p>
       )}
 
       {somenteLeitura ? (
         <p className="rounded-campo border border-borda-subtle bg-surface-sunken px-3 py-2 text-body text-texto-secondary">
-          O Administrador tem todas as permissões, sempre — inclusive as que forem criadas no futuro. Não pode ser
-          alterado, para ninguém trancar o sistema para fora.
+          {t('O Administrador tem todas as permissões, sempre — inclusive as que forem criadas no futuro. Não pode ser alterado, para ninguém trancar o sistema para fora.')}
         </p>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
-          <Campo rotulo="Nome do perfil" value={nome} maxLength={80} onChange={(e) => definirNome(e.target.value)} />
-          <Campo rotulo="Descrição" value={descricao} maxLength={255} onChange={(e) => definirDescricao(e.target.value)} />
+          <Campo rotulo={t('Nome do perfil')} value={nome} maxLength={80} onChange={(e) => definirNome(e.target.value)} />
+          <Campo rotulo={t('Descrição')} value={descricao} maxLength={255} onChange={(e) => definirDescricao(e.target.value)} />
         </div>
       )}
 
       <div className="grid gap-4 lg:grid-cols-2">
         {agruparPorModulo(catalogo).map(([modulo, permissoes]) => (
           <fieldset key={modulo} className="flex flex-col gap-2 rounded-cartao border border-borda-subtle bg-surface-raised p-4">
-            <legend className="px-1 text-label font-medium text-texto-primary">{ROTULO_MODULO[modulo] ?? modulo}</legend>
+            <legend className="px-1 text-label font-medium text-texto-primary">{td(ROTULO_MODULO[modulo] ?? modulo)}</legend>
             {permissoes.map((p) => (
               <label key={p.codigo} className="flex min-h-linha items-center gap-2 text-body text-texto-primary">
                 <input
@@ -150,10 +152,10 @@ function MatrizDoPerfil({
                   disabled={somenteLeitura}
                   onChange={() => alternar(p.codigo)}
                 />
-                {ROTULO_PERMISSAO[p.codigo] ?? p.descricao}
+                {td(ROTULO_PERMISSAO[p.codigo] ?? p.descricao)}
                 {p.sensivel && (
                   <Badge tom="warning" icone="alert-triangle">
-                    Sensível
+                    {t('Sensível')}
                   </Badge>
                 )}
               </label>
@@ -164,10 +166,10 @@ function MatrizDoPerfil({
 
       <Confirmacao
         aberto={confirmandoExclusao}
-        titulo="Excluir perfil"
-        mensagem={`Excluir o perfil ${perfil.nome}? Esta ação não pode ser desfeita.`}
-        rotuloConfirmar="Excluir"
-        rotuloOcupado="Excluindo…"
+        titulo={t('Excluir perfil')}
+        mensagem={t('Excluir o perfil {nome}? Esta ação não pode ser desfeita.', { nome: td(perfil.nome) })}
+        rotuloConfirmar={t('Excluir')}
+        rotuloOcupado={t('Excluindo…')}
         ocupado={excluir.isPending}
         aoConfirmar={() => excluir.mutate()}
         aoCancelar={() => definirConfirmandoExclusao(false)}
@@ -205,17 +207,17 @@ function NovoPerfil({ perfis, aberto, aoFechar, aoCriar }: {
       }),
     onSuccess: (criado) => {
       void queryClient.invalidateQueries({ queryKey: chavePerfis });
-      mostrarToast(`Perfil ${criado.nome} criado`);
+      mostrarToast(t('Perfil {nome} criado', { nome: criado.nome }));
       definirCodigo('');
       definirNome('');
       definirCopiarDe('');
       aoCriar(criado.codigo);
     },
-    onError: (erro) => mostrarToast(separarErro(erro).geral ?? 'Não foi possível criar o perfil.', 'pending'),
+    onError: (erro) => mostrarToast(separarErro(erro).geral ?? t('Não foi possível criar o perfil.'), 'pending'),
   });
 
   return (
-    <Modal aberto={aberto} aoFechar={fechar} titulo="Novo perfil" descricao="Comece do zero ou copie as permissões de um perfil existente.">
+    <Modal aberto={aberto} aoFechar={fechar} titulo={t('Novo perfil')} descricao={t('Comece do zero ou copie as permissões de um perfil existente.')}>
       <form
         className="flex flex-col gap-4"
         onSubmit={(e) => {
@@ -224,26 +226,26 @@ function NovoPerfil({ perfis, aberto, aoFechar, aoCriar }: {
         }}
       >
         <Campo
-          rotulo="Código"
-          ajuda="Letras maiúsculas, números e _ (ex.: COMPRADOR_JUNIOR). Não muda depois."
+          rotulo={t('Código')}
+          ajuda={t('Letras maiúsculas, números e _ (ex.: COMPRADOR_JUNIOR). Não muda depois.')}
           value={codigo}
           maxLength={30}
           onChange={(e) => definirCodigo(e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, '_'))}
         />
-        <Campo rotulo="Nome" value={nome} maxLength={80} onChange={(e) => definirNome(e.target.value)} />
+        <Campo rotulo={t('Nome')} value={nome} maxLength={80} onChange={(e) => definirNome(e.target.value)} />
         <Selecao
-          rotulo="Copiar permissões de"
-          placeholder="Nenhum — começar sem permissões"
-          opcoes={perfis.map((p) => ({ valor: p.codigo, rotulo: p.nome }))}
+          rotulo={t('Copiar permissões de')}
+          placeholder={t('Nenhum — começar sem permissões')}
+          opcoes={perfis.map((p) => ({ valor: p.codigo, rotulo: td(p.nome) }))}
           value={copiarDe}
           onChange={(e) => definirCopiarDe(e.target.value)}
         />
         <div className="flex justify-end gap-2">
           <Botao type="button" variante="secundaria" onClick={fechar}>
-            Cancelar
+            {t('Cancelar')}
           </Botao>
-          <Botao type="submit" icone="plus" disabled={!codigo || !nome.trim()} ocupado={criar.isPending} rotuloOcupado="Criando…">
-            Criar perfil
+          <Botao type="submit" icone="plus" disabled={!codigo || !nome.trim()} ocupado={criar.isPending} rotuloOcupado={t('Criando…')}>
+            {t('Criar perfil')}
           </Botao>
         </div>
       </form>
@@ -276,7 +278,7 @@ export function PerfisPermissoes() {
     return (
       <div className="mx-auto flex max-w-[600px] flex-col gap-4">
         <p role="alert" className={CLASSE_AVISO}>
-          Acesso restrito: seu perfil não tem permissão para esta tela.
+          {t('Acesso restrito: seu perfil não tem permissão para esta tela.')}
         </p>
       </div>
     );
@@ -286,9 +288,9 @@ export function PerfisPermissoes() {
     <div className="mx-auto flex max-w-[1100px] flex-col gap-4">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-title text-texto-primary">Perfis e permissões</h1>
+          <h1 className="text-title text-texto-primary">{t('Perfis e permissões')}</h1>
           <p className="text-body text-texto-secondary">
-            O que cada perfil pode fazer no sistema. Mudanças valem na hora para quem usa o perfil.
+            {t('O que cada perfil pode fazer no sistema. Mudanças valem na hora para quem usa o perfil.')}
           </p>
         </div>
         <div className="flex flex-col items-end gap-1">
@@ -298,26 +300,26 @@ export function PerfisPermissoes() {
             disabled={!perfis.data || sujo}
             aria-describedby={sujo ? 'aviso-rascunho' : undefined}
           >
-            Novo perfil
+            {t('Novo perfil')}
           </Botao>
           {sujo && (
             <p id="aviso-rascunho" className="text-label text-texto-secondary">
-              Salve ou descarte as alterações antes de criar outro perfil.
+              {t('Salve ou descarte as alterações antes de criar outro perfil.')}
             </p>
           )}
         </div>
       </div>
 
-      {(perfis.isPending || catalogo.isPending) && <p className="text-body text-texto-secondary">Carregando perfis…</p>}
+      {(perfis.isPending || catalogo.isPending) && <p className="text-body text-texto-secondary">{t('Carregando perfis…')}</p>}
       {(perfis.isError || catalogo.isError) && (
         <p role="alert" className={CLASSE_AVISO}>
-          Não foi possível carregar os perfis. Recarregue a página para tentar de novo.
+          {t('Não foi possível carregar os perfis. Recarregue a página para tentar de novo.')}
         </p>
       )}
 
       {atual && catalogo.data && (
         <div className="grid gap-4 md:grid-cols-[16rem_1fr]">
-          <ul aria-label="Perfis" className="flex flex-col gap-1">
+          <ul aria-label={t('Perfis')} className="flex flex-col gap-1">
             {lista.map((p) => (
               <li key={p.codigo}>
                 <button
@@ -329,10 +331,11 @@ export function PerfisPermissoes() {
                     p.codigo === atual.codigo ? 'bg-brand-subtle text-brand' : 'hover:bg-surface-sunken',
                   )}
                 >
-                  <span className="text-body font-medium">{p.nome}</span>
+                  <span className="text-body font-medium">{td(p.nome)}</span>
                   <span className="text-label text-texto-secondary">
-                    {p.usuarios === 1 ? '1 usuário' : `${p.usuarios} usuários`}
-                    {p.sistema ? ' · sistema' : ' · personalizado'}
+                    {p.sistema
+                      ? t('{usuarios} · sistema', { usuarios: textoUsuarios(p.usuarios) })
+                      : t('{usuarios} · personalizado', { usuarios: textoUsuarios(p.usuarios) })}
                   </span>
                 </button>
               </li>
@@ -361,9 +364,9 @@ export function PerfisPermissoes() {
 
       <Confirmacao
         aberto={pedidoDeTroca !== null}
-        titulo="Descartar alterações?"
-        mensagem="As permissões alteradas neste perfil ainda não foram salvas."
-        rotuloConfirmar="Descartar"
+        titulo={t('Descartar alterações?')}
+        mensagem={t('As permissões alteradas neste perfil ainda não foram salvas.')}
+        rotuloConfirmar={t('Descartar')}
         rotuloOcupado="…"
         aoConfirmar={() => {
           definirSujo(false);

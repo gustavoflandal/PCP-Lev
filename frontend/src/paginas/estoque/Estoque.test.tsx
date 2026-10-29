@@ -1,8 +1,9 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { entrarComoPerfil, instalarServidorFalso, renderizarComProvedores, type ServidorFalso } from '@/testes/utilitarios';
 import { useToasts } from '@/componentes/ui/Toast';
+import { PREFERENCIAS_PADRAO, usePreferencias } from '@/store/preferencias';
 import { Estoque } from './Estoque';
 
 const ITEM = {
@@ -292,5 +293,28 @@ describe('Estoque', () => {
       expect(within(modal).getByText(/50 unidade\(s\) do saldo sem documento/)).toBeInTheDocument();
       expect(within(modal).getByRole('columnheader', { name: 'Custo unitário' })).toBeInTheDocument();
     });
+  });
+});
+
+describe('Estoque em espanhol', () => {
+  afterEach(() => usePreferencias.getState().aplicar({ ...PREFERENCIAS_PADRAO, idioma: 'pt-BR' }));
+
+  it('traduz titulo, colunas, status e botoes; o dado do banco fica como veio', async () => {
+    const servidor = instalarServidorFalso();
+    entrarComoPerfil('GESTOR');
+    usePreferencias.getState().aplicar({ ...PREFERENCIAS_PADRAO, idioma: 'es' });
+    servidor.responder([
+      { metodo: 'get', url: '/estoque', status: 200, corpo: { dados: [{ ...ITEM, status: 'CRITICO' }], paginacao: { pagina: 1, limite: 20, total: 1, total_paginas: 1 } } },
+    ]);
+    renderizarComProvedores(<Estoque />);
+
+    expect(await screen.findByRole('heading', { name: 'Inventario' })).toBeInTheDocument();
+    expect(await screen.findByText('CON-001')).toBeInTheDocument();
+    expect(screen.getByText('Conector RCA Macho')).toBeInTheDocument();
+    expect(screen.getAllByText('Crítico').length).toBeGreaterThan(0);
+    expect(screen.getByText('Saldo actual')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Origen del saldo de CON-001' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Exportar CSV' })).toBeInTheDocument();
+    expect(screen.queryByText('Saldo atual')).not.toBeInTheDocument();
   });
 });

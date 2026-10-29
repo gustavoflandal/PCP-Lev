@@ -111,6 +111,7 @@ A fábrica montava painéis de mensagem variável, radares e controladores semaf
 ### Em todas as telas
 - **Imprimir / PDF:** leiaute de impressão limpo, com cabeçalho (tela, empresa, quem imprimiu, quando), em folha clara mesmo no tema escuro.
 - **Ajuda contextual** em cada tela.
+- **Português e espanhol:** cada usuário escolhe o idioma em *Preferências*; telas, ajuda e mensagens da API acompanham a escolha. Manual em espanhol em [docs/es/8_MANUAL_OPERACION.md](docs/es/8_MANUAL_OPERACION.md) e landing em `landing-page/es/`.
 - **Temas claro e escuro**, alto contraste, densidade e tamanho de fonte por usuário.
 - **Encerramento da sessão por inatividade.**
 
@@ -211,6 +212,8 @@ Suba tudo:
 ```bash
 docker compose --profile dev up -d --build
 ```
+
+> **Atualizações:** depois de baixar código novo, rode `./publicar.ps1` (Windows) ou `./publicar.sh`, que reconstrói as imagens e grava o commit e a data/hora da publicação na tela de entrada. Um `docker compose up` sem `--build` mantém o container no código da última construção.
 
 | Serviço | Endereço |
 |---|---|

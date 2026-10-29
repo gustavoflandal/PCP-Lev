@@ -1,3 +1,4 @@
+import { t } from '@/i18n';
 import { cn } from '@/lib/cn';
 import { icones } from './icones';
 
@@ -95,13 +96,13 @@ const ICONE_DO_ESTADO = {
 function rotuloDoEstado(etapa: Etapa): string {
   switch (etapa.estado) {
     case 'concluida':
-      return etapa.timestamp ? `Concluída · ${etapa.timestamp}` : 'Concluída';
+      return etapa.timestamp ? t('Concluída · {hora}', { hora: etapa.timestamp }) : t('Concluída');
     case 'pendente-acionavel':
-      return 'Pendente · iniciar';
+      return t('Pendente · iniciar');
     case 'pendente-futura':
-      return 'Aguardando etapa anterior';
+      return t('Aguardando etapa anterior');
     case 'bloqueada':
-      return 'Bloqueada · aguardando aprovação';
+      return t('Bloqueada · aguardando aprovação');
   }
 }
 

@@ -4,12 +4,15 @@ import { create } from 'zustand';
 export type Tema = 'claro' | 'escuro' | 'automatico';
 export type Densidade = 'compacta' | 'confortavel';
 export type TamanhoFonte = 'padrao' | 'grande' | 'extra-grande';
+export type Idioma = 'pt-BR' | 'es';
 
 export interface Preferencias {
   tema: Tema;
   alto_contraste: boolean;
   densidade: Densidade;
   tamanho_fonte: TamanhoFonte;
+  /** Idioma da interface e das mensagens da API (cabecalho Accept-Language). */
+  idioma: Idioma;
 }
 
 export const PREFERENCIAS_PADRAO: Preferencias = {
@@ -19,6 +22,7 @@ export const PREFERENCIAS_PADRAO: Preferencias = {
   // ver o comentario da migration 009 no backend.
   densidade: 'compacta',
   tamanho_fonte: 'padrao',
+  idioma: 'pt-BR',
 };
 
 const CHAVE_PREFERENCIAS = 'pcp.preferencias';
@@ -52,6 +56,16 @@ function aplicarNoDocumento(preferencias: Preferencias): void {
   el.setAttribute('data-densidade', preferencias.densidade === 'confortavel' ? 'confortavel' : 'compacta');
   const fontesValidas: TamanhoFonte[] = ['padrao', 'grande', 'extra-grande'];
   el.setAttribute('data-fonte', fontesValidas.includes(preferencias.tamanho_fonte) ? preferencias.tamanho_fonte : 'padrao');
+  el.setAttribute('lang', preferencias.idioma === 'es' ? 'es' : 'pt-BR');
+}
+
+/** Primeira visita, sem preferencia salva: segue o idioma do navegador. */
+function idiomaDoNavegador(): Idioma {
+  try {
+    return navigator.language?.toLowerCase().startsWith('es') ? 'es' : 'pt-BR';
+  } catch {
+    return 'pt-BR';
+  }
 }
 
 function salvarCache(preferencias: Preferencias): void {
@@ -71,8 +85,9 @@ function salvarCache(preferencias: Preferencias): void {
 function lerCache(): Preferencias {
   try {
     const bruto = localStorage.getItem(CHAVE_PREFERENCIAS);
-    if (!bruto) return PREFERENCIAS_PADRAO;
-    return { ...PREFERENCIAS_PADRAO, ...(JSON.parse(bruto) as Partial<Preferencias>) };
+    if (!bruto) return { ...PREFERENCIAS_PADRAO, idioma: idiomaDoNavegador() };
+    const salvas = { ...PREFERENCIAS_PADRAO, ...(JSON.parse(bruto) as Partial<Preferencias>) };
+    return { ...salvas, idioma: salvas.idioma === 'es' ? 'es' : 'pt-BR' };
   } catch {
     return PREFERENCIAS_PADRAO;
   }

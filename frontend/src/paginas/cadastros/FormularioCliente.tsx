@@ -5,6 +5,7 @@ import { Botao } from '@/componentes/ui/Botao';
 import { Campo } from '@/componentes/ui/Campo';
 import { Selecao } from '@/componentes/ui/Selecao';
 import { OPCOES_TIPO_CLIENTE, ROTULO_TIPO_CLIENTE, type Cliente, type TipoCliente } from '@/tipos/cadastros';
+import { t, td, marcar } from '@/i18n';
 
 const TIPOS = Object.keys(ROTULO_TIPO_CLIENTE) as [TipoCliente, ...TipoCliente[]];
 
@@ -24,28 +25,28 @@ const DATA_OU_VAZIO = /^(\d{4}-\d{2}-\d{2})?$/;
 
 const esquema = z
   .object({
-    tipo: z.enum(TIPOS, { errorMap: () => ({ message: 'Escolha o tipo de cliente' }) }),
-    razao_social: z.string().trim().min(1, 'Informe a razão social').max(255),
+    tipo: z.enum(TIPOS, { errorMap: () => ({ message: marcar('Escolha o tipo de cliente') }) }),
+    razao_social: z.string().trim().min(1, marcar('Informe a razão social')).max(255),
     nome_fantasia: z.string().trim().max(255).default(''),
-    cnpj: z.string().trim().min(1, 'Informe o CNPJ'),
-    inscricao_estadual: z.string().trim().max(30, 'Use até 30 caracteres').default(''),
+    cnpj: z.string().trim().min(1, marcar('Informe o CNPJ')),
+    inscricao_estadual: z.string().trim().max(30, marcar('Use até 30 caracteres')).default(''),
     contato_nome: z.string().trim().max(100).default(''),
     contato_email: z.string().trim().max(100).default(''),
     contato_telefone: z.string().trim().max(20).default(''),
     endereco: z.string().trim().max(255).default(''),
     cidade: z.string().trim().max(100).default(''),
     uf: z.string().default(''),
-    numero_contrato: z.string().trim().max(60, 'Use até 60 caracteres').default(''),
-    vigencia_inicio: z.string().regex(DATA_OU_VAZIO, 'Informe uma data válida').default(''),
-    vigencia_fim: z.string().regex(DATA_OU_VAZIO, 'Informe uma data válida').default(''),
+    numero_contrato: z.string().trim().max(60, marcar('Use até 60 caracteres')).default(''),
+    vigencia_inicio: z.string().regex(DATA_OU_VAZIO, marcar('Informe uma data válida')).default(''),
+    vigencia_fim: z.string().regex(DATA_OU_VAZIO, marcar('Informe uma data válida')).default(''),
     condicao_pagamento: z.string().trim().max(50).default(''),
-    observacoes: z.string().trim().max(1000, 'Use até 1000 caracteres').default(''),
+    observacoes: z.string().trim().max(1000, marcar('Use até 1000 caracteres')).default(''),
     ativo: z.enum(['true', 'false']),
   })
   // AAAA-MM-DD compara certo como texto.
   .refine((v) => !v.vigencia_inicio || !v.vigencia_fim || v.vigencia_fim >= v.vigencia_inicio, {
     path: ['vigencia_fim'],
-    message: 'O fim da vigência não pode ser antes do início',
+    message: marcar('O fim da vigência não pode ser antes do início'),
   });
 
 type Formulario = z.input<typeof esquema>;
@@ -82,9 +83,9 @@ export interface FormularioClienteProps {
   aoCancelar: () => void;
 }
 
-const SITUACAO = [
-  { valor: 'true', rotulo: 'Ativo' },
-  { valor: 'false', rotulo: 'Inativo' },
+const opcoesSituacao = () => [
+  { valor: 'true', rotulo: t('Ativo') },
+  { valor: 'false', rotulo: t('Inativo') },
 ];
 
 export function FormularioCliente({
@@ -125,7 +126,7 @@ export function FormularioCliente({
 
   /** O erro do formulario vence o da API: e o mais recente que a pessoa viu. */
   const erroDe = (campo: keyof Formulario): string | undefined =>
-    errors[campo]?.message ?? errosPorCampo[campo];
+    td(errors[campo]?.message ?? errosPorCampo[campo]) || undefined;
 
   return (
     <form
@@ -164,29 +165,29 @@ export function FormularioCliente({
 
       <div className="grid gap-4 md:grid-cols-[200px_1fr]">
         <Selecao
-          rotulo="Tipo"
+          rotulo={t('Tipo')}
           obrigatorio
-          placeholder="Selecione"
-          opcoes={OPCOES_TIPO_CLIENTE}
+          placeholder={t('Selecione')}
+          opcoes={OPCOES_TIPO_CLIENTE.map((o) => ({ ...o, rotulo: td(o.rotulo) }))}
           erro={erroDe('tipo')}
           {...register('tipo')}
         />
-        <Campo rotulo="Razão social" obrigatorio erro={erroDe('razao_social')} {...register('razao_social')} />
+        <Campo rotulo={t('Razão social')} obrigatorio erro={erroDe('razao_social')} {...register('razao_social')} />
       </div>
 
-      <Campo rotulo="Nome fantasia" erro={erroDe('nome_fantasia')} {...register('nome_fantasia')} />
+      <Campo rotulo={t('Nome fantasia')} erro={erroDe('nome_fantasia')} {...register('nome_fantasia')} />
 
       <div className="grid gap-4 md:grid-cols-2">
         <Campo
-          rotulo="CNPJ"
+          rotulo={t('CNPJ')}
           obrigatorio
           tipoDado="codigo"
-          ajuda="Com ou sem pontuação"
+          ajuda={t('Com ou sem pontuação')}
           erro={erroDe('cnpj')}
           {...register('cnpj')}
         />
         <Campo
-          rotulo="Inscrição estadual"
+          rotulo={t('Inscrição estadual')}
           tipoDado="codigo"
           erro={erroDe('inscricao_estadual')}
           {...register('inscricao_estadual')}
@@ -194,51 +195,51 @@ export function FormularioCliente({
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Campo rotulo="Nome do contato" erro={erroDe('contato_nome')} {...register('contato_nome')} />
-        <Campo rotulo="E-mail do contato" type="email" erro={erroDe('contato_email')} {...register('contato_email')} />
+        <Campo rotulo={t('Nome do contato')} erro={erroDe('contato_nome')} {...register('contato_nome')} />
+        <Campo rotulo={t('E-mail do contato')} type="email" erro={erroDe('contato_email')} {...register('contato_email')} />
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Campo rotulo="Telefone do contato" erro={erroDe('contato_telefone')} {...register('contato_telefone')} />
-        <Campo rotulo="Condição de pagamento" erro={erroDe('condicao_pagamento')} {...register('condicao_pagamento')} />
+        <Campo rotulo={t('Telefone do contato')} erro={erroDe('contato_telefone')} {...register('contato_telefone')} />
+        <Campo rotulo={t('Condição de pagamento')} erro={erroDe('condicao_pagamento')} {...register('condicao_pagamento')} />
       </div>
 
-      <Campo rotulo="Endereço" erro={erroDe('endereco')} {...register('endereco')} />
+      <Campo rotulo={t('Endereço')} erro={erroDe('endereco')} {...register('endereco')} />
 
       <div className="grid gap-4 md:grid-cols-[1fr_120px]">
-        <Campo rotulo="Cidade" erro={erroDe('cidade')} {...register('cidade')} />
-        <Selecao rotulo="UF" placeholder="—" opcoes={OPCOES_UF} erro={erroDe('uf')} {...register('uf')} />
+        <Campo rotulo={t('Cidade')} erro={erroDe('cidade')} {...register('cidade')} />
+        <Selecao rotulo={'UF'} placeholder="—" opcoes={OPCOES_UF} erro={erroDe('uf')} {...register('uf')} />
       </div>
 
       <Campo
-        rotulo="Nº do contrato"
+        rotulo={t('Nº do contrato')}
         tipoDado="codigo"
-        ajuda="Contrato ou ata de registro de preços"
+        ajuda={t('Contrato ou ata de registro de preços')}
         erro={erroDe('numero_contrato')}
         {...register('numero_contrato')}
       />
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Campo rotulo="Início da vigência" type="date" erro={erroDe('vigencia_inicio')} {...register('vigencia_inicio')} />
-        <Campo rotulo="Fim da vigência" type="date" erro={erroDe('vigencia_fim')} {...register('vigencia_fim')} />
+        <Campo rotulo={t('Início da vigência')} type="date" erro={erroDe('vigencia_inicio')} {...register('vigencia_inicio')} />
+        <Campo rotulo={t('Fim da vigência')} type="date" erro={erroDe('vigencia_fim')} {...register('vigencia_fim')} />
       </div>
 
-      <Campo rotulo="Observações" erro={erroDe('observacoes')} {...register('observacoes')} />
+      <Campo rotulo={t('Observações')} erro={erroDe('observacoes')} {...register('observacoes')} />
 
       {inicial && (
         // So faz sentido escolher a situacao ao editar: e a unica forma de
         // reativar um cliente. Ao criar, o registro sempre nasce ativo.
         <div className="w-[200px]">
-          <Selecao rotulo="Situação" opcoes={SITUACAO} {...register('ativo')} />
+          <Selecao rotulo={t('Situação')} opcoes={opcoesSituacao()} {...register('ativo')} />
         </div>
       )}
 
       <div className="flex items-center justify-end gap-2">
         <Botao variante="secundaria" onClick={aoCancelar} disabled={ocupado}>
-          Cancelar
+          {t('Cancelar')}
         </Botao>
-        <Botao type="submit" icone="save" ocupado={ocupado} rotuloOcupado="Salvando…">
-          Salvar
+        <Botao type="submit" icone="save" ocupado={ocupado} rotuloOcupado={t('Salvando…')}>
+          {t('Salvar')}
         </Botao>
       </div>
     </form>

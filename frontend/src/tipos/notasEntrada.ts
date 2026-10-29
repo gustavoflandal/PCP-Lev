@@ -7,6 +7,7 @@
  * datas como AAAA-MM-DD; datas zero sao omitidas (omitzero) ou null.
  */
 import type { FlagsControle } from './arquivos';
+import { marcar } from '@/i18n';
 
 export type StatusNota = 'Rascunho' | 'Conferida' | 'Efetivada' | 'Cancelada' | 'Estornada';
 
@@ -212,13 +213,13 @@ export type CorpoDePara = Omit<DePara, 'id' | 'fornecedor_id' | 'peca_codigo' | 
 
 /** Categorias de anexo da nota (arquivo.CategoriasNotaEntrada). */
 export const CATEGORIAS_ANEXO_NOTA = [
-  'XML da NF-e',
-  'DANFE',
-  'Certificado de Conformidade',
-  'Foto da mercadoria',
-  'Foto do lacre',
-  'Foto de avaria',
-  'Outro',
+  marcar('XML da NF-e'),
+  marcar('DANFE'),
+  marcar('Certificado de Conformidade'),
+  marcar('Foto da mercadoria'),
+  marcar('Foto do lacre'),
+  marcar('Foto de avaria'),
+  marcar('Outro'),
 ] as const;
 
 /** Codigo do 409 com a lista de pendencias (handlers.CodigoPendencias). */

@@ -1,3 +1,4 @@
+import { t } from '@/i18n';
 import { Botao } from './Botao';
 
 export interface PaginacaoProps {
@@ -18,15 +19,15 @@ export function Paginacao({ pagina, totalPaginas, total, aoMudar }: PaginacaoPro
     return null;
   }
 
-  const registros = total === 1 ? '1 registro' : `${total} registros`;
+  const registros = total === 1 ? t('1 registro') : t('{n} registros', { n: total });
 
   return (
     <nav
-      aria-label="Paginação"
+      aria-label={t('Paginação')}
       className="flex items-center justify-between gap-4 border-t border-borda-subtle px-3 py-2"
     >
       <p className="text-label text-texto-secondary">
-        {`Página ${pagina} de ${totalPaginas} · ${registros}`}
+        {t('Página {pagina} de {total} · {registros}', { pagina, total: totalPaginas, registros })}
       </p>
 
       <div className="flex items-center gap-2">
@@ -35,18 +36,18 @@ export function Paginacao({ pagina, totalPaginas, total, aoMudar }: PaginacaoPro
           icone="chevron-left"
           disabled={pagina <= 1}
           onClick={() => aoMudar(pagina - 1)}
-          aria-label="Página anterior"
+          aria-label={t('Página anterior')}
         >
-          Anterior
+          {t('Anterior')}
         </Botao>
         <Botao
           variante="secundaria"
           icone="chevron-right"
           disabled={pagina >= totalPaginas}
           onClick={() => aoMudar(pagina + 1)}
-          aria-label="Próxima página"
+          aria-label={t('Próxima página')}
         >
-          Próxima
+          {t('Próxima')}
         </Botao>
       </div>
     </nav>

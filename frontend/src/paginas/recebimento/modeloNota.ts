@@ -3,6 +3,7 @@
  * para digitar a vontade) e as conversoes de/para o contrato da API. Funcoes
  * puras -- testaveis sem renderizar a tela.
  */
+import { marcar, t } from '@/i18n';
 import type { FlagsControle } from '@/tipos/arquivos';
 import type { PartePeca } from '@/tipos/cadastros';
 import type { ItemPedidoCompra } from '@/tipos/compras';
@@ -85,13 +86,13 @@ export interface FormNota {
 }
 
 export const CAMPOS_VALOR = [
-  ['valor_produtos', 'Valor dos produtos (R$)'],
-  ['valor_frete', 'Frete (R$)'],
-  ['valor_seguro', 'Seguro (R$)'],
-  ['valor_desconto', 'Desconto (R$)'],
-  ['valor_ipi', 'IPI (R$)'],
-  ['valor_icms_st', 'ICMS-ST (R$)'],
-  ['valor_total', 'Valor total da nota (R$)'],
+  ['valor_produtos', marcar('Valor dos produtos (R$)')],
+  ['valor_frete', marcar('Frete (R$)')],
+  ['valor_seguro', marcar('Seguro (R$)')],
+  ['valor_desconto', marcar('Desconto (R$)')],
+  ['valor_ipi', marcar('IPI (R$)')],
+  ['valor_icms_st', marcar('ICMS-ST (R$)')],
+  ['valor_total', marcar('Valor total da nota (R$)')],
 ] as const;
 
 export const FLAGS_VAZIAS: FlagsControle = {
@@ -340,12 +341,12 @@ export function formularioParaCorpo(f: FormNota): CorpoNota {
  */
 export function validarParaSalvar(f: FormNota): Record<string, string> {
   const erros: Record<string, string> = {};
-  if (!f.pedido_compra_id) erros.pedido_compra_id = 'Escolha o pedido de compra que a nota atende';
-  if (!/^\d{1,3}$/.test(f.serie.trim())) erros.serie = 'Série com até 3 dígitos';
-  if (!/^\d{1,9}$/.test(f.numero.trim())) erros.numero = 'Número com até 9 dígitos';
+  if (!f.pedido_compra_id) erros.pedido_compra_id = t('Escolha o pedido de compra que a nota atende');
+  if (!/^\d{1,3}$/.test(f.serie.trim())) erros.serie = t('Série com até 3 dígitos');
+  if (!/^\d{1,9}$/.test(f.numero.trim())) erros.numero = t('Número com até 9 dígitos');
   const chave = f.chave_acesso.replace(/\D/g, '');
-  if (chave !== '' && chave.length !== 44) erros.chave_acesso = `A chave tem 44 dígitos (informados: ${chave.length})`;
-  if (f.observacoes.trim().length > 1000) erros.observacoes = 'Observações até 1000 caracteres';
+  if (chave !== '' && chave.length !== 44) erros.chave_acesso = t('A chave tem 44 dígitos (informados: {n})', { n: chave.length });
+  if (f.observacoes.trim().length > 1000) erros.observacoes = t('Observações até 1000 caracteres');
   const itemRuim = f.itens.findIndex(
     (i) =>
       paraNumero(i.quantidade_nf) <= 0 ||
@@ -354,7 +355,9 @@ export function validarParaSalvar(f: FormNota): Record<string, string> {
       !Number.isInteger(paraNumero(i.quantidade_recebida)),
   );
   if (itemRuim >= 0) {
-    erros.itens = `Item ${itemRuim + 1}: informe a quantidade da nota (maior que zero), o fator (maior que zero) e a quantidade recebida (inteira).`;
+    erros.itens = t('Item {n}: informe a quantidade da nota (maior que zero), o fator (maior que zero) e a quantidade recebida (inteira).', {
+      n: itemRuim + 1,
+    });
   }
   return erros;
 }

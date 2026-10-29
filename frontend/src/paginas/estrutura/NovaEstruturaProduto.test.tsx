@@ -18,12 +18,12 @@ const PECAS = {
   paginacao: { pagina: 1, limite: 200, total: 1, total_paginas: 1 },
 };
 
-function renderizar() {
+function renderizar(rota = '/estrutura-produtos/1/nova') {
   return renderizarComProvedores(
     <Routes>
       <Route path="/estrutura-produtos/:produtoId/nova" element={<NovaEstruturaProduto />} />
     </Routes>,
-    { rota: '/estrutura-produtos/1/nova' },
+    { rota },
   );
 }
 
@@ -45,6 +45,7 @@ describe('NovaEstruturaProduto', () => {
     renderizar();
     await screen.findByText('Criar estrutura');
 
+    await userEvent.clear(screen.getByLabelText(/Vigência/));
     await userEvent.type(screen.getByLabelText(/Vigência/), '2026-09-01');
     await userEvent.selectOptions(screen.getByLabelText(/Parte\/peça/), 'RES-10K — Resistor');
     await userEvent.click(screen.getByRole('button', { name: 'Salvar' }));
@@ -71,12 +72,78 @@ describe('NovaEstruturaProduto', () => {
     renderizar();
     await screen.findByText('Nova versão da estrutura');
 
+    await userEvent.clear(screen.getByLabelText(/Vigência/));
     await userEvent.type(screen.getByLabelText(/Vigência/), '2026-10-01');
     await userEvent.selectOptions(screen.getByLabelText(/Parte\/peça/), 'RES-10K — Resistor');
     await userEvent.click(screen.getByRole('button', { name: 'Salvar' }));
 
     await waitFor(() => expect(servidor.requisicoes.find((r) => r.url === '/boms/10/versionar')).toBeTruthy());
     expect(useToasts.getState().itens[0]?.mensagem).toBe('Nova versão criada');
+  });
+
+  it('replica a versao de origem e envia exatamente os itens que ficaram na tela', async () => {
+    const pecas = {
+      sucesso: true,
+      dados: [
+        { id: 1, codigo: 'RES-10K', descricao: 'Resistor', ativo: true },
+        { id: 2, codigo: 'CAP-1U', descricao: 'Capacitor', ativo: true },
+        { id: 3, codigo: 'LED-R', descricao: 'LED', ativo: true },
+      ],
+      paginacao: { pagina: 1, limite: 200, total: 3, total_paginas: 1 },
+    };
+    servidor.responder([
+      {
+        metodo: 'get', url: '/produtos-acabados/1/boms', status: 200,
+        corpo: {
+          sucesso: true,
+          dados: [
+            { id: 20, versao: 2, data_vigencia_inicio: '2026-10-01', ativo: true, itens: [{ id: 3, parte_peca_id: 1, quantidade: 4 }, { id: 4, parte_peca_id: 2, quantidade: 2 }] },
+            { id: 10, versao: 1, data_vigencia_inicio: '2026-09-01', ativo: false, itens: [{ id: 1, parte_peca_id: 1, quantidade: 4 }] },
+          ],
+        },
+      },
+      { metodo: 'get', url: '/partes-pecas', status: 200, corpo: pecas },
+      { metodo: 'post', url: '/boms/20/versionar', status: 201, corpo: { sucesso: true, dados: { id: 30, versao: 3 } } },
+    ]);
+    renderizar();
+    await screen.findByText('Nova versão da estrutura');
+
+    // Replicou os 2 itens da mais recente (v2); retira o primeiro e acrescenta o LED.
+    expect(screen.getAllByLabelText(/Parte\/peça/)).toHaveLength(2);
+    await userEvent.click(screen.getAllByRole('button', { name: 'Remover item' })[0]);
+    await userEvent.click(screen.getByRole('button', { name: 'Adicionar item' }));
+    await userEvent.selectOptions(screen.getAllByLabelText(/Parte\/peça/)[1], 'LED-R — LED');
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar' }));
+
+    await waitFor(() => {
+      const corpo = servidor.requisicoes.find((r) => r.url === '/boms/20/versionar')?.corpo as {
+        itens: { parte_peca_id: number; quantidade: number }[];
+      };
+      expect(corpo.itens).toEqual([
+        { parte_peca_id: 2, quantidade: 2 },
+        { parte_peca_id: 3, quantidade: 1 },
+      ]);
+    });
+  });
+
+  it('com ?base= parte da versao indicada, nao da mais recente', async () => {
+    servidor.responder([
+      {
+        metodo: 'get', url: '/produtos-acabados/1/boms', status: 200,
+        corpo: {
+          sucesso: true,
+          dados: [
+            { id: 20, versao: 2, data_vigencia_inicio: '2026-10-01', ativo: true, itens: [{ id: 3, parte_peca_id: 1, quantidade: 4 }, { id: 4, parte_peca_id: 1, quantidade: 2 }] },
+            { id: 10, versao: 1, data_vigencia_inicio: '2026-09-01', ativo: false, itens: [{ id: 1, parte_peca_id: 1, quantidade: 4 }] },
+          ],
+        },
+      },
+      { metodo: 'get', url: '/partes-pecas', status: 200, corpo: PECAS },
+    ]);
+    renderizar('/estrutura-produtos/1/nova?base=10');
+
+    expect(await screen.findByText(/Parte da versão 1/)).toBeInTheDocument();
+    expect(screen.getAllByLabelText(/Parte\/peça/)).toHaveLength(1);
   });
 
   it('erro 409 mostra alerta', async () => {
@@ -91,6 +158,7 @@ describe('NovaEstruturaProduto', () => {
     renderizar();
     await screen.findByText('Criar estrutura');
 
+    await userEvent.clear(screen.getByLabelText(/Vigência/));
     await userEvent.type(screen.getByLabelText(/Vigência/), '2026-09-01');
     await userEvent.selectOptions(screen.getByLabelText(/Parte\/peça/), 'RES-10K — Resistor');
     await userEvent.click(screen.getByRole('button', { name: 'Salvar' }));
@@ -106,6 +174,7 @@ describe('NovaEstruturaProduto', () => {
     renderizar();
     await screen.findByText('Criar estrutura');
 
+    await userEvent.clear(screen.getByLabelText(/Vigência/));
     await userEvent.type(screen.getByLabelText(/Vigência/), '2026-09-01');
     await userEvent.selectOptions(screen.getAllByLabelText(/Parte\/peça/)[0], 'RES-10K — Resistor');
     await userEvent.click(screen.getByRole('button', { name: 'Adicionar item' }));

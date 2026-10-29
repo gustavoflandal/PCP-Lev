@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { marcar, t, td } from '@/i18n';
 import { AnexosDoRegistro } from '@/componentes/arquivos/AnexosDoRegistro';
 import { BadgeStatusOP, BadgeStatusPedidoVenda, NomeEtapa, SeloAtraso } from '@/componentes/producao/Selos';
 import { Botao } from '@/componentes/ui/Botao';
@@ -23,10 +24,10 @@ import {
 type ModalAberto = 'cancelar' | 'entregar' | null;
 
 const FLUXO: { chave: StatusPedidoVenda; nome: string }[] = [
-  { chave: 'Aberto', nome: 'Aberto' },
-  { chave: 'Em Producao', nome: 'Em produção' },
-  { chave: 'Pronto para Envio', nome: 'Pronto para envio' },
-  { chave: 'Entregue', nome: 'Entregue' },
+  { chave: 'Aberto', nome: marcar('Aberto') },
+  { chave: 'Em Producao', nome: marcar('Em produção') },
+  { chave: 'Pronto para Envio', nome: marcar('Pronto para envio') },
+  { chave: 'Entregue', nome: marcar('Entregue') },
 ];
 
 /** Etapas ate a atual: concluidas; a seguinte: o proximo passo; o resto: futuras. */
@@ -43,7 +44,7 @@ function etapasDoPedido(p: PedidoVenda, aoEntregar?: () => void): Etapa[] {
           : undefined;
     return {
       chave: f.chave,
-      nome: f.nome,
+      nome: td(f.nome),
       estado,
       timestamp,
       aoAcionar: f.chave === 'Entregue' && p.status === 'Pronto para Envio' ? aoEntregar : undefined,
@@ -87,9 +88,9 @@ export function DetalhePedidoVenda() {
     onSuccess: (op) => {
       definirErroAcao(null);
       invalidar();
-      mostrarToast(`OP ${op.numero_op} gerada`);
+      mostrarToast(t('OP {numero} gerada', { numero: op.numero_op }));
     },
-    onError: (erro) => falhou(erro, 'Não foi possível gerar a OP.'),
+    onError: (erro) => falhou(erro, t('Não foi possível gerar a OP.')),
   });
 
   const mutacaoCancelar = useMutation({
@@ -97,10 +98,10 @@ export function DetalhePedidoVenda() {
     onSuccess: () => {
       definirErroAcao(null);
       invalidar();
-      mostrarToast('Pedido de venda cancelado');
+      mostrarToast(t('Pedido de venda cancelado'));
       definirModal(null);
     },
-    onError: (erro) => falhou(erro, 'Não foi possível cancelar o pedido.'),
+    onError: (erro) => falhou(erro, t('Não foi possível cancelar o pedido.')),
   });
 
   const mutacaoEntregar = useMutation({
@@ -108,15 +109,15 @@ export function DetalhePedidoVenda() {
     onSuccess: () => {
       definirErroAcao(null);
       invalidar();
-      mostrarToast('Entrega registrada');
+      mostrarToast(t('Entrega registrada'));
       definirModal(null);
     },
-    onError: (erro) => falhou(erro, 'Não foi possível registrar a entrega.'),
+    onError: (erro) => falhou(erro, t('Não foi possível registrar a entrega.')),
   });
 
-  if (consulta.isPending) return <p className="text-body text-texto-secondary">Carregando…</p>;
+  if (consulta.isPending) return <p className="text-body text-texto-secondary">{t('Carregando…')}</p>;
   if (consulta.isError || !consulta.data) {
-    return <p className="text-body text-estado-pending">Não foi possível carregar o pedido de venda.</p>;
+    return <p className="text-body text-estado-pending">{t('Não foi possível carregar o pedido de venda.')}</p>;
   }
 
   const pedido = consulta.data;
@@ -127,7 +128,7 @@ export function DetalhePedidoVenda() {
   const colunas: Coluna<ItemPedidoVenda>[] = [
     {
       chave: 'produto',
-      rotulo: 'Produto',
+      rotulo: t('Produto'),
       renderizar: (i) => (
         <span className="flex flex-col">
           <span className="font-mono">{i.produto_codigo}</span>
@@ -135,12 +136,12 @@ export function DetalhePedidoVenda() {
         </span>
       ),
     },
-    { chave: 'quantidade', rotulo: 'Qtd.', alinhamento: 'direita', renderizar: (i) => <span className="tabular">{i.quantidade}</span> },
-    { chave: 'preco_unitario', rotulo: 'Preço unitário', alinhamento: 'direita', renderizar: (i) => formatarMoeda(i.preco_unitario) },
-    { chave: 'total', rotulo: 'Total', alinhamento: 'direita', renderizar: (i) => formatarMoeda(i.total) },
+    { chave: 'quantidade', rotulo: t('Qtd.'), alinhamento: 'direita', renderizar: (i) => <span className="tabular">{i.quantidade}</span> },
+    { chave: 'preco_unitario', rotulo: t('Preço unitário'), alinhamento: 'direita', renderizar: (i) => formatarMoeda(i.preco_unitario) },
+    { chave: 'total', rotulo: t('Total'), alinhamento: 'direita', renderizar: (i) => formatarMoeda(i.total) },
     {
       chave: 'op',
-      rotulo: 'Ordem de produção',
+      rotulo: t('Ordem de produção'),
       renderizar: (i) =>
         i.ordem_producao_id && i.numero_op ? (
           <span className="flex flex-wrap items-center gap-2">
@@ -155,7 +156,7 @@ export function DetalhePedidoVenda() {
             )}
           </span>
         ) : (
-          <span className="text-label text-texto-secondary">Sem OP</span>
+          <span className="text-label text-texto-secondary">{t('Sem OP')}</span>
         ),
     },
   ];
@@ -166,19 +167,22 @@ export function DetalhePedidoVenda() {
         <div className="flex flex-col gap-1">
           <h1 className="font-mono text-title text-texto-primary">{pedido.numero_pedido}</h1>
           <p className="text-body text-texto-secondary">
-            {pedido.cliente_nome} · Pedido em {formatarData(pedido.data_pedido)} · Entrega prometida{' '}
-            {formatarData(pedido.data_entrega_prometida)}
+            {t('{cliente} · Pedido em {pedido} · Entrega prometida {entrega}', {
+              cliente: pedido.cliente_nome,
+              pedido: formatarData(pedido.data_pedido),
+              entrega: formatarData(pedido.data_entrega_prometida),
+            })}
           </p>
           <div className="flex flex-wrap items-center gap-2">
             <BadgeStatusPedidoVenda status={pedido.status} />
-            {pedidoAtrasado(pedido) && <SeloAtraso>Entrega atrasada</SeloAtraso>}
+            {pedidoAtrasado(pedido) && <SeloAtraso>{t('Entrega atrasada')}</SeloAtraso>}
           </div>
           {pedido.observacoes && <p className="text-body text-texto-secondary">{pedido.observacoes}</p>}
         </div>
         <p className="font-mono text-subtitle tabular text-texto-primary">{formatarMoeda(pedido.valor_total)}</p>
       </div>
 
-      {pedido.status !== 'Cancelado' && <TrilhaEtapas rotulo="Situação do pedido de venda" etapas={etapasDoPedido(pedido, podeEntregar ? () => definirModal('entregar') : undefined)} />}
+      {pedido.status !== 'Cancelado' && <TrilhaEtapas rotulo={t('Situação do pedido de venda')} etapas={etapasDoPedido(pedido, podeEntregar ? () => definirModal('entregar') : undefined)} />}
 
       {erroAcao && (
         <p role="alert" className="rounded-campo border border-estado-pending bg-estado-pending-bg px-3 py-2 text-body text-estado-pending">
@@ -187,14 +191,14 @@ export function DetalhePedidoVenda() {
       )}
 
       <Tabela<ItemPedidoVenda>
-        rotulo="Itens do pedido de venda"
+        rotulo={t('Itens do pedido de venda')}
         colunas={colunas}
         itens={itens}
         chaveDe={(i) => i.id}
         ordenarPor="id"
         ordem="asc"
         aoOrdenar={() => {}}
-        vazio="Nenhum item neste pedido."
+        vazio={t('Nenhum item neste pedido.')}
         acoes={
           podeGerarOP && aceitaOP
             ? (i) =>
@@ -203,12 +207,12 @@ export function DetalhePedidoVenda() {
                     variante="secundaria"
                     icone="factory"
                     ocupado={mutacaoGerarOP.isPending && mutacaoGerarOP.variables === i.id}
-                    rotuloOcupado="Gerando…"
+                    rotuloOcupado={t('Gerando…')}
                     disabled={mutacaoGerarOP.isPending}
                     onClick={() => mutacaoGerarOP.mutate(i.id)}
-                    aria-label={`Gerar OP de ${i.produto_codigo}`}
+                    aria-label={t('Gerar OP de {produto}', { produto: i.produto_codigo })}
                   >
-                    Gerar OP
+                    {t('Gerar OP')}
                   </Botao>
                 ) : null
             : undefined
@@ -218,23 +222,23 @@ export function DetalhePedidoVenda() {
       <div className="flex flex-wrap items-center justify-end gap-2">
         {podeEditar && pedidoEditavel(pedido) && (
           <Botao variante="secundaria" icone="pencil" onClick={() => navegar(`/pedidos-venda/${pedido.id}/editar`)}>
-            Editar pedido
+            {t('Editar pedido')}
           </Botao>
         )}
         {podeCancelar && cancelavel && (
           <Botao variante="fantasma" icone="trash-2" onClick={() => definirModal('cancelar')}>
-            Cancelar pedido
+            {t('Cancelar pedido')}
           </Botao>
         )}
         {podeEntregar && pedido.status === 'Pronto para Envio' && (
           <Botao icone="package" onClick={() => definirModal('entregar')}>
-            Registrar entrega
+            {t('Registrar entrega')}
           </Botao>
         )}
       </div>
 
-      <section aria-label="Documentos do pedido" className="flex flex-col gap-2">
-        <h2 className="text-subtitle text-texto-primary">Documentos</h2>
+      <section aria-label={t('Documentos do pedido')} className="flex flex-col gap-2">
+        <h2 className="text-subtitle text-texto-primary">{t('Documentos')}</h2>
         <AnexosDoRegistro
           entidade="pedido_venda"
           entidadeId={pedido.id}
@@ -245,10 +249,10 @@ export function DetalhePedidoVenda() {
 
       <Confirmacao
         aberto={modal === 'cancelar'}
-        titulo="Cancelar pedido de venda"
-        mensagem={`Cancelar o pedido ${pedido.numero_pedido}? As OPs ainda abertas dele também são canceladas. O histórico é preservado.`}
-        rotuloConfirmar="Cancelar pedido"
-        rotuloOcupado="Cancelando…"
+        titulo={t('Cancelar pedido de venda')}
+        mensagem={t('Cancelar o pedido {numero}? As OPs ainda abertas dele também são canceladas. O histórico é preservado.', { numero: pedido.numero_pedido })}
+        rotuloConfirmar={t('Cancelar pedido')}
+        rotuloOcupado={t('Cancelando…')}
         ocupado={mutacaoCancelar.isPending}
         aoConfirmar={() => mutacaoCancelar.mutate()}
         aoCancelar={() => definirModal(null)}
@@ -256,10 +260,10 @@ export function DetalhePedidoVenda() {
 
       <Confirmacao
         aberto={modal === 'entregar'}
-        titulo="Registrar entrega"
-        mensagem={`Registrar a entrega do pedido ${pedido.numero_pedido}? Os produtos saem do estoque e as unidades ficam como expedidas.`}
-        rotuloConfirmar="Registrar entrega"
-        rotuloOcupado="Registrando…"
+        titulo={t('Registrar entrega')}
+        mensagem={t('Registrar a entrega do pedido {numero}? Os produtos saem do estoque e as unidades ficam como expedidas.', { numero: pedido.numero_pedido })}
+        rotuloConfirmar={t('Registrar entrega')}
+        rotuloOcupado={t('Registrando…')}
         ocupado={mutacaoEntregar.isPending}
         aoConfirmar={() => mutacaoEntregar.mutate()}
         aoCancelar={() => definirModal(null)}

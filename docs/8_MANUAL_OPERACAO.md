@@ -51,6 +51,11 @@ administrador.
 
 - O ícone de olho ao lado do campo Senha mostra o que foi digitado, para
   conferir antes de enviar.
+- No rodapé do formulário aparece a **versão do sistema em execução** e a
+  data e a hora em que ela foi publicada (por exemplo, "Versão 1.1.0
+  (a125f59) · publicada em 29/10/2026, 08:38"). Informe esse texto ao
+  suporte ao relatar um problema; ele também mostra se o servidor já está
+  com a atualização mais recente.
 - Se o usuário ou a senha estiverem errados, uma mensagem explica o problema
   logo abaixo do formulário.
 - Se a sessão cair por inatividade (o sistema encerra a sessão automaticamente
@@ -239,38 +244,60 @@ insumos de uma ordem de produção.
 ![Lista de estrutura de produtos](screenshots/29-estrutura-produtos-lista.png)
 
 A lista mostra todos os produtos acabados; a coluna **Estrutura** indica
-"Sem estrutura ativa" para quem ainda não tem BOM cadastrada, ou a versão e a
-data de vigência de quem já tem (por exemplo, "v.2 desde 01/09/2026").
+"Sem estrutura ativa" para quem ainda não tem BOM cadastrada, ou a versão
+**vigente** e a data de início da vigência de quem já tem (por exemplo,
+"v.2 desde 01/09/2026").
 
 ### 7.1 Criar a primeira versão
 
-Clique no código de um produto sem estrutura ativa para abrir o detalhe, e em
-**Criar estrutura**.
+Clique no código de um produto sem estrutura para abrir o detalhe, e em
+**Criar estrutura**. **Vigência a partir de** (já preenchida com a data de
+hoje) e ao menos **um item** (peça e quantidade) são obrigatórios. Use
+**Adicionar item** para incluir mais peças. Ao salvar, você volta para o
+detalhe do produto, já mostrando a versão recém-criada.
 
-![Formulário de nova estrutura](screenshots/31-estrutura-produtos-form-nova-versao.png)
-
-**Vigência a partir de** e ao menos **um item** (peça e quantidade) são
-obrigatórios. Use **Adicionar item** para incluir mais peças. Ao salvar, você
-volta para o detalhe do produto, já mostrando a versão recém-criada.
-
-### 7.2 Versionar (nova versão)
+### 7.2 Nova versão
 
 Uma estrutura de produto **nunca é editada nem apagada** — RF1.3 exige
 preservar o que cada ordem de produção passada realmente usou. Para mudar a
-composição (trocar uma peça, ajustar uma quantidade), use **Nova versão**,
-disponível no detalhe do produto assim que ele já tem uma estrutura ativa.
+composição, use **Nova versão**, no detalhe do produto.
 
-![Detalhe da estrutura com histórico](screenshots/30-estrutura-produtos-detalhe.png)
+![Formulário de nova versão](screenshots/31-estrutura-produtos-form-nova-versao.png)
 
-O formulário de nova versão é igual ao de criação, mas exige uma
-**vigência posterior** à da versão atual. Ao salvar, a versão anterior é
-automaticamente encerrada (ganha uma data de fim de vigência) e cai para a
-seção **Histórico**, visível abaixo da versão ativa — nada se perde, só deixa
-de valer a partir daquela data.
+O botão abre uma tela que **replica a estrutura da versão que está sendo
+exibida**, com todos os itens já preenchidos. Nessa tela você:
 
-Só existe **uma versão ativa por produto de cada vez** — por isso o botão
-"Criar estrutura" só aparece para produtos que ainda não têm nenhuma; a partir
-da primeira versão, o caminho é sempre "Nova versão".
+- **troca** a peça ou ajusta a quantidade de um item;
+- **retira** um item com **Remover item**;
+- **adiciona** peças com **Adicionar item**.
+
+Ao confirmar com **Salvar**, a nova versão é composta por **todos os itens
+que estiverem na tela** — nem mais, nem menos. Ela recebe o próximo número
+(v.3, por exemplo) e passa a ser a **vigente**; a versão que valia até então é
+encerrada (ganha data de fim de vigência) e continua guardada. A nova
+vigência pode começar em qualquer data; se for anterior à da versão
+encerrada, o fim dela é ajustado para não ficar menor que o início.
+
+### 7.3 Ver todas as versões e definir a vigente
+
+![Detalhe da estrutura com a lista de versões](screenshots/30-estrutura-produtos-detalhe.png)
+
+O painel do detalhe mostra sempre a **versão mais recente**. Logo abaixo, a
+lista **Versões** traz todas elas, com vigência, quantidade de itens e a
+situação: **Vigente** (a que vale hoje) ou **Anterior**.
+
+![Consulta de uma versão anterior](screenshots/79-estrutura-versoes.png)
+
+- **Ver itens** exibe no painel os itens da versão escolhida. Se ela não for a
+  vigente, o painel mostra o selo **Não vigente**.
+- **Definir como vigente** (para quem pode incluir estruturas) torna a versão
+  escolhida a vigente, **seja ela qual for** — inclusive uma mais antiga, para
+  desfazer uma troca. A vigente anterior é encerrada hoje e a escolhida volta a
+  valer sem data de fim.
+- **Nova versão** parte da versão exibida no painel.
+
+A versão **vigente** é a que aparece em **Produtos acabados** e a que as
+ordens de produção usam. Só existe **uma vigente por produto de cada vez**.
 
 ---
 
@@ -494,6 +521,18 @@ vale em qualquer computador que você usar para entrar, não só na estação
 atual.
 
 ![Tela de Preferências, tema claro](screenshots/34-preferencias-tema-claro.png)
+
+- **Idioma**: Português (Brasil) ou Español. A escolha vale para tudo: os
+  textos das telas, os menus, a **Ajuda** de cada tela e as mensagens de erro
+  e de validação que o sistema devolve. Ao trocar, a tela inteira muda na hora
+  e a escolha fica salva na sua conta, valendo em qualquer computador. Na
+  primeira visita a um computador, a tela de entrada segue o idioma do
+  navegador (espanhol se o navegador estiver em espanhol, senão português);
+  depois do login, vale o idioma da sua conta. Datas, números e moeda
+  continuam seguindo os **Parâmetros regionais** da empresa (seção 15): o
+  idioma muda os textos, não os formatos.
+
+  ![Tela de Preferências com o idioma](screenshots/80-preferencias-idioma.png)
 
 - **Tema**: Claro, Escuro ou Automático (segue o sistema operacional e muda
   sozinho se o computador alternar entre claro e escuro, por exemplo ao
@@ -1137,6 +1176,12 @@ favorito na TV para ela abrir sempre do mesmo jeito.
 Em todo gráfico, **Ver dados** mostra a mesma informação em tabela — para
 conferir números e para leitores de tela.
 
+Os gráficos usam uma **paleta de cores** para distinguir as categorias: num
+gráfico de uma série só (por exemplo, OPs por etapa), cada barra tem a sua cor;
+quando há várias séries, a cor identifica a série e a legenda a explica. As
+cores são de categoria, não de situação — verde e vermelho nos gráficos não
+significam "bom" ou "ruim". A paleta tem versão para o tema escuro.
+
 ![Painel de produção em modo TV](screenshots/78-painel-modo-tv.png)
 
 ### 29.2 Compras
@@ -1251,7 +1296,8 @@ Por design (RF1.3): uma BOM não pode ser deletada nem editada, só
 passada consumiu — se fosse possível editar a versão 1 depois que ela já foi
 usada para produzir, o histórico de produção ficaria mentindo sobre o que
 realmente foi montado. Para mudar a composição, use "Nova versão" (seção
-[7.2](#72-versionar-nova-versão)) a partir de uma data de vigência futura.
+[7.2](#72-nova-versão)); para voltar a uma composição antiga, defina-a como
+vigente (seção [7.3](#73-ver-todas-as-versões-e-definir-a-vigente)).
 
 **Uma peça que eu sei que está crítica não aparece em Necessidade de
 compra.**

@@ -14,6 +14,7 @@ import (
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/producao"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/platform/consulta"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/platform/httpx"
+	"github.com/gustavoflandal/pcp-lev/backend/internal/platform/i18n"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/platform/tempo"
 	"github.com/labstack/echo/v4"
 )
@@ -88,11 +89,11 @@ func (h *ProducaoHandler) responder(c echo.Context, err error) error {
 		for _, f := range falta.Faltas {
 			detalhes = append(detalhes, httpx.CampoInvalido{
 				Campo:    f.Codigo,
-				Mensagem: fmt.Sprintf("%s: necessaria %d, disponivel %d", f.Descricao, f.Necessaria, f.Disponivel),
+				Mensagem: f.Descricao + ": " + i18n.T(c, fmt.Sprintf("necessaria %d, disponivel %d", f.Necessaria, f.Disponivel)),
 			})
 		}
 		return c.JSON(http.StatusConflict, httpx.RespostaErro{Erro: httpx.DetalheErro{
-			Codigo: CodigoMaterialInsuficiente, Mensagem: err.Error(), Detalhes: detalhes,
+			Codigo: CodigoMaterialInsuficiente, Mensagem: i18n.T(c, err.Error()), Detalhes: detalhes,
 		}})
 	}
 	return errosProducao.responder(c, err)

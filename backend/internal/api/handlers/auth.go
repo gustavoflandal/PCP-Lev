@@ -197,6 +197,7 @@ type preferenciasRequest struct {
 	AltoContraste bool   `json:"alto_contraste"`
 	Densidade     string `json:"densidade"`
 	TamanhoFonte  string `json:"tamanho_fonte"`
+	Idioma        string `json:"idioma"`
 }
 
 // AtualizarPreferencias grava as preferencias de aparencia do usuario da
@@ -216,7 +217,7 @@ func (h *AuthHandler) AtualizarPreferencias(c echo.Context) error {
 	}
 
 	atualizado, err := h.servico.AtualizarPreferencias(c.Request().Context(), claims.UsuarioID, usuario.Preferencias{
-		Tema: req.Tema, AltoContraste: req.AltoContraste, Densidade: req.Densidade, TamanhoFonte: req.TamanhoFonte,
+		Tema: req.Tema, AltoContraste: req.AltoContraste, Densidade: req.Densidade, TamanhoFonte: req.TamanhoFonte, Idioma: req.Idioma,
 	})
 	if err != nil {
 		switch {

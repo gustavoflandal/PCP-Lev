@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { td } from '@/i18n';
 import { cn } from '@/lib/cn';
 import { icones } from './icones';
 
@@ -75,7 +76,7 @@ export function Toasts() {
             )}
           >
             <Icone size={16} aria-hidden="true" className="shrink-0" />
-            {item.mensagem}
+            {td(item.mensagem)}
           </li>
         );
       })}

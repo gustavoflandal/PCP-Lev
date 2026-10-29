@@ -13,16 +13,17 @@ import { formatarData } from '@/lib/formato';
 import { anexar, enviarArquivo } from '@/servicos/arquivos';
 import { CATEGORIAS_DOCUMENTO_PRODUTO, LIMITE_PDF_BYTES, TIPO_PDF, type Anexo } from '@/tipos/arquivos';
 import { corpoNovoAnexo, useEstruturasDoProduto, type EntidadeComMidia } from './comum';
+import { t, td, marcar } from '@/i18n';
 
-const OPCOES_CATEGORIA = CATEGORIAS_DOCUMENTO_PRODUTO.map((c) => ({ valor: c, rotulo: c }));
+const opcoesCategoria = () => CATEGORIAS_DOCUMENTO_PRODUTO.map((c) => ({ valor: c, rotulo: td(c) }));
 
 /** Forma, nao regra: categoria, tamanhos e datas sao conferidos de novo pela API. */
 const esquema = z
   .object({
-    categoria: z.string().min(1, 'Escolha a categoria do documento'),
-    titulo: z.string().trim().max(150, 'O título aceita até 150 caracteres'),
-    descricao: z.string().trim().max(500, 'A descrição aceita até 500 caracteres'),
-    versao: z.string().trim().max(20, 'A versão aceita até 20 caracteres'),
+    categoria: z.string().min(1, marcar('Escolha a categoria do documento')),
+    titulo: z.string().trim().max(150, marcar('O título aceita até 150 caracteres')),
+    descricao: z.string().trim().max(500, marcar('A descrição aceita até 500 caracteres')),
+    versao: z.string().trim().max(20, marcar('A versão aceita até 20 caracteres')),
     data_emissao: z.string(),
     data_validade: z.string(),
     fornecedor_id: z.string(),
@@ -30,7 +31,7 @@ const esquema = z
   })
   .refine((v) => !v.data_emissao || !v.data_validade || v.data_validade >= v.data_emissao, {
     path: ['data_validade'],
-    message: 'A validade não pode ser anterior à emissão',
+    message: marcar('A validade não pode ser anterior à emissão'),
   });
 
 type Formulario = z.infer<typeof esquema>;
@@ -53,7 +54,7 @@ export function FormularioDocumento({ entidade, entidadeId, base, aoConcluir, ao
   const estruturas = useEstruturasDoProduto(ehProduto ? entidadeId : null);
   const opcoesEstrutura = (estruturas.data ?? []).map((e) => ({
     valor: String(e.id),
-    rotulo: `Versão ${e.versao} — desde ${formatarData(e.data_vigencia_inicio)}${e.ativo ? ' (ativa)' : ''}`,
+    rotulo: t('Versão {versao} — desde {data}{valor}', { versao: e.versao, data: formatarData(e.data_vigencia_inicio), valor: e.ativo ? t(' (ativa)') : '' }),
   }));
 
   const [pdf, definirPdf] = useState<File | null>(null);
@@ -96,14 +97,14 @@ export function FormularioDocumento({ entidade, entidadeId, base, aoConcluir, ao
       );
     },
     onSuccess: () => {
-      mostrarToast(base ? 'Nova versão enviada' : 'Documento enviado');
+      mostrarToast(base ? t('Nova versão enviada') : t('Documento enviado'));
       aoConcluir();
     },
   });
 
   const erroApi = mutacao.error ? separarErro(mutacao.error) : null;
   const erroDe = (campo: keyof Formulario): string | undefined =>
-    errors[campo]?.message ?? erroApi?.porCampo[campo];
+    td(errors[campo]?.message ?? erroApi?.porCampo[campo]) || undefined;
 
   function aoEscolher(evento: ChangeEvent<HTMLInputElement>) {
     const arquivo = evento.target.files?.[0] ?? null;
@@ -111,11 +112,11 @@ export function FormularioDocumento({ entidade, entidadeId, base, aoConcluir, ao
     definirPdf(null);
     if (!arquivo) return;
     if (arquivo.type !== TIPO_PDF) {
-      definirErroArquivo('Documento técnico precisa ser PDF.');
+      definirErroArquivo(t('Documento técnico precisa ser PDF.'));
       return;
     }
     if (arquivo.size > LIMITE_PDF_BYTES) {
-      definirErroArquivo('O PDF passa de 25 MB. Reduza o arquivo e envie de novo.');
+      definirErroArquivo(t('O PDF passa de 25 MB. Reduza o arquivo e envie de novo.'));
       return;
     }
     definirPdf(arquivo);
@@ -124,10 +125,10 @@ export function FormularioDocumento({ entidade, entidadeId, base, aoConcluir, ao
   return (
     <form
       noValidate
-      aria-label={base ? 'Nova versão do documento' : 'Novo documento'}
+      aria-label={base ? t('Nova versão do documento') : t('Novo documento')}
       onSubmit={handleSubmit((valores) => {
         if (!pdf) {
-          definirErroArquivo(erroArquivo ?? 'Escolha o arquivo PDF do documento.');
+          definirErroArquivo(erroArquivo ?? t('Escolha o arquivo PDF do documento.'));
           return;
         }
         mutacao.mutate({ arquivo: pdf, valores });
@@ -135,7 +136,7 @@ export function FormularioDocumento({ entidade, entidadeId, base, aoConcluir, ao
       className="flex flex-col gap-4 rounded-cartao border border-borda-strong p-4"
     >
       <h4 className="text-subtitle text-texto-primary">
-        {base ? `Nova versão — ${base.titulo || base.categoria}` : 'Novo documento'}
+        {base ? t('Nova versão — {valor}', { valor: base.titulo || td(base.categoria) }) : t('Novo documento')}
       </h4>
 
       {erroApi?.geral && (
@@ -149,7 +150,7 @@ export function FormularioDocumento({ entidade, entidadeId, base, aoConcluir, ao
 
       <div className="flex flex-col gap-1">
         <label htmlFor={idArquivo} className="text-label text-texto-secondary">
-          Arquivo PDF (até 25 MB)
+          {t('Arquivo PDF (até 25 MB)')}
           <span aria-hidden="true" className="ml-1 text-estado-pending">
             *
           </span>
@@ -173,38 +174,38 @@ export function FormularioDocumento({ entidade, entidadeId, base, aoConcluir, ao
 
       <div className="grid gap-4 md:grid-cols-2">
         <Selecao
-          rotulo="Categoria"
+          rotulo={t('Categoria')}
           obrigatorio
-          placeholder="Escolha a categoria"
-          opcoes={OPCOES_CATEGORIA}
+          placeholder={t('Escolha a categoria')}
+          opcoes={opcoesCategoria()}
           erro={erroDe('categoria')}
           {...register('categoria')}
         />
-        <Campo rotulo="Título" erro={erroDe('titulo')} {...register('titulo')} />
+        <Campo rotulo={t('Título')} erro={erroDe('titulo')} {...register('titulo')} />
       </div>
 
-      <Campo rotulo="Descrição" erro={erroDe('descricao')} {...register('descricao')} />
+      <Campo rotulo={t('Descrição')} erro={erroDe('descricao')} {...register('descricao')} />
 
       <div className="grid gap-4 md:grid-cols-3">
-        <Campo rotulo="Versão" ajuda="Ex.: Rev. B, 2.1" erro={erroDe('versao')} {...register('versao')} />
-        <Campo rotulo="Data de emissão" type="date" erro={erroDe('data_emissao')} {...register('data_emissao')} />
-        <Campo rotulo="Data de validade" type="date" erro={erroDe('data_validade')} {...register('data_validade')} />
+        <Campo rotulo={t('Versão')} ajuda={t('Ex.: Rev. B, 2.1')} erro={erroDe('versao')} {...register('versao')} />
+        <Campo rotulo={t('Data de emissão')} type="date" erro={erroDe('data_emissao')} {...register('data_emissao')} />
+        <Campo rotulo={t('Data de validade')} type="date" erro={erroDe('data_validade')} {...register('data_validade')} />
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
         <Selecao
-          rotulo="Fornecedor de origem"
-          placeholder="Não informado"
+          rotulo={t('Fornecedor de origem')}
+          placeholder={t('Não informado')}
           opcoes={opcoesFornecedor}
           erro={erroDe('fornecedor_id')}
           {...register('fornecedor_id')}
         />
         {ehProduto && (
           <Selecao
-            rotulo="Revisão da BOM"
-            placeholder="Não vinculado"
+            rotulo={t('Revisão da BOM')}
+            placeholder={t('Não vinculado')}
             opcoes={opcoesEstrutura}
-            ajuda={estruturas.isSuccess && opcoesEstrutura.length === 0 ? 'O produto ainda não tem estrutura cadastrada.' : undefined}
+            ajuda={estruturas.isSuccess && opcoesEstrutura.length === 0 ? t('O produto ainda não tem estrutura cadastrada.') : undefined}
             erro={erroDe('estrutura_produto_id')}
             {...register('estrutura_produto_id')}
           />
@@ -213,10 +214,10 @@ export function FormularioDocumento({ entidade, entidadeId, base, aoConcluir, ao
 
       <div className="flex items-center justify-end gap-2">
         <Botao variante="secundaria" onClick={aoCancelar} disabled={mutacao.isPending}>
-          Cancelar
+          {t('Cancelar')}
         </Botao>
-        <Botao type="submit" icone="upload" ocupado={mutacao.isPending} rotuloOcupado="Enviando…">
-          {base ? 'Enviar nova versão' : 'Enviar documento'}
+        <Botao type="submit" icone="upload" ocupado={mutacao.isPending} rotuloOcupado={t('Enviando…')}>
+          {base ? t('Enviar nova versão') : t('Enviar documento')}
         </Botao>
       </div>
     </form>

@@ -27,7 +27,7 @@ describe('usePreferencias', () => {
 
   it('aplicar seta os atributos no <html>', () => {
     usePreferencias.getState().aplicar({
-      tema: 'escuro', alto_contraste: true, densidade: 'compacta', tamanho_fonte: 'grande',
+      tema: 'escuro', alto_contraste: true, densidade: 'compacta', tamanho_fonte: 'grande', idioma: 'pt-BR',
     });
 
     const el = document.documentElement;
@@ -47,7 +47,7 @@ describe('usePreferencias', () => {
 
   it('aplicar grava o cache local para o script de index.html reaplicar sem flash', () => {
     usePreferencias.getState().aplicar({
-      tema: 'escuro', alto_contraste: false, densidade: 'compacta', tamanho_fonte: 'padrao',
+      tema: 'escuro', alto_contraste: false, densidade: 'compacta', tamanho_fonte: 'padrao', idioma: 'pt-BR',
     });
 
     const salvo = JSON.parse(localStorage.getItem('pcp.preferencias') ?? '{}');

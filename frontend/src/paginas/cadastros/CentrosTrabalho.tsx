@@ -11,11 +11,12 @@ import { useListagem } from '@/hooks/useListagem';
 import { PERMISSOES, usePode } from '@/lib/permissoes';
 import { OPCOES_ETAPA, ROTULO_ETAPA, type CentroTrabalho } from '@/tipos/cadastros';
 import { FormularioCentroTrabalho } from './FormularioCentroTrabalho';
+import { t, td } from '@/i18n';
 
 const horasBR = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 });
 
 function formatarCapacidade(horas: number | null | undefined): string {
-  return horas === null || horas === undefined ? '—' : `${horasBR.format(horas)} h/dia`;
+  return horas === null || horas === undefined ? '—' : t('{valor} h/dia', { valor: horasBR.format(horas) });
 }
 
 export function CentrosTrabalho() {
@@ -25,21 +26,21 @@ export function CentrosTrabalho() {
 
   const lista = useListagem<CentroTrabalho>('centros-trabalho', 'codigo');
   const crud = useCadastroCrud<CentroTrabalho>('centros-trabalho', {
-    criado: 'Centro de trabalho cadastrado',
-    atualizado: 'Centro de trabalho atualizado',
-    inativado: 'Centro de trabalho inativado',
+    criado: t('Centro de trabalho cadastrado'),
+    atualizado: t('Centro de trabalho atualizado'),
+    inativado: t('Centro de trabalho inativado'),
   });
 
   const colunas: Coluna<CentroTrabalho>[] = [
     {
       chave: 'codigo',
-      rotulo: 'Código',
+      rotulo: t('Código'),
       ordenavel: true,
       renderizar: (c) => <span className="font-mono">{c.codigo}</span>,
     },
     {
       chave: 'nome',
-      rotulo: 'Nome',
+      rotulo: t('Nome'),
       ordenavel: true,
       renderizar: (c) => (
         <span className="flex flex-col">
@@ -50,40 +51,40 @@ export function CentrosTrabalho() {
     },
     {
       chave: 'etapa',
-      rotulo: 'Etapa',
+      rotulo: t('Etapa'),
       ordenavel: true,
-      renderizar: (c) => ROTULO_ETAPA[c.etapa] ?? c.etapa,
+      renderizar: (c) => td(ROTULO_ETAPA[c.etapa] ?? c.etapa),
     },
     {
       chave: 'capacidade_horas_dia',
-      rotulo: 'Capacidade',
+      rotulo: t('Capacidade'),
       alinhamento: 'direita',
       renderizar: (c) => formatarCapacidade(c.capacidade_horas_dia),
     },
-    { chave: 'ativo', rotulo: 'Situação', renderizar: (c) => <BadgeSituacao ativo={c.ativo} /> },
+    { chave: 'ativo', rotulo: t('Situação'), renderizar: (c) => <BadgeSituacao ativo={c.ativo} /> },
   ];
 
   return (
     <div className="mx-auto flex max-w-[1400px] flex-col gap-4">
       <div>
-        <h1 className="text-title text-texto-primary">Centros de trabalho</h1>
+        <h1 className="text-title text-texto-primary">{t('Centros de trabalho')}</h1>
         <p className="text-body text-texto-secondary">
-          Bancadas e postos onde cada etapa da produção acontece.
+          {t('Bancadas e postos onde cada etapa da produção acontece.')}
         </p>
       </div>
 
       <BarraDeFiltros
         busca={lista.busca}
         aoBuscar={lista.definirBusca}
-        rotuloBusca="Buscar por código ou nome"
+        rotuloBusca={t('Buscar por código ou nome')}
         filtroAtivo={lista.filtroAtivo}
         aoFiltrarSituacao={lista.definirFiltroAtivo}
         filtrosExtras={
           <div className="w-[180px]">
             <Selecao
-              rotulo="Etapa"
-              placeholder="Todas"
-              opcoes={OPCOES_ETAPA}
+              rotulo={t('Etapa')}
+              placeholder={t('Todas')}
+              opcoes={OPCOES_ETAPA.map((o) => ({ ...o, rotulo: td(o.rotulo) }))}
               value={lista.filtros.etapa ?? ''}
               onChange={(evento) => lista.definirFiltro('etapa', evento.target.value)}
             />
@@ -92,14 +93,14 @@ export function CentrosTrabalho() {
       >
         {podeIncluir && (
           <Botao icone="plus" onClick={crud.abrirNovo}>
-            Novo centro de trabalho
+            {t('Novo centro de trabalho')}
           </Botao>
         )}
       </BarraDeFiltros>
 
       <div>
         <Tabela<CentroTrabalho>
-          rotulo="Centros de trabalho"
+          rotulo={t('Centros de trabalho')}
           colunas={colunas}
           itens={lista.itens}
           chaveDe={(c) => c.id}
@@ -109,7 +110,7 @@ export function CentrosTrabalho() {
           carregando={lista.carregando}
           erro={lista.erro}
           aoTentarDeNovo={lista.recarregar}
-          vazio="Nenhum centro de trabalho encontrado. Ajuste os filtros ou cadastre um centro de trabalho."
+          vazio={t('Nenhum centro de trabalho encontrado. Ajuste os filtros ou cadastre um centro de trabalho.')}
           acoes={
             podeEditar || podeInativar
               ? (c) => (
@@ -118,20 +119,20 @@ export function CentrosTrabalho() {
                       <Botao
                         variante="fantasma"
                         icone="pencil"
-                        aria-label={`Editar ${c.codigo}`}
+                        aria-label={t('Editar {codigo}', { codigo: c.codigo })}
                         onClick={() => crud.abrirEdicao(c)}
                       >
-                        Editar
+                        {t('Editar')}
                       </Botao>
                     )}
                     {podeInativar && c.ativo && (
                       <Botao
                         variante="fantasma"
                         icone="trash-2"
-                        aria-label={`Inativar ${c.codigo}`}
+                        aria-label={t('Inativar {codigo}', { codigo: c.codigo })}
                         onClick={() => crud.pedirInativacao(c)}
                       >
-                        Inativar
+                        {t('Inativar')}
                       </Botao>
                     )}
                   </span>
@@ -150,8 +151,8 @@ export function CentrosTrabalho() {
       <Modal
         aberto={crud.formularioAberto}
         aoFechar={crud.fecharFormulario}
-        titulo={crud.emEdicao ? 'Editar centro de trabalho' : 'Novo centro de trabalho'}
-        descricao="Campos com * são obrigatórios."
+        titulo={crud.emEdicao ? t('Editar centro de trabalho') : t('Novo centro de trabalho')}
+        descricao={t('Campos com * são obrigatórios.')}
       >
         <FormularioCentroTrabalho
           key={crud.emEdicao?.id ?? 'novo'}
@@ -166,14 +167,14 @@ export function CentrosTrabalho() {
 
       <Confirmacao
         aberto={crud.aInativar !== null}
-        titulo="Inativar centro de trabalho"
+        titulo={t('Inativar centro de trabalho')}
         mensagem={
           crud.aInativar
-            ? `Inativar o centro de trabalho ${crud.aInativar.codigo} · ${crud.aInativar.nome}? Ele deixa de aparecer nas listas de seleção. O histórico é preservado.`
+            ? t('Inativar o centro de trabalho {codigo} · {nome}? Ele deixa de aparecer nas listas de seleção. O histórico é preservado.', { codigo: crud.aInativar.codigo, nome: crud.aInativar.nome })
             : ''
         }
-        rotuloConfirmar="Inativar"
-        rotuloOcupado="Inativando…"
+        rotuloConfirmar={t('Inativar')}
+        rotuloOcupado={t('Inativando…')}
         ocupado={crud.inativando}
         aoConfirmar={crud.confirmarInativacao}
         aoCancelar={crud.cancelarInativacao}

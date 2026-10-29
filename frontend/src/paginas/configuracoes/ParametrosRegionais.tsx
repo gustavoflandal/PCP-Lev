@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Botao } from '@/componentes/ui/Botao';
 import { Selecao } from '@/componentes/ui/Selecao';
 import { useToasts } from '@/componentes/ui/Toast';
+import { t } from '@/i18n';
 import { useConfiguracaoRegionalServidor } from '@/hooks/useConfiguracaoRegionalServidor';
 import { separarErro } from '@/lib/errosDeFormulario';
 import { formatarDataComFormato, formatarHoraComFormato } from '@/lib/formato';
@@ -11,15 +12,15 @@ import { useConfiguracaoRegional } from '@/store/configuracaoRegional';
 import type { ConfiguracaoRegional, FormatoData, FormatoHora } from '@/tipos/regional';
 import { PERMISSOES, usePode } from '@/lib/permissoes';
 
-const OPCOES_FORMATO_DATA: { valor: FormatoData; rotulo: string }[] = [
-  { valor: 'DD/MM/AAAA', rotulo: 'DD/MM/AAAA (31/08/2026)' },
-  { valor: 'DD-MM-AAAA', rotulo: 'DD-MM-AAAA (31-08-2026)' },
-  { valor: 'AAAA-MM-DD', rotulo: 'AAAA-MM-DD (2026-08-31)' },
+const opcoesFormatoData = (): { valor: FormatoData; rotulo: string }[] => [
+  { valor: 'DD/MM/AAAA', rotulo: t('DD/MM/AAAA (31/08/2026)') },
+  { valor: 'DD-MM-AAAA', rotulo: t('DD-MM-AAAA (31-08-2026)') },
+  { valor: 'AAAA-MM-DD', rotulo: t('AAAA-MM-DD (2026-08-31)') },
 ];
 
-const OPCOES_FORMATO_HORA: { valor: FormatoHora; rotulo: string }[] = [
-  { valor: '24H', rotulo: '24 horas (14:30)' },
-  { valor: '12H', rotulo: '12 horas (02:30 PM)' },
+const opcoesFormatoHora = (): { valor: FormatoHora; rotulo: string }[] => [
+  { valor: '24H', rotulo: t('24 horas (14:30)') },
+  { valor: '12H', rotulo: t('12 horas (02:30 PM)') },
 ];
 
 // Data/hora de exemplo fixas para a pré-visualização -- não dependem do
@@ -46,18 +47,18 @@ export function ParametrosRegionais() {
   const consulta = useConfiguracaoRegionalServidor(autorizado);
 
   if (!autorizado) {
-    return <Aviso>Acesso restrito: seu perfil não tem permissão para esta tela.</Aviso>;
+    return <Aviso>{t('Acesso restrito: seu perfil não tem permissão para esta tela.')}</Aviso>;
   }
 
   if (consulta.isPending) {
-    return <p className="text-body text-texto-secondary">Carregando parâmetros regionais…</p>;
+    return <p className="text-body text-texto-secondary">{t('Carregando parâmetros regionais…')}</p>;
   }
 
   if (consulta.isError) {
     // O PUT grava os dois campos de uma vez -- mostrar o formulario com os
     // defaults depois de uma falha de carga deixaria "Salvar" sobrescrever a
     // configuracao real (mesmo cuidado de DadosEmpresa).
-    return <Aviso>Não foi possível carregar os parâmetros regionais. Recarregue a página para tentar de novo.</Aviso>;
+    return <Aviso>{t('Não foi possível carregar os parâmetros regionais. Recarregue a página para tentar de novo.')}</Aviso>;
   }
 
   return <FormularioRegional atual={consulta.data} />;
@@ -80,10 +81,10 @@ function FormularioRegional({ atual }: { atual: ConfiguracaoRegional }) {
         formato_data: atualizada.formato_data,
         formato_hora: atualizada.formato_hora,
       });
-      mostrarToast('Parâmetros regionais salvos');
+      mostrarToast(t('Parâmetros regionais salvos'));
     },
     onError: (erro) => {
-      mostrarToast(separarErro(erro).geral ?? 'Não foi possível salvar os parâmetros regionais.', 'pending');
+      mostrarToast(separarErro(erro).geral ?? t('Não foi possível salvar os parâmetros regionais.'), 'pending');
     },
   });
 
@@ -98,33 +99,33 @@ function FormularioRegional({ atual }: { atual: ConfiguracaoRegional }) {
       }}
     >
       <div>
-        <h1 className="text-title text-texto-primary">Parâmetros regionais</h1>
+        <h1 className="text-title text-texto-primary">{t('Parâmetros regionais')}</h1>
         <p className="text-body text-texto-secondary">
-          Formato de data e hora usados em todo o sistema — a mudança vale para todos os usuários.
+          {t('Formato de data e hora usados em todo o sistema — a mudança vale para todos os usuários.')}
         </p>
       </div>
 
       <div className="flex flex-col gap-4 rounded-cartao border border-borda-subtle bg-surface-raised p-6">
         <Selecao
-          rotulo="Formato de data"
-          opcoes={OPCOES_FORMATO_DATA}
+          rotulo={t('Formato de data')}
+          opcoes={opcoesFormatoData()}
           value={formatoData}
           onChange={(evento) => definirFormatoData(evento.target.value as FormatoData)}
         />
 
         <Selecao
-          rotulo="Formato de hora"
-          opcoes={OPCOES_FORMATO_HORA}
+          rotulo={t('Formato de hora')}
+          opcoes={opcoesFormatoHora()}
           value={formatoHora}
           onChange={(evento) => definirFormatoHora(evento.target.value as FormatoHora)}
         />
 
         <p className="text-label text-texto-secondary" aria-live="polite">
-          Assim: {preview}
+          {t('Assim: {exemplo}', { exemplo: preview })}
         </p>
 
-        <Botao type="submit" ocupado={mutacao.isPending} rotuloOcupado="Salvando…">
-          Salvar
+        <Botao type="submit" ocupado={mutacao.isPending} rotuloOcupado={t('Salvando…')}>
+          {t('Salvar')}
         </Botao>
       </div>
     </form>

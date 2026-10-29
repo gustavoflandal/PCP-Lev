@@ -39,6 +39,12 @@ describe('Login', () => {
     expect(screen.getByLabelText('Senha')).toBeInTheDocument();
   });
 
+  it('mostra a versao em execucao e a data/hora da publicacao', () => {
+    renderizarComProvedores(<Login />);
+
+    expect(screen.getByTestId('versao-sistema')).toHaveTextContent(/^Versão \d+\.\d+\.\d+.* · publicada em \d{2}\/\d{2}\/\d{4}/);
+  });
+
   it('autentica e abre a sessao', async () => {
     servidor.responder([{ metodo: 'post', url: '/auth/login', status: 200, corpo: respostaLogin }]);
     renderizarComProvedores(<Login />);

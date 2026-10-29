@@ -137,3 +137,36 @@ func TestListarPorProdutoResponde200(t *testing.T) {
 	itens := lista(t, rec)
 	require.Len(t, itens, 1)
 }
+
+func TestAtivarResponde200ETornaAVersaoVigente(t *testing.T) {
+	api, produtoID, pecaID := apiEstrutura(t)
+	criarRec := api.chamar(http.MethodPost, "/api/v1/boms", corpoEstruturaValido(produtoID, pecaID, "2026-09-01"), usuario.PerfilGestor)
+	require.Equal(t, http.StatusCreated, criarRec.Code)
+	v1 := int64(dados(t, criarRec)["id"].(float64))
+	corpoNovo := `{"data_vigencia_inicio": "2026-10-01", "itens": [{"parte_peca_id": ` +
+		formatarID(float64(pecaID)) + `, "quantidade": 6}]}`
+	require.Equal(t, http.StatusCreated,
+		api.chamar(http.MethodPost, fmt.Sprintf("/api/v1/boms/%d/versionar", v1), corpoNovo, usuario.PerfilGestor).Code)
+
+	rec := api.chamar(http.MethodPost, fmt.Sprintf("/api/v1/boms/%d/ativar", v1), "", usuario.PerfilGestor)
+
+	require.Equal(t, http.StatusOK, rec.Code, rec.Body.String())
+	assert.Equal(t, true, dados(t, rec)["ativo"])
+	assert.Equal(t, float64(1), dados(t, rec)["versao"])
+}
+
+func TestAtivarComoOperadorResponde403(t *testing.T) {
+	api, _, _ := apiEstrutura(t)
+
+	rec := api.chamar(http.MethodPost, "/api/v1/boms/1/ativar", "", usuario.PerfilOperador)
+
+	assert.Equal(t, http.StatusForbidden, rec.Code)
+}
+
+func TestAtivarInexistenteResponde404(t *testing.T) {
+	api, _, _ := apiEstrutura(t)
+
+	rec := api.chamar(http.MethodPost, "/api/v1/boms/999999/ativar", "", usuario.PerfilGestor)
+
+	assert.Equal(t, http.StatusNotFound, rec.Code)
+}

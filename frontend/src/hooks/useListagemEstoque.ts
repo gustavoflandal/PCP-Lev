@@ -4,6 +4,7 @@ import { ErroApi } from '@/servicos/api';
 import { listarEstoque } from '@/servicos/estoque';
 import type { DadosPaginacao, Ordem } from '@/tipos/cadastros';
 import type { ParametrosListagemEstoque, SaldoEstoque } from '@/tipos/estoque';
+import { t } from '@/i18n';
 
 const LIMITE_PADRAO = 20;
 const PAGINACAO_VAZIA: DadosPaginacao = { pagina: 1, limite: LIMITE_PADRAO, total: 0, total_paginas: 0 };
@@ -61,7 +62,7 @@ export function useListagemEstoque(): ListagemEstoque {
   const erro = consulta.error
     ? consulta.error instanceof ErroApi
       ? consulta.error.message
-      : 'Não foi possível carregar a lista. Tente de novo.'
+      : t('Não foi possível carregar a lista. Tente de novo.')
     : null;
 
   return {

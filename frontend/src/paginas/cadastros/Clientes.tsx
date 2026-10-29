@@ -14,6 +14,7 @@ import { formatarCNPJ, formatarData } from '@/lib/formato';
 import { PERMISSOES, usePode } from '@/lib/permissoes';
 import { OPCOES_TIPO_CLIENTE, ROTULO_TIPO_CLIENTE, type Cliente } from '@/tipos/cadastros';
 import { FormularioCliente } from './FormularioCliente';
+import { t, td } from '@/i18n';
 
 /** Data de hoje no fuso do navegador, em AAAA-MM-DD (o mesmo formato da API). */
 function hojeLocal(agora: Date = new Date()): string {
@@ -34,9 +35,9 @@ function Vigencia({ cliente }: { cliente: Cliente }) {
   const { vigencia_inicio: inicio, vigencia_fim: fim } = cliente;
   if (!inicio && !fim) return null;
   let texto: string;
-  if (inicio && fim) texto = `${formatarData(inicio)} a ${formatarData(fim)}`;
-  else if (inicio) texto = `desde ${formatarData(inicio)}`;
-  else texto = `até ${formatarData(fim ?? undefined)}`;
+  if (inicio && fim) texto = t('{data} a {data2}', { data: formatarData(inicio), data2: formatarData(fim) });
+  else if (inicio) texto = t('desde {data}', { data: formatarData(inicio) });
+  else texto = t('até {data}', { data: formatarData(fim ?? undefined) });
   return <span className="text-label text-texto-secondary">{texto}</span>;
 }
 
@@ -49,9 +50,9 @@ export function Clientes() {
 
   const lista = useListagem<Cliente>('clientes', 'razao_social');
   const crud = useCadastroCrud<Cliente>('clientes', {
-    criado: 'Cliente cadastrado',
-    atualizado: 'Cliente atualizado',
-    inativado: 'Cliente inativado',
+    criado: t('Cliente cadastrado'),
+    atualizado: t('Cliente atualizado'),
+    inativado: t('Cliente inativado'),
   });
 
   const hoje = hojeLocal();
@@ -59,7 +60,7 @@ export function Clientes() {
   const colunas: Coluna<Cliente>[] = [
     {
       chave: 'razao_social',
-      rotulo: 'Razão social',
+      rotulo: t('Razão social'),
       ordenavel: true,
       renderizar: (c) => (
         <span className="flex flex-col">
@@ -70,25 +71,25 @@ export function Clientes() {
     },
     {
       chave: 'tipo',
-      rotulo: 'Tipo',
+      rotulo: t('Tipo'),
       ordenavel: true,
-      renderizar: (c) => ROTULO_TIPO_CLIENTE[c.tipo] ?? c.tipo,
+      renderizar: (c) => td(ROTULO_TIPO_CLIENTE[c.tipo] ?? c.tipo),
     },
     {
       chave: 'cnpj',
-      rotulo: 'CNPJ',
+      rotulo: t('CNPJ'),
       ordenavel: true,
       renderizar: (c) => <span className="font-mono">{formatarCNPJ(c.cnpj)}</span>,
     },
     {
       chave: 'cidade',
-      rotulo: 'Cidade/UF',
+      rotulo: t('Cidade/UF'),
       ordenavel: true,
       renderizar: (c) => (c.cidade || c.uf ? [c.cidade, c.uf].filter(Boolean).join('/') : '—'),
     },
     {
       chave: 'vigencia_fim',
-      rotulo: 'Contrato',
+      rotulo: t('Contrato'),
       ordenavel: true,
       renderizar: (c) =>
         c.numero_contrato || c.vigencia_inicio || c.vigencia_fim ? (
@@ -97,7 +98,7 @@ export function Clientes() {
             <Vigencia cliente={c} />
             {contratoVencido(c.vigencia_fim, hoje) && (
               <Badge tom="warning" icone="alert-triangle">
-                Contrato vencido
+                {t('Contrato vencido')}
               </Badge>
             )}
           </span>
@@ -105,30 +106,30 @@ export function Clientes() {
           '—'
         ),
     },
-    { chave: 'ativo', rotulo: 'Situação', renderizar: (c) => <BadgeSituacao ativo={c.ativo} /> },
+    { chave: 'ativo', rotulo: t('Situação'), renderizar: (c) => <BadgeSituacao ativo={c.ativo} /> },
   ];
 
   return (
     <div className="mx-auto flex max-w-[1400px] flex-col gap-4">
       <div>
-        <h1 className="text-title text-texto-primary">Clientes</h1>
+        <h1 className="text-title text-texto-primary">{t('Clientes')}</h1>
         <p className="text-body text-texto-secondary">
-          Quem compra os painéis: órgãos públicos, concessionárias e integradores, com o contrato vigente.
+          {t('Quem compra os painéis: órgãos públicos, concessionárias e integradores, com o contrato vigente.')}
         </p>
       </div>
 
       <BarraDeFiltros
         busca={lista.busca}
         aoBuscar={lista.definirBusca}
-        rotuloBusca="Buscar por razão social, CNPJ, cidade ou contrato"
+        rotuloBusca={t('Buscar por razão social, CNPJ, cidade ou contrato')}
         filtroAtivo={lista.filtroAtivo}
         aoFiltrarSituacao={lista.definirFiltroAtivo}
         filtrosExtras={
           <div className="w-[200px]">
             <Selecao
-              rotulo="Tipo"
-              placeholder="Todos"
-              opcoes={OPCOES_TIPO_CLIENTE}
+              rotulo={t('Tipo')}
+              placeholder={t('Todos')}
+              opcoes={OPCOES_TIPO_CLIENTE.map((o) => ({ ...o, rotulo: td(o.rotulo) }))}
               value={lista.filtros.tipo ?? ''}
               onChange={(evento) => lista.definirFiltro('tipo', evento.target.value)}
             />
@@ -137,14 +138,14 @@ export function Clientes() {
       >
         {podeIncluir && (
           <Botao icone="plus" onClick={crud.abrirNovo}>
-            Novo cliente
+            {t('Novo cliente')}
           </Botao>
         )}
       </BarraDeFiltros>
 
       <div>
         <Tabela<Cliente>
-          rotulo="Clientes"
+          rotulo={t('Clientes')}
           colunas={colunas}
           itens={lista.itens}
           chaveDe={(c) => c.id}
@@ -154,35 +155,35 @@ export function Clientes() {
           carregando={lista.carregando}
           erro={lista.erro}
           aoTentarDeNovo={lista.recarregar}
-          vazio="Nenhum cliente encontrado. Ajuste os filtros ou cadastre um cliente."
+          vazio={t('Nenhum cliente encontrado. Ajuste os filtros ou cadastre um cliente.')}
           acoes={(c) => (
             <span className="flex flex-wrap items-center justify-end gap-x-2 gap-y-1">
               <Botao
                 variante="fantasma"
                 icone="paperclip"
-                aria-label={`Documentos de ${c.razao_social}`}
+                aria-label={t('Documentos de {razao_social}', { razao_social: c.razao_social })}
                 onClick={() => documentos.abrir({ id: c.id, nome: c.razao_social })}
               >
-                Documentos
+                {t('Documentos')}
               </Botao>
               {podeEditar && (
                 <Botao
                   variante="fantasma"
                   icone="pencil"
-                  aria-label={`Editar ${c.razao_social}`}
+                  aria-label={t('Editar {razao_social}', { razao_social: c.razao_social })}
                   onClick={() => crud.abrirEdicao(c)}
                 >
-                  Editar
+                  {t('Editar')}
                 </Botao>
               )}
               {podeInativar && c.ativo && (
                 <Botao
                   variante="fantasma"
                   icone="trash-2"
-                  aria-label={`Inativar ${c.razao_social}`}
+                  aria-label={t('Inativar {razao_social}', { razao_social: c.razao_social })}
                   onClick={() => crud.pedirInativacao(c)}
                 >
-                  Inativar
+                  {t('Inativar')}
                 </Botao>
               )}
             </span>
@@ -199,8 +200,8 @@ export function Clientes() {
       <Modal
         aberto={crud.formularioAberto}
         aoFechar={crud.fecharFormulario}
-        titulo={crud.emEdicao ? 'Editar cliente' : 'Novo cliente'}
-        descricao="Campos com * são obrigatórios."
+        titulo={crud.emEdicao ? t('Editar cliente') : t('Novo cliente')}
+        descricao={t('Campos com * são obrigatórios.')}
       >
         <FormularioCliente
           // A chave remonta o formulario ao trocar de registro.
@@ -223,14 +224,14 @@ export function Clientes() {
 
       <Confirmacao
         aberto={crud.aInativar !== null}
-        titulo="Inativar cliente"
+        titulo={t('Inativar cliente')}
         mensagem={
           crud.aInativar
-            ? `Inativar o cliente ${crud.aInativar.razao_social}? Ele deixa de aparecer nas listas de seleção. O histórico é preservado.`
+            ? t('Inativar o cliente {razao_social}? Ele deixa de aparecer nas listas de seleção. O histórico é preservado.', { razao_social: crud.aInativar.razao_social })
             : ''
         }
-        rotuloConfirmar="Inativar"
-        rotuloOcupado="Inativando…"
+        rotuloConfirmar={t('Inativar')}
+        rotuloOcupado={t('Inativando…')}
         ocupado={crud.inativando}
         aoConfirmar={crud.confirmarInativacao}
         aoCancelar={crud.cancelarInativacao}

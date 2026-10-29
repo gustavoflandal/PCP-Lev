@@ -2,6 +2,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { Badge } from '@/componentes/ui/Badge';
 import { Botao } from '@/componentes/ui/Botao';
+import { t } from '@/i18n';
 import { formatarBytes, formatarMilissegundos } from '@/lib/formato';
 import { buscarStatusBanco, chaveStatusBanco, testarConexaoBanco } from '@/servicos/banco';
 import type { StatusBanco } from '@/tipos/banco';
@@ -44,16 +45,16 @@ function TesteDeConexao() {
         variante="secundaria"
         icone="refresh-cw"
         ocupado={teste.isPending}
-        rotuloOcupado="Testando…"
+        rotuloOcupado={t('Testando…')}
         onClick={() => teste.mutate()}
       >
-        Testar conexão
+        {t('Testar conexão')}
       </Botao>
       <p role="status" className="text-body">
         {teste.isSuccess && (
-          <span className="text-estado-done">Conexão OK em {formatarMilissegundos(teste.data.latencia_ms)}</span>
+          <span className="text-estado-done">{t('Conexão OK em {tempo}', { tempo: formatarMilissegundos(teste.data.latencia_ms) })}</span>
         )}
-        {teste.isError && <span className="text-estado-pending">Falha ao conectar ao banco de dados.</span>}
+        {teste.isError && <span className="text-estado-pending">{t('Falha ao conectar ao banco de dados.')}</span>}
       </p>
     </div>
   );
@@ -62,59 +63,59 @@ function TesteDeConexao() {
 function Painel({ status }: { status: StatusBanco }) {
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      <Cartao titulo="Conexão">
+      <Cartao titulo={t('Conexão')}>
         <Itens
           linhas={[
-            ['Situação', <Badge tom="done" icone="check-circle-2">Conectado</Badge>],
-            ['Latência', formatarMilissegundos(status.latencia_ms)],
+            [t('Situação'), <Badge tom="done" icone="check-circle-2">{t('Conectado')}</Badge>],
+            [t('Latência'), formatarMilissegundos(status.latencia_ms)],
           ]}
         />
         <TesteDeConexao />
       </Cartao>
 
-      <Cartao titulo="Identificação">
+      <Cartao titulo={t('Identificação')}>
         <Itens
           linhas={[
-            ['Servidor', <span className="font-mono">{status.host}</span>],
-            ['Banco', <span className="font-mono">{status.banco}</span>],
-            ['PostgreSQL', status.versao],
+            [t('Servidor'), <span className="font-mono">{status.host}</span>],
+            [t('Banco'), <span className="font-mono">{status.banco}</span>],
+            [t('PostgreSQL'), status.versao],
           ]}
         />
       </Cartao>
 
-      <Cartao titulo="Pool de conexões">
+      <Cartao titulo={t('Pool de conexões')}>
         <Itens
           linhas={[
-            ['Em uso', status.pool.em_uso],
-            ['Ociosas', status.pool.ociosas],
-            ['Abertas', `${status.pool.total} de ${status.pool.maximo}`],
-            ['Ativas no servidor', status.conexoes_ativas],
+            [t('Em uso'), status.pool.em_uso],
+            [t('Ociosas'), status.pool.ociosas],
+            [t('Abertas'), t('{total} de {maximo}', { total: status.pool.total, maximo: status.pool.maximo })],
+            [t('Ativas no servidor'), status.conexoes_ativas],
           ]}
         />
       </Cartao>
 
-      <Cartao titulo="Último backup">
-        <p className="text-body text-texto-primary">Nenhum backup registrado.</p>
+      <Cartao titulo={t('Último backup')}>
+        <p className="text-body text-texto-primary">{t('Nenhum backup registrado.')}</p>
         <p className="text-label text-texto-secondary">
-          O agendamento e o histórico de backups entram com o módulo Backup e Manutenção.
+          {t('O agendamento e o histórico de backups entram com o módulo Backup e Manutenção.')}
         </p>
       </Cartao>
 
       <div className="lg:col-span-2">
-        <Cartao titulo="Armazenamento">
-          <Itens linhas={[['Tamanho do banco', formatarBytes(status.tamanho_bytes)]]} />
+        <Cartao titulo={t('Armazenamento')}>
+          <Itens linhas={[[t('Tamanho do banco'), formatarBytes(status.tamanho_bytes)]]} />
           <div className="overflow-x-auto border border-borda-subtle">
-            <table className="w-full border-collapse" aria-label="Maiores tabelas">
+            <table className="w-full border-collapse" aria-label={t('Maiores tabelas')}>
               <thead>
                 <tr className="bg-surface-sunken">
                   <th scope="col" className="border-b border-borda-subtle px-3 py-2 text-left text-label text-texto-secondary">
-                    Tabela
+                    {t('Tabela')}
                   </th>
                   <th scope="col" className="border-b border-borda-subtle px-3 py-2 text-right text-label text-texto-secondary">
-                    Tamanho
+                    {t('Tamanho')}
                   </th>
                   <th scope="col" className="border-b border-borda-subtle px-3 py-2 text-right text-label text-texto-secondary">
-                    Linhas (estimativa)
+                    {t('Linhas (estimativa)')}
                   </th>
                 </tr>
               </thead>
@@ -151,7 +152,7 @@ export function BancoDeDados() {
     return (
       <div className="mx-auto flex max-w-[600px] flex-col gap-4">
         <p role="alert" className={CLASSE_AVISO}>
-          Acesso restrito: seu perfil não tem permissão para esta tela.
+          {t('Acesso restrito: seu perfil não tem permissão para esta tela.')}
         </p>
       </div>
     );
@@ -161,26 +162,26 @@ export function BancoDeDados() {
     <div className="mx-auto flex max-w-[1100px] flex-col gap-4">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-title text-texto-primary">Banco de dados</h1>
+          <h1 className="text-title text-texto-primary">{t('Banco de dados')}</h1>
           <p className="text-body text-texto-secondary">
-            Diagnóstico somente leitura. Usuário, senha e string de conexão nunca são exibidos.
+            {t('Diagnóstico somente leitura. Usuário, senha e string de conexão nunca são exibidos.')}
           </p>
         </div>
         <Botao
           variante="secundaria"
           icone="refresh-cw"
           ocupado={consulta.isFetching}
-          rotuloOcupado="Atualizando…"
+          rotuloOcupado={t('Atualizando…')}
           onClick={() => consulta.refetch()}
         >
-          Atualizar
+          {t('Atualizar')}
         </Botao>
       </div>
 
-      {consulta.isPending && <p className="text-body text-texto-secondary">Consultando o banco de dados…</p>}
+      {consulta.isPending && <p className="text-body text-texto-secondary">{t('Consultando o banco de dados…')}</p>}
       {consulta.isError && (
         <p role="alert" className={CLASSE_AVISO}>
-          Não foi possível consultar o banco de dados. Use “Atualizar” para tentar de novo.
+          {t('Não foi possível consultar o banco de dados. Use “Atualizar” para tentar de novo.')}
         </p>
       )}
       {/* Com erro, nao mostra o retrato anterior: "Conectado" ao lado do

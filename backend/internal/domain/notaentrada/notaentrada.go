@@ -496,7 +496,7 @@ func Conferir(n Nota, ctx Contexto) []Pendencia {
 		// Numero de serie: um por unidade, unico por peca em todo o historico.
 		if peca.Controle.ControlaNumeroSerie {
 			if len(it.Series) != it.QuantidadeRecebida {
-				bloq(o, "SERIE", "%d de %d series informadas", len(it.Series), it.QuantidadeRecebida)
+				bloq(o, "SERIE", "series informadas: %d de %d", len(it.Series), it.QuantidadeRecebida)
 			}
 			lotesDaLinha := map[string]bool{}
 			for _, l := range it.Lotes {

@@ -24,6 +24,11 @@ COPY . .
 # A URL da API e resolvida em tempo de build (Vite embute no bundle).
 ARG VITE_API_URL=/api/v1
 ENV VITE_API_URL=$VITE_API_URL
+# Identificacao da publicacao mostrada na tela de entrada (vite.config.ts).
+# Vazios, valem a versao do package.json e a hora do build.
+ARG APP_COMMIT=
+ARG APP_PUBLICADO_EM=
+ENV APP_COMMIT=$APP_COMMIT APP_PUBLICADO_EM=$APP_PUBLICADO_EM
 RUN npm run build
 
 # ---------- runtime ----------

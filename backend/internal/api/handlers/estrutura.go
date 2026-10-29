@@ -14,8 +14,6 @@ import (
 var errosEstrutura = mapaDeErros{
 	{estrutura.ErrNaoEncontrado, http.StatusNotFound, httpx.CodigoNaoEncontrado},
 	{estrutura.ErrJaPossuiEstruturaAtiva, http.StatusConflict, httpx.CodigoConflito},
-	{estrutura.ErrStatusInvalidoParaAcao, http.StatusConflict, httpx.CodigoConflito},
-	{estrutura.ErrVigenciaAnteriorAAtual, http.StatusConflict, httpx.CodigoConflito},
 	{estrutura.ErrProdutoAcabadoObrigatorio, http.StatusBadRequest, httpx.CodigoErroValidacao},
 	{estrutura.ErrProdutoAcabadoInexistente, http.StatusBadRequest, httpx.CodigoErroValidacao},
 	{estrutura.ErrItensObrigatorios, http.StatusBadRequest, httpx.CodigoErroValidacao},
@@ -45,6 +43,7 @@ func (h *EstruturaHandler) Registrar(grupo *echo.Group, autenticacao echo.Middle
 	rotas.POST("", h.Criar, incluir)
 	rotas.GET("/:id", h.Obter, ver)
 	rotas.POST("/:id/versionar", h.Versionar, incluir)
+	rotas.POST("/:id/ativar", h.Ativar, incluir)
 
 	grupo.GET("/produtos-acabados/:id/boms", h.ListarPorProduto, autenticacao, ver)
 }
@@ -141,7 +140,7 @@ func (h *EstruturaHandler) Obter(c echo.Context) error {
 	return httpx.OK(c, encontrada)
 }
 
-// Versionar substitui a estrutura ativa por uma nova versao.
+// Versionar cria uma nova versao a partir da estrutura :id e a torna vigente.
 func (h *EstruturaHandler) Versionar(c echo.Context) error {
 	id, err := idDaRota(c)
 	if err != nil {
@@ -177,4 +176,17 @@ func (h *EstruturaHandler) ListarPorProduto(c echo.Context) error {
 		return errosEstrutura.responder(c, err)
 	}
 	return httpx.OK(c, historico)
+}
+
+// Ativar define a versao :id como a vigente do produto.
+func (h *EstruturaHandler) Ativar(c echo.Context) error {
+	id, err := idDaRota(c)
+	if err != nil {
+		return erroRequisicaoInvalida(c, "O identificador da estrutura deve ser numerico")
+	}
+	ativada, err := h.servico.Ativar(c.Request().Context(), id, autorDaRequisicao(c))
+	if err != nil {
+		return errosEstrutura.responder(c, err)
+	}
+	return httpx.OK(c, ativada)
 }

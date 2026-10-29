@@ -1,6 +1,7 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { PREFERENCIAS_PADRAO, usePreferencias } from '@/store/preferencias';
 import { formatarMes } from '@/lib/paineis';
 import { GraficoBarras, GraficoBarrasHorizontais, GraficoLinha } from './Grafico';
 
@@ -93,8 +94,37 @@ describe('Grafico', () => {
     expect(desenho).not.toBeNull();
     expect(desenho?.closest('[aria-hidden="true"]')).not.toBeNull();
     const barra = container.querySelector('.recharts-bar-rectangle path');
-    expect(barra?.getAttribute('fill')).toBe('var(--brand)');
+    expect(barra?.getAttribute('fill')).toBe('var(--grafico-1)');
     expect(container.innerHTML).not.toMatch(/#[0-9a-f]{6}/i);
+  });
+
+  it('uma serie so: cada categoria ganha uma cor da paleta', () => {
+    const { container } = render(
+      <GraficoBarras
+        titulo="OPs por etapa"
+        series={[{ nome: 'OPs', pontos: [{ rotulo: 'Montagem', valor: 3 }, { rotulo: 'Teste', valor: 5 }, { rotulo: 'Expedição', valor: 2 }] }]}
+        rotuloCategoria="Etapa"
+        vazio="Nada."
+      />,
+    );
+
+    const cores = [...container.querySelectorAll('.recharts-bar-rectangle path')].map((b) => b.getAttribute('fill'));
+    expect(cores).toEqual(['var(--grafico-1)', 'var(--grafico-2)', 'var(--grafico-3)']);
+  });
+
+  it('varias series: a cor identifica a serie', () => {
+    const pontos = [{ rotulo: 'A', valor: 1 }, { rotulo: 'B', valor: 2 }];
+    const { container } = render(
+      <GraficoBarras
+        titulo="Comparativo"
+        series={[{ nome: 'Previsto', pontos }, { nome: 'Realizado', pontos }]}
+        rotuloCategoria="Item"
+        vazio="Nada."
+      />,
+    );
+
+    const cores = [...container.querySelectorAll('.recharts-bar-rectangle path')].map((b) => b.getAttribute('fill'));
+    expect(new Set(cores)).toEqual(new Set(['var(--grafico-1)', 'var(--grafico-2)']));
   });
 
   it('carregando mostra o esqueleto, sem "Ver dados"', () => {
@@ -172,5 +202,26 @@ describe('Grafico', () => {
 
     expect(screen.getByRole('rowheader', { name: nome })).toBeInTheDocument();
     expect(screen.getByRole('cell', { name: '3' })).toBeInTheDocument();
+  });
+});
+
+describe('Grafico em espanhol', () => {
+  afterEach(() => usePreferencias.getState().aplicar(PREFERENCIAS_PADRAO));
+
+  it('traduz os controles, o mes abreviado e o rotulo da API', async () => {
+    usePreferencias.getState().aplicar({ ...PREFERENCIAS_PADRAO, idioma: 'es' });
+    render(
+      <GraficoBarras
+        titulo="Lotes por faixa de vencimento"
+        series={[{ nome: 'Lotes', pontos: [{ rotulo: 'Até 30 dias', valor: 3 }] }]}
+        rotuloCategoria="Vencimento"
+        vazio="Nenhum lote."
+      />,
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Ver datos' }));
+    expect(screen.getByRole('button', { name: 'Ocultar datos' })).toBeInTheDocument();
+    expect(screen.getByRole('rowheader', { name: 'Hasta 30 días' })).toBeInTheDocument();
+    expect(formatarMes('2026-10')).toBe('oct/26');
+    expect(formatarMes('2026-01')).toBe('ene/26');
   });
 });

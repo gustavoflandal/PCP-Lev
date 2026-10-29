@@ -13,6 +13,7 @@ import { agruparVersoes, mensagemDeErro, useEstruturasDoProduto, type EntidadeCo
 import { FormularioDocumento } from './FormularioDocumento';
 import { LinkAbrir } from './LinksDoArquivo';
 import { SeloValidade } from './SeloValidade';
+import { t, td } from '@/i18n';
 
 export interface DocumentosDoRegistroProps {
   entidade: EntidadeComMidia;
@@ -41,12 +42,12 @@ export function DocumentosDoRegistro({ entidade, entidadeId, documentos, podeEdi
     mutationFn: (a: Anexo) => removerAnexo(a.id),
     onMutate: () => definirErro(null),
     onSuccess: () => {
-      mostrarToast('Documento removido');
+      mostrarToast(t('Documento removido'));
       definirARemover(null);
       aoMudar();
     },
     onError: (e) => {
-      definirErro(mensagemDeErro(e, 'Não foi possível remover o documento. Tente de novo.'));
+      definirErro(mensagemDeErro(e, t('Não foi possível remover o documento. Tente de novo.')));
       definirARemover(null);
     },
   });
@@ -62,18 +63,18 @@ export function DocumentosDoRegistro({ entidade, entidadeId, documentos, podeEdi
 
   function versaoDaEstrutura(id: number): string {
     const e = estruturas.data?.find((x) => x.id === id);
-    return e ? `BOM versão ${e.versao}` : `BOM nº ${id}`;
+    return e ? t('BOM versão {versao}', { versao: e.versao }) : t('BOM nº {id}', { id });
   }
 
   return (
     <section aria-labelledby={idTitulo} className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 id={idTitulo} className="text-subtitle text-texto-primary">
-          Documentos
+          {t('Documentos')}
         </h3>
         {podeEditar && !formulario && (
           <Botao variante="secundaria" icone="plus" onClick={() => definirFormulario({})}>
-            Novo documento
+            {t('Novo documento')}
           </Botao>
         )}
       </div>
@@ -102,12 +103,13 @@ export function DocumentosDoRegistro({ entidade, entidadeId, documentos, podeEdi
 
       {grupos.length === 0 ? (
         <p className="text-body text-texto-secondary">
-          Nenhum documento.{podeEditar ? ' Envie datasheet, desenho, certificado ou instrução em PDF.' : ''}
+          {t('Nenhum documento.')}
+          {podeEditar ? t(' Envie datasheet, desenho, certificado ou instrução em PDF.') : ''}
         </p>
       ) : (
         <ul className="flex flex-col divide-y divide-borda-subtle rounded-cartao border border-borda-subtle">
           {grupos.map(({ chave, vigente, anteriores }) => {
-            const nome = vigente.titulo || vigente.categoria;
+            const nome = vigente.titulo || td(vigente.categoria);
             const aberto = abertos.has(chave);
             const idHistorico = `${idTitulo}-historico-${chave}`;
             return (
@@ -119,50 +121,52 @@ export function DocumentosDoRegistro({ entidade, entidadeId, documentos, podeEdi
                       <p className="text-body font-medium text-texto-primary">
                         {nome}
                         {vigente.versao && (
-                          <span className="ml-2 font-mono text-label text-texto-secondary">versão {vigente.versao}</span>
+                          <span className="ml-2 font-mono text-label text-texto-secondary">{t('versão {versao}', { versao: vigente.versao })}</span>
                         )}
                       </p>
                       <p className="text-label text-texto-secondary">
-                        {vigente.categoria}
+                        {td(vigente.categoria)}
                         {vigente.descricao && ` · ${vigente.descricao}`}
                       </p>
                       <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-label text-texto-secondary">
-                        {vigente.data_emissao && <span>Emissão {formatarData(vigente.data_emissao)}</span>}
+                        {vigente.data_emissao && <span>{t('Emissão {data}', { data: formatarData(vigente.data_emissao) })}</span>}
                         {vigente.data_validade && (
                           <span className="inline-flex items-center gap-2">
-                            Validade {formatarData(vigente.data_validade)}
+                            {t('Validade {data}', { data: formatarData(vigente.data_validade) })}
                             <SeloValidade validade={vigente.data_validade} />
                           </span>
                         )}
                         {vigente.fornecedor_id && (
                           <span>
-                            Fornecedor {fornecedorPorId.get(vigente.fornecedor_id) ?? `nº ${vigente.fornecedor_id}`}
+                            {t('Fornecedor {nome}', {
+                              nome: fornecedorPorId.get(vigente.fornecedor_id) ?? t('nº {fornecedor_id}', { fornecedor_id: vigente.fornecedor_id }),
+                            })}
                           </span>
                         )}
                         {vigente.estrutura_produto_id && <span>{versaoDaEstrutura(vigente.estrutura_produto_id)}</span>}
-                        <span>Enviado em {formatarDataHora(vigente.created_at)}</span>
+                        <span>{t('Enviado em {data}', { data: formatarDataHora(vigente.created_at) })}</span>
                       </p>
                     </div>
                   </div>
                   <div className="flex flex-wrap items-center justify-end gap-2">
-                    <LinkAbrir anexo={vigente} rotulo={`Abrir ${nome}`} />
+                    <LinkAbrir anexo={vigente} rotulo={t('Abrir {nome}', { nome })} />
                     {podeEditar && (
                       <>
                         <Botao
                           variante="secundaria"
                           icone="upload"
-                          aria-label={`Nova versão de ${nome}`}
+                          aria-label={t('Nova versão de {nome}', { nome })}
                           onClick={() => definirFormulario({ base: vigente })}
                         >
-                          Nova versão
+                          {t('Nova versão')}
                         </Botao>
                         <Botao
                           variante="fantasma"
                           icone="trash-2"
-                          aria-label={`Remover ${nome}`}
+                          aria-label={t('Remover {nome}', { nome })}
                           onClick={() => definirARemover(vigente)}
                         >
-                          Remover
+                          {t('Remover')}
                         </Botao>
                       </>
                     )}
@@ -183,19 +187,20 @@ export function DocumentosDoRegistro({ entidade, entidadeId, documentos, podeEdi
                         aria-hidden="true"
                         className={cn('motion-safe:transition-transform', aberto && 'rotate-180')}
                       />
-                      Versões anteriores ({anteriores.length})
+                      {t('Versões anteriores ({n})', { n: anteriores.length })}
                     </button>
                     {aberto && (
                       <ul id={idHistorico} className="flex flex-col gap-2 border-l-2 border-borda-subtle pl-3">
                         {anteriores.map((v) => (
                           <li key={v.id} className="flex flex-wrap items-center justify-between gap-2">
                             <span className="text-label text-texto-secondary">
-                              <span className="font-mono">{v.versao ? `versão ${v.versao}` : `envio nº ${v.id}`}</span>
+                              <span className="font-mono">{v.versao ? t('versão {versao}', { versao: v.versao }) : t('envio nº {id}', { id: v.id })}</span>
                               {' · '}
-                              {v.arquivo.nome_original} · enviado em {formatarDataHora(v.created_at)}
-                              {v.data_validade && ` · validade ${formatarData(v.data_validade)}`}
+                              {v.arquivo.nome_original}
+                              {t(' · enviado em {data}', { data: formatarDataHora(v.created_at) })}
+                              {v.data_validade && t(' · validade {data}', { data: formatarData(v.data_validade) })}
                             </span>
-                            <LinkAbrir anexo={v} rotulo={`Abrir versão anterior ${v.versao || v.id} de ${nome}`} />
+                            <LinkAbrir anexo={v} rotulo={t('Abrir versão anterior {valor} de {nome}', { valor: v.versao || v.id, nome })} />
                           </li>
                         ))}
                       </ul>
@@ -210,14 +215,14 @@ export function DocumentosDoRegistro({ entidade, entidadeId, documentos, podeEdi
 
       <Confirmacao
         aberto={aRemover !== null}
-        titulo="Remover documento"
+        titulo={t('Remover documento')}
         mensagem={
           aRemover
-            ? `Remover a versão vigente de "${aRemover.titulo || aRemover.categoria}"? Se houver versão anterior, ela volta a valer.`
+            ? t('Remover a versão vigente de "{valor}"? Se houver versão anterior, ela volta a valer.', { valor: aRemover.titulo || td(aRemover.categoria) })
             : ''
         }
-        rotuloConfirmar="Remover"
-        rotuloOcupado="Removendo…"
+        rotuloConfirmar={t('Remover')}
+        rotuloOcupado={t('Removendo…')}
         ocupado={mutacaoRemover.isPending}
         aoConfirmar={() => aRemover && mutacaoRemover.mutate(aRemover)}
         aoCancelar={() => definirARemover(null)}

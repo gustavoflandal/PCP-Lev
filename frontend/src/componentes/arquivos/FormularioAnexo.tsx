@@ -19,6 +19,7 @@ import {
   type EntidadeRegistro,
 } from '@/tipos/arquivos';
 import { corpoNovoAnexo } from './comum';
+import { t, td, marcar } from '@/i18n';
 
 /** O que o servico de arquivos aceita como anexo de registro: imagem ou PDF. */
 const ACEITOS = [...TIPOS_IMAGEM, TIPO_PDF].join(',');
@@ -26,15 +27,15 @@ const ACEITOS = [...TIPOS_IMAGEM, TIPO_PDF].join(',');
 /** Forma, nao regra: a API confere categoria, tamanho e datas de novo. */
 const esquema = z
   .object({
-    categoria: z.string().min(1, 'Escolha a categoria do documento'),
-    titulo: z.string().trim().max(150, 'O título aceita até 150 caracteres'),
-    descricao: z.string().trim().max(500, 'A descrição aceita até 500 caracteres'),
+    categoria: z.string().min(1, marcar('Escolha a categoria do documento')),
+    titulo: z.string().trim().max(150, marcar('O título aceita até 150 caracteres')),
+    descricao: z.string().trim().max(500, marcar('A descrição aceita até 500 caracteres')),
     data_emissao: z.string(),
     data_validade: z.string(),
   })
   .refine((v) => !v.data_emissao || !v.data_validade || v.data_validade >= v.data_emissao, {
     path: ['data_validade'],
-    message: 'A validade não pode ser anterior à emissão',
+    message: marcar('A validade não pode ser anterior à emissão'),
   });
 
 type Formulario = z.infer<typeof esquema>;
@@ -50,13 +51,13 @@ function tituloDoArquivo(nome: string): string {
 function problemaDoArquivo(arquivo: File): string | null {
   const imagem = (TIPOS_IMAGEM as readonly string[]).includes(arquivo.type);
   if (!imagem && arquivo.type !== TIPO_PDF) {
-    return 'Envie um PDF ou uma imagem JPG, PNG ou WebP.';
+    return t('Envie um PDF ou uma imagem JPG, PNG ou WebP.');
   }
   if (imagem && arquivo.size > LIMITE_IMAGEM_BYTES) {
-    return 'A imagem passa de 5 MB. Reduza o arquivo e envie de novo.';
+    return t('A imagem passa de 5 MB. Reduza o arquivo e envie de novo.');
   }
   if (!imagem && arquivo.size > LIMITE_PDF_BYTES) {
-    return 'O PDF passa de 25 MB. Reduza o arquivo e envie de novo.';
+    return t('O PDF passa de 25 MB. Reduza o arquivo e envie de novo.');
   }
   return null;
 }
@@ -74,7 +75,7 @@ export interface FormularioAnexoProps {
 export function FormularioAnexo({ entidade, entidadeId, base, aoConcluir, aoCancelar }: FormularioAnexoProps) {
   const idArquivo = useId();
   const mostrarToast = useToasts((estado) => estado.mostrar);
-  const opcoesCategoria = CATEGORIAS_ANEXO_REGISTRO[entidade].map((c) => ({ valor: c, rotulo: c }));
+  const opcoesCategoria = CATEGORIAS_ANEXO_REGISTRO[entidade].map((c) => ({ valor: c, rotulo: td(c) }));
   const [arquivo, definirArquivo] = useState<File | null>(null);
   const [erroArquivo, definirErroArquivo] = useState<string | null>(null);
 
@@ -109,13 +110,13 @@ export function FormularioAnexo({ entidade, entidadeId, base, aoConcluir, aoCanc
       );
     },
     onSuccess: () => {
-      mostrarToast(base ? 'Nova versão enviada' : 'Documento enviado');
+      mostrarToast(base ? t('Nova versão enviada') : t('Documento enviado'));
       aoConcluir();
     },
   });
 
   const erroApi = mutacao.error ? separarErro(mutacao.error) : null;
-  const erroDe = (campo: keyof Formulario): string | undefined => errors[campo]?.message ?? erroApi?.porCampo[campo];
+  const erroDe = (campo: keyof Formulario): string | undefined => td(errors[campo]?.message ?? erroApi?.porCampo[campo]) || undefined;
   // Erro de campo que nao esta no formulario (arquivo_id, tipo...) sobe para o topo.
   const foraDoFormulario = erroApi
     ? Object.entries(erroApi.porCampo)
@@ -142,19 +143,19 @@ export function FormularioAnexo({ entidade, entidadeId, base, aoConcluir, aoCanc
   return (
     <form
       noValidate
-      aria-label={base ? `Nova versão de ${nomeBase}` : 'Enviar documento'}
+      aria-label={base ? t('Nova versão de {nomeBase}', { nomeBase }) : t('Enviar documento')}
       onSubmit={handleSubmit((valores) => {
         if (!arquivo) {
-          definirErroArquivo(erroArquivo ?? 'Escolha o arquivo do documento.');
+          definirErroArquivo(erroArquivo ?? t('Escolha o arquivo do documento.'));
           return;
         }
         mutacao.mutate({ arquivo, valores });
       })}
       className="flex flex-col gap-4 rounded-cartao border border-borda-strong bg-surface-raised p-4"
     >
-      <h4 className="text-subtitle text-texto-primary">{base ? `Nova versão — ${nomeBase}` : 'Enviar documento'}</h4>
+      <h4 className="text-subtitle text-texto-primary">{base ? t('Nova versão — {nomeBase}', { nomeBase }) : t('Enviar documento')}</h4>
       {base && (
-        <p className="text-label text-texto-secondary">A versão atual sai de vigência e fica no histórico do documento.</p>
+        <p className="text-label text-texto-secondary">{t('A versão atual sai de vigência e fica no histórico do documento.')}</p>
       )}
 
       {geral && (
@@ -168,7 +169,7 @@ export function FormularioAnexo({ entidade, entidadeId, base, aoConcluir, aoCanc
 
       <div className="flex flex-col gap-1">
         <label htmlFor={idArquivo} className="text-label text-texto-secondary">
-          Arquivo (PDF até 25 MB ou imagem até 5 MB)
+          {t('Arquivo (PDF até 25 MB ou imagem até 5 MB)')}
           <span aria-hidden="true" className="ml-1 text-estado-pending">
             *
           </span>
@@ -192,24 +193,24 @@ export function FormularioAnexo({ entidade, entidadeId, base, aoConcluir, aoCanc
 
       <div className="grid gap-4 md:grid-cols-2">
         <Selecao
-          rotulo="Categoria"
+          rotulo={t('Categoria')}
           obrigatorio
-          placeholder="Escolha a categoria"
+          placeholder={t('Escolha a categoria')}
           opcoes={opcoesCategoria}
           erro={erroDe('categoria')}
           {...register('categoria')}
         />
-        <Campo rotulo="Título" ajuda="Em branco, vale o nome do arquivo" erro={erroDe('titulo')} {...register('titulo')} />
+        <Campo rotulo={t('Título')} ajuda={t('Em branco, vale o nome do arquivo')} erro={erroDe('titulo')} {...register('titulo')} />
       </div>
 
-      <Campo rotulo="Descrição" erro={erroDe('descricao')} {...register('descricao')} />
+      <Campo rotulo={t('Descrição')} erro={erroDe('descricao')} {...register('descricao')} />
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Campo rotulo="Data de emissão" type="date" erro={erroDe('data_emissao')} {...register('data_emissao')} />
+        <Campo rotulo={t('Data de emissão')} type="date" erro={erroDe('data_emissao')} {...register('data_emissao')} />
         <Campo
-          rotulo="Data de validade"
+          rotulo={t('Data de validade')}
           type="date"
-          ajuda="Com validade, o documento entra em Documentos a vencer"
+          ajuda={t('Com validade, o documento entra em Documentos a vencer')}
           erro={erroDe('data_validade')}
           {...register('data_validade')}
         />
@@ -217,10 +218,10 @@ export function FormularioAnexo({ entidade, entidadeId, base, aoConcluir, aoCanc
 
       <div className="flex items-center justify-end gap-2">
         <Botao variante="secundaria" onClick={aoCancelar} disabled={mutacao.isPending}>
-          Cancelar
+          {t('Cancelar')}
         </Botao>
-        <Botao type="submit" icone="upload" ocupado={mutacao.isPending} rotuloOcupado="Enviando…">
-          {base ? 'Enviar nova versão' : 'Enviar documento'}
+        <Botao type="submit" icone="upload" ocupado={mutacao.isPending} rotuloOcupado={t('Enviando…')}>
+          {base ? t('Enviar nova versão') : t('Enviar documento')}
         </Botao>
       </div>
     </form>

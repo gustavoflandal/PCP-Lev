@@ -1,3 +1,4 @@
+import { t } from '@/i18n';
 import { Botao } from './Botao';
 import { Modal } from './Modal';
 
@@ -38,7 +39,7 @@ export function Confirmacao({
       rodape={
         <>
           <Botao variante="secundaria" onClick={aoCancelar} disabled={ocupado}>
-            Cancelar
+            {t('Cancelar')}
           </Botao>
           <Botao
             variante="perigo"

@@ -1,3 +1,4 @@
+import { marcar } from '@/i18n';
 /**
  * Contrato da Fase 3 (Producao) — espelho dos JSON tags de
  * backend/internal/domain/pedidovenda e backend/internal/domain/producao.
@@ -10,11 +11,11 @@
 export type StatusPedidoVenda = 'Aberto' | 'Em Producao' | 'Pronto para Envio' | 'Entregue' | 'Cancelado';
 
 export const ROTULO_STATUS_PEDIDO_VENDA: Record<StatusPedidoVenda, string> = {
-  Aberto: 'Aberto',
-  'Em Producao': 'Em produção',
-  'Pronto para Envio': 'Pronto para envio',
-  Entregue: 'Entregue',
-  Cancelado: 'Cancelado',
+  Aberto: marcar('Aberto'),
+  'Em Producao': marcar('Em produção'),
+  'Pronto para Envio': marcar('Pronto para envio'),
+  Entregue: marcar('Entregue'),
+  Cancelado: marcar('Cancelado'),
 };
 
 export interface ItemPedidoVenda {
@@ -65,10 +66,10 @@ export interface CorpoPedidoVenda {
 export type StatusOP = 'Aberta' | 'Liberada' | 'Concluida' | 'Cancelada';
 
 export const ROTULO_STATUS_OP: Record<StatusOP, string> = {
-  Aberta: 'Aberta',
-  Liberada: 'Liberada',
-  Concluida: 'Concluída',
-  Cancelada: 'Cancelada',
+  Aberta: marcar('Aberta'),
+  Liberada: marcar('Liberada'),
+  Concluida: marcar('Concluída'),
+  Cancelada: marcar('Cancelada'),
 };
 
 /** Etapas da OP (RN3), na ordem do fluxo. Os centros de trabalho usam a forma maiuscula sem acento. */
@@ -77,21 +78,21 @@ export type EtapaOP = 'Separacao' | 'Montagem' | 'Testes' | 'Expedicao';
 export const ETAPAS_OP: EtapaOP[] = ['Separacao', 'Montagem', 'Testes', 'Expedicao'];
 
 export const ROTULO_ETAPA_OP: Record<EtapaOP, string> = {
-  Separacao: 'Separação',
-  Montagem: 'Montagem',
-  Testes: 'Testes',
-  Expedicao: 'Expedição',
+  Separacao: marcar('Separação'),
+  Montagem: marcar('Montagem'),
+  Testes: marcar('Testes'),
+  Expedicao: marcar('Expedição'),
 };
 
 export type StatusSerie = 'Em Producao' | 'Aprovado' | 'Reprovado' | 'Em Estoque' | 'Expedido' | 'Cancelado';
 
 export const ROTULO_STATUS_SERIE: Record<StatusSerie, string> = {
-  'Em Producao': 'Em produção',
-  Aprovado: 'Aprovado',
-  Reprovado: 'Reprovado',
-  'Em Estoque': 'Em estoque',
-  Expedido: 'Expedido',
-  Cancelado: 'Cancelado',
+  'Em Producao': marcar('Em produção'),
+  Aprovado: marcar('Aprovado'),
+  Reprovado: marcar('Reprovado'),
+  'Em Estoque': marcar('Em estoque'),
+  Expedido: marcar('Expedido'),
+  Cancelado: marcar('Cancelado'),
 };
 
 export interface Apontamento {

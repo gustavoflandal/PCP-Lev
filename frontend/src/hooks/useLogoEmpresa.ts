@@ -1,3 +1,4 @@
+import { t } from '@/i18n';
 import { urlLogoClaro, urlLogoEscuro } from '@/servicos/empresa';
 import { useTemaResolvido } from '@/store/preferencias';
 import { useDadosEmpresa } from './useDadosEmpresa';
@@ -22,7 +23,7 @@ export interface LogoEmpresa {
 export function useLogoEmpresa(): LogoEmpresa {
   const { data: empresa } = useDadosEmpresa();
   const temaResolvido = useTemaResolvido();
-  const nomeExibido = empresa?.nome_fantasia || empresa?.razao_social || 'Sistema PCP';
+  const nomeExibido = empresa?.nome_fantasia || empresa?.razao_social || t('Sistema PCP');
 
   const preferirEscuro = temaResolvido === 'escuro';
   if (preferirEscuro ? empresa?.tem_logo_escuro : empresa?.tem_logo_claro) {

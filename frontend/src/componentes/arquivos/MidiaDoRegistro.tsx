@@ -6,6 +6,7 @@ import { listarAnexos } from '@/servicos/arquivos';
 import { chaveAnexos, RECURSO_DA_ENTIDADE, type EntidadeComMidia } from './comum';
 import { DocumentosDoRegistro } from './DocumentosDoRegistro';
 import { FotosDoRegistro } from './FotosDoRegistro';
+import { t } from '@/i18n';
 
 /**
  * As URLs assinadas vivem 5 minutos: a lista nunca fica velha mais que isso.
@@ -46,7 +47,7 @@ export function MidiaDoRegistro({ entidade, entidadeId, codigo, podeEditar, item
 
   if (consulta.isPending) {
     return (
-      <div aria-busy="true" aria-label="Carregando mídia e documentos" className="flex flex-col gap-3">
+      <div aria-busy="true" aria-label={t('Carregando mídia e documentos')} className="flex flex-col gap-3">
         <span className="block h-24 w-full animate-pulse rounded-cartao bg-surface-sunken" />
         <span className="block h-16 w-full animate-pulse rounded-cartao bg-surface-sunken" />
       </div>
@@ -60,10 +61,10 @@ export function MidiaDoRegistro({ entidade, entidadeId, codigo, podeEditar, item
           <IconeFalha size={16} aria-hidden="true" />
           {consulta.error instanceof ErroApi
             ? consulta.error.message
-            : 'Não foi possível carregar a mídia e os documentos. Tente de novo.'}
+            : t('Não foi possível carregar a mídia e os documentos. Tente de novo.')}
         </p>
         <Botao variante="secundaria" icone="refresh-cw" onClick={() => void consulta.refetch()}>
-          Tentar de novo
+          {t('Tentar de novo')}
         </Botao>
       </div>
     );
@@ -73,7 +74,7 @@ export function MidiaDoRegistro({ entidade, entidadeId, codigo, podeEditar, item
   return (
     <div className="flex flex-col gap-6">
       {!podeEditar && (
-        <p className="text-label text-texto-secondary">Somente consulta: seu perfil não altera fotos nem documentos deste cadastro.</p>
+        <p className="text-label text-texto-secondary">{t('Somente consulta: seu perfil não altera fotos nem documentos deste cadastro.')}</p>
       )}
       <FotosDoRegistro
         entidade={entidade}

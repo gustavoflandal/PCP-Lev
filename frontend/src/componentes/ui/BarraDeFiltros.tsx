@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { t } from '@/i18n';
 import { Campo } from './Campo';
 import { Selecao } from './Selecao';
 
@@ -15,10 +16,10 @@ export interface BarraDeFiltrosProps {
   children?: ReactNode;
 }
 
-const OPCOES_SITUACAO = [
-  { valor: 'ativos', rotulo: 'Ativos' },
-  { valor: 'inativos', rotulo: 'Inativos' },
-  { valor: 'todos', rotulo: 'Todos' },
+const opcoesSituacao = () => [
+  { valor: 'ativos', rotulo: t('Ativos') },
+  { valor: 'inativos', rotulo: t('Inativos') },
+  { valor: 'todos', rotulo: t('Todos') },
 ];
 
 function paraValor(filtroAtivo: boolean | null): string {
@@ -52,14 +53,14 @@ export function BarraDeFiltros({
             rotulo={rotuloBusca}
             value={busca}
             onChange={(evento) => aoBuscar(evento.target.value)}
-            placeholder="Digite para filtrar"
+            placeholder={t('Digite para filtrar')}
           />
         </div>
 
         <div className="w-[160px]">
           <Selecao
-            rotulo="Situação"
-            opcoes={OPCOES_SITUACAO}
+            rotulo={t('Situação')}
+            opcoes={opcoesSituacao()}
             value={paraValor(filtroAtivo)}
             onChange={(evento) => aoFiltrarSituacao(paraFiltro(evento.target.value))}
           />

@@ -7,7 +7,7 @@ const respostaLogin: RespostaLogin = {
   expires_in: 28800,
   usuario: {
     id: 1, username: 'admin', nome: 'Administrador do Sistema', perfil: 'ADMIN',
-    tema: 'automatico', alto_contraste: false, densidade: 'confortavel', tamanho_fonte: 'padrao',
+    tema: 'automatico', alto_contraste: false, densidade: 'confortavel', tamanho_fonte: 'padrao', idioma: 'pt-BR',
   },
 };
 
@@ -89,7 +89,7 @@ describe('store de autenticacao', () => {
     useAutenticacao.getState().entrar(respostaLogin);
 
     useAutenticacao.getState().atualizarPreferenciasSessao({
-      tema: 'escuro', alto_contraste: true, densidade: 'compacta', tamanho_fonte: 'grande',
+      tema: 'escuro', alto_contraste: true, densidade: 'compacta', tamanho_fonte: 'grande', idioma: 'pt-BR',
     });
 
     // Sem isto, um F5 apos salvar preferencias re-semeia o <html> com o
@@ -102,7 +102,7 @@ describe('store de autenticacao', () => {
   it('atualizarPreferenciasSessao sem sessao ativa nao quebra', () => {
     expect(() =>
       useAutenticacao.getState().atualizarPreferenciasSessao({
-        tema: 'escuro', alto_contraste: false, densidade: 'compacta', tamanho_fonte: 'padrao',
+        tema: 'escuro', alto_contraste: false, densidade: 'compacta', tamanho_fonte: 'padrao', idioma: 'pt-BR',
       }),
     ).not.toThrow();
   });

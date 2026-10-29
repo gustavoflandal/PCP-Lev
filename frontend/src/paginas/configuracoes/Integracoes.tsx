@@ -8,6 +8,7 @@ import { Campo } from '@/componentes/ui/Campo';
 import { Confirmacao } from '@/componentes/ui/Confirmacao';
 import { Selecao } from '@/componentes/ui/Selecao';
 import { useToasts } from '@/componentes/ui/Toast';
+import { marcar, t, td } from '@/i18n';
 import { separarErro } from '@/lib/errosDeFormulario';
 import {
   atualizarConfiguracaoSMTP,
@@ -18,15 +19,15 @@ import {
 import type { ConfiguracaoSMTP, CorpoAtualizarSMTP } from '@/tipos/email';
 import { PERMISSOES, usePode } from '@/lib/permissoes';
 
-const OPCOES_HABILITADO = [
-  { valor: 'true', rotulo: 'Habilitado — o sistema pode enviar e-mails' },
-  { valor: 'false', rotulo: 'Desabilitado' },
+const opcoesHabilitado = () => [
+  { valor: 'true', rotulo: t('Habilitado — o sistema pode enviar e-mails') },
+  { valor: 'false', rotulo: t('Desabilitado') },
 ];
 
-const OPCOES_CRIPTOGRAFIA = [
-  { valor: 'STARTTLS', rotulo: 'STARTTLS (normalmente porta 587)' },
-  { valor: 'TLS', rotulo: 'TLS/SSL (normalmente porta 465)' },
-  { valor: 'NENHUMA', rotulo: 'Nenhuma — só servidor interno, sem usuário e senha' },
+const opcoesCriptografia = () => [
+  { valor: 'STARTTLS', rotulo: t('STARTTLS (normalmente porta 587)') },
+  { valor: 'TLS', rotulo: t('TLS/SSL (normalmente porta 465)') },
+  { valor: 'NENHUMA', rotulo: t('Nenhuma — só servidor interno, sem usuário e senha') },
 ];
 
 const CLASSE_AVISO =
@@ -40,10 +41,10 @@ const esquema = z
     habilitado: z.enum(['true', 'false']),
     host: z.string().trim(),
     porta: z.coerce
-      .number({ invalid_type_error: 'Informe a porta' })
-      .int('Use um número inteiro')
-      .min(1, 'Porta entre 1 e 65535')
-      .max(65535, 'Porta entre 1 e 65535'),
+      .number({ invalid_type_error: marcar('Informe a porta') })
+      .int(marcar('Use um número inteiro'))
+      .min(1, marcar('Porta entre 1 e 65535'))
+      .max(65535, marcar('Porta entre 1 e 65535')),
     criptografia: z.enum(['NENHUMA', 'STARTTLS', 'TLS']),
     usuario: z.string().trim(),
     senha: z.string(),
@@ -52,21 +53,21 @@ const esquema = z
   })
   .superRefine((v, ctx) => {
     if (v.remetente_email !== '' && !EMAIL.test(v.remetente_email)) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['remetente_email'], message: 'Informe um e-mail válido' });
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['remetente_email'], message: marcar('Informe um e-mail válido') });
     }
     if (v.criptografia === 'NENHUMA' && (v.usuario !== '' || v.senha !== '')) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['usuario'],
-        message: 'Usuário e senha exigem STARTTLS ou TLS',
+        message: marcar('Usuário e senha exigem STARTTLS ou TLS'),
       });
     }
     if (v.habilitado === 'true') {
       if (v.host === '') {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['host'], message: 'Informe o servidor para habilitar o envio' });
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['host'], message: marcar('Informe o servidor para habilitar o envio') });
       }
       if (v.remetente_email === '') {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['remetente_email'], message: 'Informe o e-mail do remetente' });
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['remetente_email'], message: marcar('Informe o e-mail do remetente') });
       }
     }
   });
@@ -133,10 +134,10 @@ function FormularioSMTP({ atual }: { atual: ConfiguracaoSMTP }) {
       queryClient.setQueryData(chaveConfiguracaoSMTP, salva);
       // A senha digitada nunca fica no formulario depois de gravada.
       setValue('senha', '');
-      mostrarToast(corpo.remover_senha ? 'Senha removida' : 'Servidor de e-mail salvo');
+      mostrarToast(corpo.remover_senha ? t('Senha removida') : t('Servidor de e-mail salvo'));
     },
     onError: (erro) => {
-      mostrarToast(separarErro(erro).geral ?? 'Não foi possível salvar o servidor de e-mail.', 'pending');
+      mostrarToast(separarErro(erro).geral ?? t('Não foi possível salvar o servidor de e-mail.'), 'pending');
     },
     // O corpo enviado (com a senha) fica em mutacao.variables ate o fim do
     // gcTime -- e visivel no Devtools do React Query. Limpar ao terminar.
@@ -148,54 +149,54 @@ function FormularioSMTP({ atual }: { atual: ConfiguracaoSMTP }) {
 
   return (
     <form
-      aria-label="Servidor de e-mail"
+      aria-label={t('Servidor de e-mail')}
       noValidate
       className="flex flex-col gap-4"
       onSubmit={handleSubmit((v) => mutacao.mutate(paraCorpo(v, false)))}
     >
-      <Selecao rotulo="Envio de e-mail" opcoes={OPCOES_HABILITADO} {...register('habilitado')} />
+      <Selecao rotulo={t('Envio de e-mail')} opcoes={opcoesHabilitado()} {...register('habilitado')} />
       <div className="grid gap-4 sm:grid-cols-[1fr_8rem]">
         <Campo
-          rotulo="Servidor (host)"
+          rotulo={t('Servidor (host)')}
           placeholder="smtp.empresa.com.br"
           autoComplete="off"
-          erro={errors.host?.message}
+          erro={td(errors.host?.message) || undefined}
           {...register('host')}
         />
-        <Campo rotulo="Porta" type="number" min={1} max={65535} erro={errors.porta?.message} {...register('porta')} />
+        <Campo rotulo={t('Porta')} type="number" min={1} max={65535} erro={td(errors.porta?.message) || undefined} {...register('porta')} />
       </div>
-      <Selecao rotulo="Criptografia" opcoes={OPCOES_CRIPTOGRAFIA} {...register('criptografia')} />
+      <Selecao rotulo={t('Criptografia')} opcoes={opcoesCriptografia()} {...register('criptografia')} />
       <Campo
-        rotulo="Usuário"
+        rotulo={t('Usuário')}
         autoComplete="off"
-        ajuda="Deixe em branco se o servidor não exige autenticação."
-        erro={errors.usuario?.message}
+        ajuda={t('Deixe em branco se o servidor não exige autenticação.')}
+        erro={td(errors.usuario?.message) || undefined}
         {...register('usuario')}
       />
       <Campo
-        rotulo="Senha"
+        rotulo={t('Senha')}
         type="password"
         autoComplete="new-password"
         ajuda={
           atual.senha_definida
-            ? 'Já existe uma senha gravada (cifrada). Deixe em branco para mantê-la — ao trocar servidor, porta ou usuário, digite-a de novo.'
-            : 'Gravada cifrada no servidor e nunca exibida de novo.'
+            ? t('Já existe uma senha gravada (cifrada). Deixe em branco para mantê-la — ao trocar servidor, porta ou usuário, digite-a de novo.')
+            : t('Gravada cifrada no servidor e nunca exibida de novo.')
         }
         {...register('senha')}
       />
       <div className="grid gap-4 sm:grid-cols-2">
         <Campo
-          rotulo="E-mail do remetente"
+          rotulo={t('E-mail do remetente')}
           type="email"
           placeholder="pcp@empresa.com.br"
-          erro={errors.remetente_email?.message}
+          erro={td(errors.remetente_email?.message) || undefined}
           {...register('remetente_email')}
         />
-        <Campo rotulo="Nome do remetente" placeholder="Sistema PCP" {...register('remetente_nome')} />
+        <Campo rotulo={t('Nome do remetente')} placeholder="Sistema PCP" {...register('remetente_nome')} />
       </div>
       <div className="flex flex-wrap gap-2">
-        <Botao type="submit" ocupado={mutacao.isPending} rotuloOcupado="Salvando…">
-          Salvar
+        <Botao type="submit" ocupado={mutacao.isPending} rotuloOcupado={t('Salvando…')}>
+          {t('Salvar')}
         </Botao>
         {atual.senha_definida && (
           <Botao
@@ -204,7 +205,7 @@ function FormularioSMTP({ atual }: { atual: ConfiguracaoSMTP }) {
             disabled={mutacao.isPending}
             onClick={() => definirConfirmandoRemocao(true)}
           >
-            Remover senha gravada
+            {t('Remover senha gravada')}
           </Botao>
         )}
       </div>
@@ -213,10 +214,10 @@ function FormularioSMTP({ atual }: { atual: ConfiguracaoSMTP }) {
           de o formulario estar valido e nao salva junto edicoes pela metade. */}
       <Confirmacao
         aberto={confirmandoRemocao}
-        titulo="Remover senha gravada"
-        mensagem="O servidor de e-mail passa a ser usado sem senha. Continuar?"
-        rotuloConfirmar="Remover senha"
-        rotuloOcupado="Removendo…"
+        titulo={t('Remover senha gravada')}
+        mensagem={t('O servidor de e-mail passa a ser usado sem senha. Continuar?')}
+        rotuloConfirmar={t('Remover senha')}
+        rotuloOcupado={t('Removendo…')}
         ocupado={mutacao.isPending}
         aoConfirmar={() => mutacao.mutate(paraCorpo(paraFormulario(atual), true))}
         aoCancelar={() => definirConfirmandoRemocao(false)}
@@ -232,19 +233,19 @@ function EnvioDeTeste() {
 
   const mutacao = useMutation({
     mutationFn: enviarEmailDeTeste,
-    onSuccess: () => mostrarToast(`E-mail de teste enviado para ${destinatario.trim()}`),
-    onError: (e) => mostrarToast(separarErro(e).geral ?? 'Não foi possível enviar o e-mail de teste.', 'pending'),
+    onSuccess: () => mostrarToast(t('E-mail de teste enviado para {destinatario}', { destinatario: destinatario.trim() })),
+    onError: (e) => mostrarToast(separarErro(e).geral ?? t('Não foi possível enviar o e-mail de teste.'), 'pending'),
   });
 
   return (
     <form
-      aria-label="Enviar e-mail de teste"
+      aria-label={t('Enviar e-mail de teste')}
       noValidate
       className="flex flex-col gap-4"
       onSubmit={(evento) => {
         evento.preventDefault();
         if (!EMAIL.test(destinatario.trim())) {
-          definirErro('Informe um e-mail válido');
+          definirErro(t('Informe um e-mail válido'));
           return;
         }
         definirErro(undefined);
@@ -252,7 +253,7 @@ function EnvioDeTeste() {
       }}
     >
       <Campo
-        rotulo="Enviar para"
+        rotulo={t('Enviar para')}
         type="email"
         placeholder="voce@empresa.com.br"
         value={destinatario}
@@ -260,8 +261,8 @@ function EnvioDeTeste() {
         onChange={(evento) => definirDestinatario(evento.target.value)}
       />
       <div>
-        <Botao type="submit" variante="secundaria" icone="mail" ocupado={mutacao.isPending} rotuloOcupado="Enviando…">
-          Enviar e-mail de teste
+        <Botao type="submit" variante="secundaria" icone="mail" ocupado={mutacao.isPending} rotuloOcupado={t('Enviando…')}>
+          {t('Enviar e-mail de teste')}
         </Botao>
       </div>
     </form>
@@ -283,29 +284,29 @@ export function Integracoes() {
   if (!autorizado) {
     conteudo = (
       <p role="alert" className={CLASSE_AVISO}>
-        Acesso restrito: seu perfil não tem permissão para esta tela.
+        {t('Acesso restrito: seu perfil não tem permissão para esta tela.')}
       </p>
     );
   } else if (consulta.isPending || (!consulta.isError && !consulta.isFetchedAfterMount)) {
-    conteudo = <p className="text-body text-texto-secondary">Carregando integrações…</p>;
+    conteudo = <p className="text-body text-texto-secondary">{t('Carregando integrações…')}</p>;
   } else if (consulta.isError) {
     conteudo = (
       <p role="alert" className={CLASSE_AVISO}>
-        Não foi possível carregar a configuração do servidor de e-mail. Recarregue a página para tentar de novo.
+        {t('Não foi possível carregar a configuração do servidor de e-mail. Recarregue a página para tentar de novo.')}
       </p>
     );
   } else {
     conteudo = (
       <>
         <Secao
-          titulo="Servidor de e-mail (SMTP)"
-          descricao="Usado pelo sistema para enviar e-mails. A senha é gravada cifrada e nunca exibida."
+          titulo={t('Servidor de e-mail (SMTP)')}
+          descricao={t('Usado pelo sistema para enviar e-mails. A senha é gravada cifrada e nunca exibida.')}
         >
           <FormularioSMTP atual={consulta.data} />
         </Secao>
         <Secao
-          titulo="Testar envio"
-          descricao="Usa a configuração salva — salve as alterações antes de testar."
+          titulo={t('Testar envio')}
+          descricao={t('Usa a configuração salva — salve as alterações antes de testar.')}
         >
           <EnvioDeTeste />
         </Secao>
@@ -316,8 +317,8 @@ export function Integracoes() {
   return (
     <div className="mx-auto flex max-w-[720px] flex-col gap-4">
       <div>
-        <h1 className="text-title text-texto-primary">Integrações</h1>
-        <p className="text-body text-texto-secondary">Serviços externos usados pelo sistema.</p>
+        <h1 className="text-title text-texto-primary">{t('Integrações')}</h1>
+        <p className="text-body text-texto-secondary">{t('Serviços externos usados pelo sistema.')}</p>
       </div>
       {conteudo}
     </div>

@@ -6,17 +6,18 @@ import { CaixaMarcacao } from '@/componentes/ui/CaixaMarcacao';
 import { Campo } from '@/componentes/ui/Campo';
 import { Selecao } from '@/componentes/ui/Selecao';
 import type { ProdutoAcabado } from '@/tipos/cadastros';
+import { t, td, marcar } from '@/i18n';
 
 /**
  * Validacao de forma, nao de regra: o dominio no backend e a autoridade sobre
  * unicidade de codigo e casas decimais do preco. Aqui so evitamos o ida-e-volta obvio.
  */
 const esquema = z.object({
-  codigo: z.string().trim().min(1, 'Informe o código'),
-  descricao: z.string().trim().min(5, 'A descrição precisa de ao menos 5 caracteres'),
-  unidade_medida: z.string().trim().min(1, 'Informe a unidade de medida'),
-  preco_venda: z.coerce.number().positive('O preço de venda deve ser maior que zero'),
-  lead_time_producao: z.coerce.number().int().positive('O lead time deve ser maior que zero'),
+  codigo: z.string().trim().min(1, marcar('Informe o código')),
+  descricao: z.string().trim().min(5, marcar('A descrição precisa de ao menos 5 caracteres')),
+  unidade_medida: z.string().trim().min(1, marcar('Informe a unidade de medida')),
+  preco_venda: z.coerce.number().positive(marcar('O preço de venda deve ser maior que zero')),
+  lead_time_producao: z.coerce.number().int().positive(marcar('O lead time deve ser maior que zero')),
   exige_metrologia: z.boolean().default(false),
   ativo: z.enum(['true', 'false']),
   // Flags de controle do item (4.1.1); validade so com lote (o backend devolve 400).
@@ -59,9 +60,9 @@ export interface FormularioProdutoProps {
   aoCancelar: () => void;
 }
 
-const SITUACAO = [
-  { valor: 'true', rotulo: 'Ativo' },
-  { valor: 'false', rotulo: 'Inativo' },
+const opcoesSituacao = () => [
+  { valor: 'true', rotulo: t('Ativo') },
+  { valor: 'false', rotulo: t('Inativo') },
 ];
 
 export function FormularioProduto({
@@ -101,7 +102,7 @@ export function FormularioProduto({
 
   /** O erro do formulario vence o da API: e o mais recente que a pessoa viu. */
   const erroDe = (campo: keyof Formulario): string | undefined =>
-    errors[campo]?.message ?? errosPorCampo[campo];
+    td(errors[campo]?.message ?? errosPorCampo[campo]) || undefined;
 
   return (
     <form
@@ -136,20 +137,20 @@ export function FormularioProduto({
 
       <div className="grid gap-4 md:grid-cols-2">
         <Campo
-          rotulo="Código"
+          rotulo={t('Código')}
           obrigatorio
           tipoDado="codigo"
           erro={erroDe('codigo')}
           {...register('codigo')}
         />
-        <Campo rotulo="Unidade" obrigatorio erro={erroDe('unidade_medida')} {...register('unidade_medida')} />
+        <Campo rotulo={t('Unidade')} obrigatorio erro={erroDe('unidade_medida')} {...register('unidade_medida')} />
       </div>
 
-      <Campo rotulo="Descrição" obrigatorio erro={erroDe('descricao')} {...register('descricao')} />
+      <Campo rotulo={t('Descrição')} obrigatorio erro={erroDe('descricao')} {...register('descricao')} />
 
       <div className="grid gap-4 md:grid-cols-2">
         <Campo
-          rotulo="Preço de venda"
+          rotulo={t('Preço de venda')}
           obrigatorio
           tipoDado="quantidade"
           step="0.01"
@@ -157,7 +158,7 @@ export function FormularioProduto({
           {...register('preco_venda')}
         />
         <Campo
-          rotulo="Lead time de produção (dias)"
+          rotulo={t('Lead time de produção (dias)')}
           obrigatorio
           tipoDado="quantidade"
           erro={erroDe('lead_time_producao')}
@@ -167,23 +168,23 @@ export function FormularioProduto({
 
       <label className="flex min-h-linha items-center gap-2 text-body text-texto-primary">
         <input type="checkbox" className="h-4 w-4 accent-brand" {...register('exige_metrologia')} />
-        Exige metrologia (Inmetro)
+        {t('Exige metrologia (Inmetro)')}
         <span className="text-label text-texto-secondary">
-          — cada unidade precisa de aprovação de modelo, lacre e validade antes de sair de Testes
+          {t('— cada unidade precisa de aprovação de modelo, lacre e validade antes de sair de Testes')}
         </span>
       </label>
 
       <fieldset className="flex flex-col gap-3 rounded-cartao border border-borda-subtle p-4">
-        <legend className="px-1 text-label text-texto-secondary">Controle do item</legend>
+        <legend className="px-1 text-label text-texto-secondary">{t('Controle do item')}</legend>
         <div className="grid gap-3 md:grid-cols-2">
           <CaixaMarcacao
-            rotulo="Controla número de série"
-            ajuda="Cada unidade produzida é identificada pela série."
+            rotulo={t('Controla número de série')}
+            ajuda={t('Cada unidade produzida é identificada pela série.')}
             {...register('controla_numero_serie')}
           />
           <CaixaMarcacao
-            rotulo="Controla lote"
-            ajuda="A produção e a expedição registram o lote."
+            rotulo={t('Controla lote')}
+            ajuda={t('A produção e a expedição registram o lote.')}
             {...register('controla_lote', {
               onChange: (evento: { target: { checked: boolean } }) => {
                 if (!evento.target.checked) {
@@ -193,24 +194,24 @@ export function FormularioProduto({
             })}
           />
           <CaixaMarcacao
-            rotulo="Controla validade"
-            ajuda={controlaLote ? 'Cada lote passa a ter validade.' : 'Marque "Controla lote" antes: validade é do lote.'}
+            rotulo={t('Controla validade')}
+            ajuda={controlaLote ? t('Cada lote passa a ter validade.') : t('Marque "Controla lote" antes: validade é do lote.')}
             disabled={!controlaLote}
             {...register('controla_validade')}
           />
           <CaixaMarcacao
-            rotulo="Item crítico (exige foto principal)"
-            ajuda="A foto principal passa a ser obrigatória."
+            rotulo={t('Item crítico (exige foto principal)')}
+            ajuda={t('A foto principal passa a ser obrigatória.')}
             {...register('item_critico')}
           />
           <CaixaMarcacao
-            rotulo="Exige certificado no recebimento"
-            ajuda="A entrada só é concluída com o certificado anexado."
+            rotulo={t('Exige certificado no recebimento')}
+            ajuda={t('A entrada só é concluída com o certificado anexado.')}
             {...register('exige_certificado')}
           />
           <CaixaMarcacao
-            rotulo="Pode ser componente de outro produto"
-            ajuda="O produto aparecerá na lista de partes/peças e poderá compor a estrutura de outro produto acabado."
+            rotulo={t('Pode ser componente de outro produto')}
+            ajuda={t('O produto aparecerá na lista de partes/peças e poderá compor a estrutura de outro produto acabado.')}
             {...register('pode_ser_componente')}
           />
         </div>
@@ -221,16 +222,16 @@ export function FormularioProduto({
         // reativar um produto. Ao criar, o registro sempre nasce ativo, e
         // mostrar o campo aqui so adicionaria uma decisao sem sentido.
         <div className="w-[200px]">
-          <Selecao rotulo="Situação" opcoes={SITUACAO} {...register('ativo')} />
+          <Selecao rotulo={t('Situação')} opcoes={opcoesSituacao()} {...register('ativo')} />
         </div>
       )}
 
       <div className="flex items-center justify-end gap-2">
         <Botao variante="secundaria" onClick={aoCancelar} disabled={ocupado}>
-          Cancelar
+          {t('Cancelar')}
         </Botao>
-        <Botao type="submit" icone="save" ocupado={ocupado} rotuloOcupado="Salvando…">
-          Salvar
+        <Botao type="submit" icone="save" ocupado={ocupado} rotuloOcupado={t('Salvando…')}>
+          {t('Salvar')}
         </Botao>
       </div>
     </form>

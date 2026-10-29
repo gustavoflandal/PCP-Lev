@@ -7,6 +7,7 @@ import (
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/acesso"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/email"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/platform/httpx"
+	"github.com/gustavoflandal/pcp-lev/backend/internal/platform/i18n"
 	"github.com/labstack/echo/v4"
 )
 
@@ -88,7 +89,7 @@ func (h *EmailHandler) Testar(c echo.Context) error {
 	if err := c.Bind(&req); err != nil {
 		return erroRequisicaoInvalida(c, "Corpo da requisicao invalido")
 	}
-	if err := h.servico.EnviarTeste(c.Request().Context(), req.Destinatario, autorDaRequisicao(c)); err != nil {
+	if err := h.servico.EnviarTesteIdioma(c.Request().Context(), req.Destinatario, autorDaRequisicao(c), i18n.Idioma(c)); err != nil {
 		return errosEmail.responder(c, err)
 	}
 	return httpx.OK(c, map[string]bool{"enviado": true})

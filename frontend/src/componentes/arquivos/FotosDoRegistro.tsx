@@ -10,6 +10,7 @@ import { girar90 } from '@/lib/imagem';
 import { anexar, atualizarAnexo, corpoDoAnexo, enviarArquivo, removerAnexo } from '@/servicos/arquivos';
 import { GALERIA_MAXIMA, LIMITE_IMAGEM_BYTES, TIPOS_IMAGEM, type Anexo } from '@/tipos/arquivos';
 import { corpoNovoAnexo, mensagemDeErro, type EntidadeComMidia } from './comum';
+import { t } from '@/i18n';
 
 export interface FotosDoRegistroProps {
   entidade: EntidadeComMidia;
@@ -22,7 +23,7 @@ export interface FotosDoRegistroProps {
 }
 
 function nomeDaFoto(f: Anexo): string {
-  return f.titulo || f.arquivo.nome_original || `foto ${f.id}`;
+  return f.titulo || f.arquivo.nome_original || t('foto {id}', { id: f.id });
 }
 
 /** Foto principal + galeria (ate 10), com envio, troca da principal e remocao. */
@@ -49,23 +50,23 @@ export function FotosDoRegistro({
     mutationFn: (foto: Anexo) => atualizarAnexo(foto.id, { ...corpoDoAnexo(foto), principal: true }),
     onMutate: () => definirErro(null),
     onSuccess: () => {
-      mostrarToast('Foto principal definida');
+      mostrarToast(t('Foto principal definida'));
       aoMudar();
     },
-    onError: (e) => definirErro(mensagemDeErro(e, 'Não foi possível trocar a foto principal. Tente de novo.')),
+    onError: (e) => definirErro(mensagemDeErro(e, t('Não foi possível trocar a foto principal. Tente de novo.'))),
   });
 
   const mutacaoRemover = useMutation({
     mutationFn: (foto: Anexo) => removerAnexo(foto.id),
     onMutate: () => definirErro(null),
     onSuccess: () => {
-      mostrarToast('Foto removida');
+      mostrarToast(t('Foto removida'));
       definirARemover(null);
       aoMudar();
     },
     onError: (e) => {
       // 409 do item critico: a mensagem da API diz o que fazer.
-      definirErro(mensagemDeErro(e, 'Não foi possível remover a foto. Tente de novo.'));
+      definirErro(mensagemDeErro(e, t('Não foi possível remover a foto. Tente de novo.')));
       definirARemover(null);
     },
   });
@@ -74,17 +75,18 @@ export function FotosDoRegistro({
     <section aria-labelledby={idTitulo} className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 id={idTitulo} className="text-subtitle text-texto-primary">
-          Fotos
+          {t('Fotos')}
         </h3>
         <span className="text-label text-texto-secondary">
-          Galeria: <span className="font-mono tabular">{galeria.length}</span> de {GALERIA_MAXIMA}
+          {t('Galeria:')} <span className="font-mono tabular">{galeria.length}</span> {t('de {max}', { max: GALERIA_MAXIMA })}
         </span>
       </div>
 
       {itemCritico && !principal && (
         <p>
           <Badge tom="warning" icone="alert-triangle">
-            Item crítico sem foto principal{podeEditar ? ' — envie uma' : ''}
+            {t('Item crítico sem foto principal')}
+            {podeEditar ? t(' — envie uma') : ''}
           </Badge>
         </p>
       )}
@@ -100,10 +102,11 @@ export function FotosDoRegistro({
 
       {ordenadas.length === 0 ? (
         <p className="text-body text-texto-secondary">
-          Nenhuma foto.{podeEditar ? ' Envie a primeira: ela vira a foto principal.' : ''}
+          {t('Nenhuma foto.')}
+          {podeEditar ? t(' Envie a primeira: ela vira a foto principal.') : ''}
         </p>
       ) : (
-        <ul aria-label={`Fotos de ${codigo}`} className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
+        <ul aria-label={t('Fotos de {codigo}', { codigo })} className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
           {ordenadas.map((foto, indice) => {
             const nome = nomeDaFoto(foto);
             return (
@@ -112,12 +115,12 @@ export function FotosDoRegistro({
                   href={foto.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  title="Abrir em tamanho real (nova aba)"
+                  title={t('Abrir em tamanho real (nova aba)')}
                   className="block aspect-square overflow-hidden rounded-campo bg-surface-sunken"
                 >
                   <img
                     src={foto.miniatura_url ?? foto.url}
-                    alt={foto.principal ? `Foto principal de ${codigo}` : `Foto ${indice + (principal ? 0 : 1)} da galeria de ${codigo}`}
+                    alt={foto.principal ? t('Foto principal de {codigo}', { codigo }) : t('Foto {valor} da galeria de {codigo}', { valor: indice + (principal ? 0 : 1), codigo })}
                     loading="lazy"
                     className="h-full w-full object-cover"
                   />
@@ -125,10 +128,10 @@ export function FotosDoRegistro({
                 {foto.principal ? (
                   <span className="inline-flex items-center gap-1 text-label text-brand">
                     <IconePrincipal size={12} aria-hidden="true" />
-                    Foto principal
+                    {t('Foto principal')}
                   </span>
                 ) : (
-                  <span className="text-label text-texto-secondary">Galeria</span>
+                  <span className="text-label text-texto-secondary">{t('Galeria')}</span>
                 )}
                 {podeEditar && (
                   <span className="flex flex-col gap-1">
@@ -137,22 +140,22 @@ export function FotosDoRegistro({
                         variante="fantasma"
                         icone="star"
                         className="h-auto min-h-[2rem] justify-start px-2"
-                        aria-label={`Tornar principal: ${nome}`}
+                        aria-label={t('Tornar principal: {nome}', { nome })}
                         ocupado={mutacaoPrincipal.isPending && mutacaoPrincipal.variables?.id === foto.id}
-                        rotuloOcupado="Definindo…"
+                        rotuloOcupado={t('Definindo…')}
                         onClick={() => mutacaoPrincipal.mutate(foto)}
                       >
-                        Tornar principal
+                        {t('Tornar principal')}
                       </Botao>
                     )}
                     <Botao
                       variante="fantasma"
                       icone="trash-2"
                       className="h-auto min-h-[2rem] justify-start px-2"
-                      aria-label={`Remover foto: ${nome}`}
+                      aria-label={t('Remover foto: {nome}', { nome })}
                       onClick={() => definirARemover(foto)}
                     >
-                      Remover
+                      {t('Remover')}
                     </Botao>
                   </span>
                 )}
@@ -174,14 +177,14 @@ export function FotosDoRegistro({
 
       <Confirmacao
         aberto={aRemover !== null}
-        titulo="Remover foto"
+        titulo={t('Remover foto')}
         mensagem={
           aRemover?.principal
-            ? 'Remover a foto principal? O registro fica sem foto principal até você escolher outra.'
-            : 'Remover esta foto da galeria?'
+            ? t('Remover a foto principal? O registro fica sem foto principal até você escolher outra.')
+            : t('Remover esta foto da galeria?')
         }
-        rotuloConfirmar="Remover"
-        rotuloOcupado="Removendo…"
+        rotuloConfirmar={t('Remover')}
+        rotuloOcupado={t('Removendo…')}
         ocupado={mutacaoRemover.isPending}
         aoConfirmar={() => aRemover && mutacaoRemover.mutate(aRemover)}
         aoCancelar={() => definirARemover(null)}
@@ -236,12 +239,12 @@ function EnvioDeFoto({ entidade, entidadeId, temPrincipal, galeriaCheia, aoEnvia
     definirErro(null);
     if (!arquivo) return;
     if (!(TIPOS_IMAGEM as readonly string[]).includes(arquivo.type)) {
-      definirErro('Envie uma foto em JPG, PNG ou WebP.');
+      definirErro(t('Envie uma foto em JPG, PNG ou WebP.'));
       definirEscolhido(null);
       return;
     }
     if (arquivo.size > LIMITE_IMAGEM_BYTES) {
-      definirErro('A foto passa de 5 MB. Reduza a resolução e envie de novo.');
+      definirErro(t('A foto passa de 5 MB. Reduza a resolução e envie de novo.'));
       definirEscolhido(null);
       return;
     }
@@ -257,7 +260,7 @@ function EnvioDeFoto({ entidade, entidadeId, temPrincipal, galeriaCheia, aoEnvia
       const girada = await girar90(escolhido.conteudo);
       definirEscolhido({ conteudo: girada, nome: escolhido.nome });
     } catch (e) {
-      definirErro(e instanceof Error ? e.message : 'Não foi possível girar a imagem.');
+      definirErro(e instanceof Error ? e.message : t('Não foi possível girar a imagem.'));
     } finally {
       definirGirando(false);
     }
@@ -270,11 +273,11 @@ function EnvioDeFoto({ entidade, entidadeId, temPrincipal, galeriaCheia, aoEnvia
     },
     onMutate: () => definirErro(null),
     onSuccess: () => {
-      mostrarToast('Foto enviada');
+      mostrarToast(t('Foto enviada'));
       limpar();
       aoEnviar();
     },
-    onError: (e) => definirErro(mensagemDeErro(e, 'Não foi possível enviar a foto. Tente de novo.')),
+    onError: (e) => definirErro(mensagemDeErro(e, t('Não foi possível enviar a foto. Tente de novo.'))),
   });
 
   const bloqueadaPelaGaleria = galeriaCheia && !comoPrincipal;
@@ -283,7 +286,7 @@ function EnvioDeFoto({ entidade, entidadeId, temPrincipal, galeriaCheia, aoEnvia
     <div className="flex flex-col gap-3 rounded-cartao border border-dashed border-borda-strong p-3">
       <div className="flex flex-col gap-1">
         <label htmlFor={idEntrada} className="text-label text-texto-secondary">
-          Nova foto (JPG, PNG ou WebP, até 5 MB)
+          {t('Nova foto (JPG, PNG ou WebP, até 5 MB)')}
         </label>
         <input
           ref={entradaRef}
@@ -309,7 +312,7 @@ function EnvioDeFoto({ entidade, entidadeId, temPrincipal, galeriaCheia, aoEnvia
           {previa && (
             <img
               src={previa}
-              alt="Pré-visualização da foto a enviar"
+              alt={t('Pré-visualização da foto a enviar')}
               className="max-h-48 max-w-[16rem] rounded-campo border border-borda-subtle object-contain"
             />
           )}
@@ -318,35 +321,35 @@ function EnvioDeFoto({ entidade, entidadeId, temPrincipal, galeriaCheia, aoEnvia
               variante="secundaria"
               icone="rotate-cw"
               ocupado={girando}
-              rotuloOcupado="Girando…"
+              rotuloOcupado={t('Girando…')}
               disabled={mutacao.isPending}
               onClick={() => void girar()}
             >
-              Girar 90°
+              {t('Girar 90°')}
             </Botao>
             <CaixaMarcacao
-              rotulo="Usar como foto principal"
-              ajuda={temPrincipal ? 'A principal atual passa para a galeria.' : 'O registro ainda não tem foto principal.'}
+              rotulo={t('Usar como foto principal')}
+              ajuda={temPrincipal ? t('A principal atual passa para a galeria.') : t('O registro ainda não tem foto principal.')}
               checked={comoPrincipal}
               onChange={(evento) => definirComoPrincipal(evento.target.checked)}
             />
             {bloqueadaPelaGaleria && (
               <p className="text-label text-estado-warning">
-                A galeria já tem {GALERIA_MAXIMA} fotos: remova uma ou envie esta como principal.
+                {t('A galeria já tem {max} fotos: remova uma ou envie esta como principal.', { max: GALERIA_MAXIMA })}
               </p>
             )}
             <div className="flex gap-2">
               <Botao variante="secundaria" onClick={limpar} disabled={mutacao.isPending}>
-                Descartar
+                {t('Descartar')}
               </Botao>
               <Botao
                 icone="upload"
                 ocupado={mutacao.isPending}
-                rotuloOcupado="Enviando…"
+                rotuloOcupado={t('Enviando…')}
                 disabled={girando || bloqueadaPelaGaleria}
                 onClick={() => mutacao.mutate(escolhido)}
               >
-                Enviar foto
+                {t('Enviar foto')}
               </Botao>
             </div>
           </div>

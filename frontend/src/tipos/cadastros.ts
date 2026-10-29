@@ -1,4 +1,5 @@
 import type { FlagsControle } from './arquivos';
+import { marcar } from '@/i18n';
 
 /** Recursos de cadastro da API. Tambem serve de chave de cache no TanStack Query. */
 export type Recurso =
@@ -105,10 +106,10 @@ export interface Fornecedor extends RegistroCadastro {
 export type TipoCliente = 'ORGAO_PUBLICO' | 'CONCESSIONARIA' | 'INTEGRADOR' | 'OUTRO';
 
 export const ROTULO_TIPO_CLIENTE: Record<TipoCliente, string> = {
-  ORGAO_PUBLICO: 'Órgão público',
-  CONCESSIONARIA: 'Concessionária',
-  INTEGRADOR: 'Integrador',
-  OUTRO: 'Outro',
+  ORGAO_PUBLICO: marcar('Órgão público'),
+  CONCESSIONARIA: marcar('Concessionária'),
+  INTEGRADOR: marcar('Integrador'),
+  OUTRO: marcar('Outro'),
 };
 
 export const OPCOES_TIPO_CLIENTE = (Object.keys(ROTULO_TIPO_CLIENTE) as TipoCliente[]).map((tipo) => ({
@@ -142,10 +143,10 @@ export interface Cliente extends RegistroCadastro {
 export type EtapaProducao = 'SEPARACAO' | 'MONTAGEM' | 'TESTES' | 'EXPEDICAO';
 
 export const ROTULO_ETAPA: Record<EtapaProducao, string> = {
-  SEPARACAO: 'Separação',
-  MONTAGEM: 'Montagem',
-  TESTES: 'Testes',
-  EXPEDICAO: 'Expedição',
+  SEPARACAO: marcar('Separação'),
+  MONTAGEM: marcar('Montagem'),
+  TESTES: marcar('Testes'),
+  EXPEDICAO: marcar('Expedição'),
 };
 
 export const OPCOES_ETAPA = (Object.keys(ROTULO_ETAPA) as EtapaProducao[]).map((etapa) => ({

@@ -9,6 +9,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/gustavoflandal/pcp-lev/backend/internal/platform/i18n"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/platform/tempo"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -114,6 +115,8 @@ type Usuario struct {
 	AltoContraste bool   `json:"alto_contraste"`
 	Densidade     string `json:"densidade"`
 	TamanhoFonte  string `json:"tamanho_fonte"`
+	// Idioma da interface e das mensagens da API: "pt-BR" ou "es".
+	Idioma string `json:"idioma"`
 }
 
 // Preferencias sao os campos informados em PUT /auth/preferencias.
@@ -122,6 +125,8 @@ type Preferencias struct {
 	AltoContraste bool
 	Densidade     string
 	TamanhoFonte  string
+	// Idioma vazio mantem o idioma ja gravado (clientes antigos nao o enviam).
+	Idioma string
 }
 
 // Conjuntos fechados aceitos por Preferencias.Validar -- variaveis de
@@ -138,7 +143,8 @@ var (
 func (p Preferencias) Validar() error {
 	if !slices.Contains(temasValidos, p.Tema) ||
 		!slices.Contains(densidadesValidas, p.Densidade) ||
-		!slices.Contains(fontesValidas, p.TamanhoFonte) {
+		!slices.Contains(fontesValidas, p.TamanhoFonte) ||
+		(p.Idioma != "" && !slices.Contains(i18n.Validos, p.Idioma)) {
 		return ErrPreferenciaInvalida
 	}
 	return nil

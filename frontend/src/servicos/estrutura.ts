@@ -13,8 +13,15 @@ export async function criarEstrutura(corpo: CorpoCriarEstrutura): Promise<Estrut
   return data.dados;
 }
 
-export async function versionarEstrutura(idAtual: number, corpo: CorpoVersionarEstrutura): Promise<Estrutura> {
-  const { data } = await api.post<EnvelopeItem<Estrutura>>(`/boms/${idAtual}/versionar`, corpo);
+/** Cria uma nova versao a partir da versao `idBase` (qualquer uma) e a torna a vigente. */
+export async function versionarEstrutura(idBase: number, corpo: CorpoVersionarEstrutura): Promise<Estrutura> {
+  const { data } = await api.post<EnvelopeItem<Estrutura>>(`/boms/${idBase}/versionar`, corpo);
+  return data.dados;
+}
+
+/** Define a versao `id` como a vigente do produto, seja ela qual for. */
+export async function ativarEstrutura(id: number): Promise<Estrutura> {
+  const { data } = await api.post<EnvelopeItem<Estrutura>>(`/boms/${id}/ativar`);
   return data.dados;
 }
 

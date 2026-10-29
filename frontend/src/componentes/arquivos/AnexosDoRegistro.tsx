@@ -13,6 +13,7 @@ import { FormularioAnexo } from './FormularioAnexo';
 import { LinkAbrir, LinkBaixar } from './LinksDoArquivo';
 import { Miniatura } from './Miniatura';
 import { SeloValidade } from './SeloValidade';
+import { t, td, marcar } from '@/i18n';
 
 /** URLs assinadas vivem 5 minutos: a lista se renova antes de expirarem. */
 const VALIDADE_CACHE_MS = 60_000;
@@ -20,11 +21,11 @@ const RENOVAR_URLS_MS = 4 * 60_000;
 
 /** O que o vazio sugere anexar em cada registro. */
 const SUGESTAO_VAZIO: Record<EntidadeRegistro, string> = {
-  ordem_producao: 'Anexe laudos de teste, relatórios de inspeção e fotos da produção.',
-  fornecedor: 'Anexe contrato, certificado de qualidade, documentos cadastrais e tabela de preços.',
-  pedido_compra: 'Anexe a proposta do fornecedor, o pedido assinado e a comunicação trocada.',
-  pedido_venda: 'Anexe o contrato ou edital, o pedido do cliente e o termo de aceite.',
-  cliente: 'Anexe contrato, documentos cadastrais e termos de aceite.',
+  ordem_producao: marcar('Anexe laudos de teste, relatórios de inspeção e fotos da produção.'),
+  fornecedor: marcar('Anexe contrato, certificado de qualidade, documentos cadastrais e tabela de preços.'),
+  pedido_compra: marcar('Anexe a proposta do fornecedor, o pedido assinado e a comunicação trocada.'),
+  pedido_venda: marcar('Anexe o contrato ou edital, o pedido do cliente e o termo de aceite.'),
+  cliente: marcar('Anexe contrato, documentos cadastrais e termos de aceite.'),
 };
 
 export interface AnexosDoRegistroProps {
@@ -103,13 +104,13 @@ export function AnexosDoRegistro({ entidade, entidadeId, podeEditar, encerrado =
     mutationFn: (a: Anexo) => removerAnexo(a.id),
     onMutate: () => definirErro(null),
     onSuccess: () => {
-      mostrarToast('Documento removido');
+      mostrarToast(t('Documento removido'));
       definirARemover(null);
       aoMudar();
     },
     onError: (e) => {
       // 409 (registro encerrado) traz o texto do dominio: mostra como veio.
-      definirErro(mensagemDeErro(e, 'Não foi possível remover o documento. Tente de novo.'));
+      definirErro(mensagemDeErro(e, t('Não foi possível remover o documento. Tente de novo.')));
       definirARemover(null);
       aoMudar();
     },
@@ -129,7 +130,7 @@ export function AnexosDoRegistro({ entidade, entidadeId, podeEditar, encerrado =
   function renderizarCorpo() {
     if (consulta.isPending) {
       return (
-        <div aria-busy="true" aria-label="Carregando documentos" className="flex flex-col gap-2">
+        <div aria-busy="true" aria-label={t('Carregando documentos')} className="flex flex-col gap-2">
           <span className="block h-16 w-full animate-pulse rounded-cartao bg-surface-sunken" />
           <span className="block h-16 w-full animate-pulse rounded-cartao bg-surface-sunken" />
         </div>
@@ -140,10 +141,10 @@ export function AnexosDoRegistro({ entidade, entidadeId, podeEditar, encerrado =
         <div className="flex flex-col items-start gap-2">
           <p role="alert" className="flex items-center gap-2 text-body text-estado-pending">
             <IconeFalha size={16} aria-hidden="true" />
-            {mensagemDeErro(consulta.error, 'Não foi possível carregar os documentos. Tente de novo.')}
+            {mensagemDeErro(consulta.error, t('Não foi possível carregar os documentos. Tente de novo.'))}
           </p>
           <Botao variante="secundaria" icone="refresh-cw" onClick={() => void consulta.refetch()}>
-            Tentar de novo
+            {t('Tentar de novo')}
           </Botao>
         </div>
       );
@@ -152,7 +153,8 @@ export function AnexosDoRegistro({ entidade, entidadeId, podeEditar, encerrado =
     if (grupos.length === 0) {
       return (
         <p className="text-body text-texto-secondary">
-          Nenhum documento anexado.{podeEditar ? ` ${SUGESTAO_VAZIO[entidade]}` : ''}
+          {t('Nenhum documento anexado.')}
+          {podeEditar ? ` ${td(SUGESTAO_VAZIO[entidade])}` : ''}
         </p>
       );
     }
@@ -164,7 +166,7 @@ export function AnexosDoRegistro({ entidade, entidadeId, podeEditar, encerrado =
           return (
             <section key={categoria} aria-labelledby={idCategoria} className="flex flex-col gap-2">
               <h3 id={idCategoria} className="text-label uppercase tracking-[.02em] text-texto-secondary">
-                {categoria} <span className="font-mono tabular">({documentos.length})</span>
+                {td(categoria)} <span className="font-mono tabular">({documentos.length})</span>
               </h3>
               <ul className="flex flex-col divide-y divide-borda-subtle rounded-cartao border border-borda-subtle bg-surface-raised">
                 {documentos.map(({ chave: chaveDocumento, vigente, anteriores }) => {
@@ -177,7 +179,7 @@ export function AnexosDoRegistro({ entidade, entidadeId, podeEditar, encerrado =
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <div className="flex min-w-0 items-start gap-3">
                           {imagem ? (
-                            <Miniatura url={vigente.miniatura_url ?? vigente.url} alt={`${categoria}: ${nome}`} />
+                            <Miniatura url={vigente.miniatura_url ?? vigente.url} alt={`${td(categoria)}: ${nome}`} />
                           ) : (
                             <IconeArquivo size={20} aria-hidden="true" className="mt-[2px] shrink-0 text-texto-secondary" />
                           )}
@@ -190,13 +192,13 @@ export function AnexosDoRegistro({ entidade, entidadeId, podeEditar, encerrado =
                             </p>
                             <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-label text-texto-secondary">
                               <span>
-                                Enviado em {formatarDataHora(vigente.created_at)}
-                                {vigente.created_by ? ` por ${vigente.created_by}` : ''}
+                                {t('Enviado em {data}', { data: formatarDataHora(vigente.created_at) })}
+                                {vigente.created_by ? t(' por {created_by}', { created_by: vigente.created_by }) : ''}
                               </span>
-                              {vigente.data_emissao && <span>Emissão {formatarData(vigente.data_emissao)}</span>}
+                              {vigente.data_emissao && <span>{t('Emissão {data}', { data: formatarData(vigente.data_emissao) })}</span>}
                               {vigente.data_validade && (
                                 <span className="inline-flex items-center gap-2">
-                                  Validade {formatarData(vigente.data_validade)}
+                                  {t('Validade {data}', { data: formatarData(vigente.data_validade) })}
                                   <SeloValidade validade={vigente.data_validade} />
                                 </span>
                               )}
@@ -204,26 +206,26 @@ export function AnexosDoRegistro({ entidade, entidadeId, podeEditar, encerrado =
                           </div>
                         </div>
                         <div className="flex flex-wrap items-center justify-end gap-2">
-                          <LinkAbrir anexo={vigente} rotulo={`Abrir ${nome}`} />
-                          <LinkBaixar anexo={vigente} rotulo={`Baixar ${nome}`} />
+                          <LinkAbrir anexo={vigente} rotulo={t('Abrir {nome}', { nome })} />
+                          <LinkBaixar anexo={vigente} rotulo={t('Baixar {nome}', { nome })} />
                           {podeEditar && (
                             <Botao
                               variante="secundaria"
                               icone="upload"
-                              aria-label={`Nova versão de ${nome}`}
+                              aria-label={t('Nova versão de {nome}', { nome })}
                               onClick={() => definirFormulario({ base: vigente })}
                             >
-                              Nova versão
+                              {t('Nova versão')}
                             </Botao>
                           )}
                           {podeRemover && (
                             <Botao
                               variante="fantasma"
                               icone="trash-2"
-                              aria-label={`Remover ${nome}`}
+                              aria-label={t('Remover {nome}', { nome })}
                               onClick={() => definirARemover(vigente)}
                             >
-                              Remover
+                              {t('Remover')}
                             </Botao>
                           )}
                         </div>
@@ -243,19 +245,19 @@ export function AnexosDoRegistro({ entidade, entidadeId, podeEditar, encerrado =
                               aria-hidden="true"
                               className={cn('motion-safe:transition-transform', aberto && 'rotate-180')}
                             />
-                            Versões anteriores ({anteriores.length})
+                            {t('Versões anteriores ({n})', { n: anteriores.length })}
                           </button>
                           {aberto && (
                             <ul id={idHistorico} className="flex flex-col gap-2 border-l-2 border-borda-subtle pl-3">
                               {anteriores.map((v) => (
                                 <li key={v.id} className="flex flex-wrap items-center justify-between gap-2">
                                   <span className="text-label text-texto-secondary">
-                                    <span className="font-mono">{v.arquivo.nome_original}</span> · enviado em{' '}
-                                    {formatarDataHora(v.created_at)}
-                                    {v.created_by ? ` por ${v.created_by}` : ''}
-                                    {v.data_validade && ` · validade ${formatarData(v.data_validade)}`}
+                                    <span className="font-mono">{v.arquivo.nome_original}</span>
+                                    {t(' · enviado em {data}', { data: formatarDataHora(v.created_at) })}
+                                    {v.created_by ? t(' por {created_by}', { created_by: v.created_by }) : ''}
+                                    {v.data_validade && t(' · validade {data}', { data: formatarData(v.data_validade) })}
                                   </span>
-                                  <LinkAbrir anexo={v} rotulo={`Abrir versão anterior ${v.arquivo.nome_original} de ${nome}`} />
+                                  <LinkAbrir anexo={v} rotulo={t('Abrir versão anterior {nome_original} de {nome}', { nome_original: v.arquivo.nome_original, nome })} />
                                 </li>
                               ))}
                             </ul>
@@ -278,19 +280,19 @@ export function AnexosDoRegistro({ entidade, entidadeId, podeEditar, encerrado =
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-col gap-1">
           {!podeEditar && (
-            <p className="text-label text-texto-secondary">Somente consulta: seu perfil não anexa documentos aqui.</p>
+            <p className="text-label text-texto-secondary">{t('Somente consulta: seu perfil não anexa documentos aqui.')}</p>
           )}
           {encerrado && (
             <p className="inline-flex items-center gap-2 text-label text-texto-secondary">
               <IconeCadeado size={14} aria-hidden="true" />
-              Registro encerrado: os documentos ficam como registro e não podem ser removidos.
-              {podeEditar ? ' Ainda é possível anexar.' : ''}
+              {t('Registro encerrado: os documentos ficam como registro e não podem ser removidos.')}
+              {podeEditar ? t(' Ainda é possível anexar.') : ''}
             </p>
           )}
         </div>
         {podeEditar && !formulario && (
           <Botao variante="secundaria" icone="plus" onClick={() => definirFormulario({})}>
-            Anexar documento
+            {t('Anexar documento')}
           </Botao>
         )}
       </div>
@@ -323,14 +325,14 @@ export function AnexosDoRegistro({ entidade, entidadeId, podeEditar, encerrado =
 
       <Confirmacao
         aberto={aRemover !== null}
-        titulo="Remover documento"
+        titulo={t('Remover documento')}
         mensagem={
           aRemover
-            ? `Remover "${nomeDoAnexo(aRemover)}"? Se houver versão anterior, ela volta a valer.`
+            ? t('Remover "{nomeDoAnexo}"? Se houver versão anterior, ela volta a valer.', { nomeDoAnexo: nomeDoAnexo(aRemover) })
             : ''
         }
-        rotuloConfirmar="Remover"
-        rotuloOcupado="Removendo…"
+        rotuloConfirmar={t('Remover')}
+        rotuloOcupado={t('Removendo…')}
         ocupado={mutacaoRemover.isPending}
         aoConfirmar={() => aRemover && mutacaoRemover.mutate(aRemover)}
         aoCancelar={() => definirARemover(null)}

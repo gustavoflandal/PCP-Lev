@@ -4,6 +4,7 @@ import { ErroApi } from '@/servicos/api';
 import { listar } from '@/servicos/cadastros';
 import type { DadosPaginacao, Ordem, ParametrosListagem, Recurso } from '@/tipos/cadastros';
 import { useDebounce } from './useDebounce';
+import { t } from '@/i18n';
 
 const LIMITE_PADRAO = 20;
 
@@ -95,7 +96,7 @@ export function useListagem<T>(recurso: Recurso, colunaPadrao: string): Listagem
   const erro = consulta.error
     ? consulta.error instanceof ErroApi
       ? consulta.error.message
-      : 'Não foi possível carregar a lista. Tente de novo.'
+      : t('Não foi possível carregar a lista. Tente de novo.')
     : null;
 
   return {

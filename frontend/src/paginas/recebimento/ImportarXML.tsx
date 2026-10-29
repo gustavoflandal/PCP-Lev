@@ -11,6 +11,7 @@ import { useToasts } from '@/componentes/ui/Toast';
 import { useFornecedoresAtivos } from '@/hooks/useFornecedoresAtivos';
 import { usePartesPecasAtivas } from '@/hooks/usePartesPecasAtivas';
 import { usePedidosQueRecebem } from '@/hooks/usePedidosQueRecebem';
+import { t } from '@/i18n';
 import { cn } from '@/lib/cn';
 import { formatarCNPJ, formatarData, formatarMoeda } from '@/lib/formato';
 import { anexar } from '@/servicos/arquivos';
@@ -76,7 +77,7 @@ function ConteudoImportar({ aoFechar, pedidoInicial }: Omit<ImportarXMLProps, 'a
   const opcoesPeca = useMemo(() => {
     const doPedido = new Set((pedidoDetalhe.data?.itens ?? []).map((i) => i.parte_peca_id));
     return [
-      ...pecas.itens.filter((p) => doPedido.has(p.id)).map((p) => ({ valor: String(p.id), rotulo: `${p.codigo} — ${p.descricao} (no pedido)` })),
+      ...pecas.itens.filter((p) => doPedido.has(p.id)).map((p) => ({ valor: String(p.id), rotulo: `${p.codigo} — ${p.descricao} ${t('(no pedido)')}` })),
       ...pecas.itens.filter((p) => !doPedido.has(p.id)).map((p) => ({ valor: String(p.id), rotulo: `${p.codigo} — ${p.descricao}` })),
     ];
   }, [pecas.itens, pedidoDetalhe.data]);
@@ -90,7 +91,7 @@ function ConteudoImportar({ aoFechar, pedidoInicial }: Omit<ImportarXMLProps, 'a
         Object.fromEntries(p.itens.filter((i) => !i.parte_peca_id).map((i) => [i.numero_item, { peca: '', fator: '1' }])),
       );
     },
-    onError: (e) => definirErro(mensagemDeErro(e, 'Não foi possível ler o XML. Confira o arquivo e tente de novo.')),
+    onError: (e) => definirErro(mensagemDeErro(e, t('Não foi possível ler o XML. Confira o arquivo e tente de novo.'))),
   });
 
   const vinculo = useMutation({
@@ -130,7 +131,7 @@ function ConteudoImportar({ aoFechar, pedidoInicial }: Omit<ImportarXMLProps, 'a
     onError: (e, { item }) =>
       definirVinculos((atual) => ({
         ...atual,
-        [item.numero_item]: { ...atual[item.numero_item], erro: mensagemDeErro(e, 'Não foi possível gravar o vínculo.') },
+        [item.numero_item]: { ...atual[item.numero_item], erro: mensagemDeErro(e, t('Não foi possível gravar o vínculo.')) },
       })),
   });
 
@@ -159,13 +160,13 @@ function ConteudoImportar({ aoFechar, pedidoInicial }: Omit<ImportarXMLProps, 'a
       clienteQuery.setQueryData(['notas-entrada', nota.id], nota);
       void clienteQuery.invalidateQueries({ queryKey: ['notas-entrada'] });
       mostrarToast(
-        xmlAnexado ? 'Rascunho criado a partir do XML' : 'Rascunho criado — anexe o XML na nota (o anexo automático falhou)',
+        xmlAnexado ? t('Rascunho criado a partir do XML') : t('Rascunho criado — anexe o XML na nota (o anexo automático falhou)'),
         xmlAnexado ? 'done' : 'pending',
       );
       aoFechar();
       navegar(`/notas-entrada/${nota.id}`);
     },
-    onError: (e) => definirErro(mensagemDeErro(e, 'Não foi possível criar o rascunho.')),
+    onError: (e) => definirErro(mensagemDeErro(e, t('Não foi possível criar o rascunho.'))),
   });
 
   const pendentes = previa ? previa.itens.filter((i) => !i.parte_peca_id).length : 0;
@@ -174,38 +175,38 @@ function ConteudoImportar({ aoFechar, pedidoInicial }: Omit<ImportarXMLProps, 'a
     <Modal
       aberto
       aoFechar={aoFechar}
-      titulo="Importar XML da NF-e"
-      descricao="Lê cabeçalho, itens, totais e lotes do XML. Nada é gravado até criar o rascunho."
+      titulo={t('Importar XML da NF-e')}
+      descricao={t('Lê cabeçalho, itens, totais e lotes do XML. Nada é gravado até criar o rascunho.')}
       largura="larga"
       rodape={
         previa ? (
           <>
             <Botao variante="secundaria" onClick={() => definirPrevia(null)} disabled={criacao.isPending}>
-              Escolher outro arquivo
+              {t('Escolher outro arquivo')}
             </Botao>
             <Botao
               icone="save"
               disabled={pendentes > 0}
               ocupado={criacao.isPending}
-              rotuloOcupado="Criando…"
+              rotuloOcupado={t('Criando…')}
               onClick={() => criacao.mutate()}
             >
-              Criar rascunho
+              {t('Criar rascunho')}
             </Botao>
           </>
         ) : (
           <>
             <Botao variante="secundaria" onClick={aoFechar}>
-              Cancelar
+              {t('Cancelar')}
             </Botao>
             <Botao
               icone="file-code"
               disabled={!pedidoNum || !arquivo}
               ocupado={leitura.isPending}
-              rotuloOcupado="Lendo…"
+              rotuloOcupado={t('Lendo…')}
               onClick={() => leitura.mutate()}
             >
-              Ler XML
+              {t('Ler XML')}
             </Botao>
           </>
         )
@@ -221,17 +222,17 @@ function ConteudoImportar({ aoFechar, pedidoInicial }: Omit<ImportarXMLProps, 'a
         {!previa ? (
           <>
             <Selecao
-              rotulo="Pedido de compra"
+              rotulo={t('Pedido de compra')}
               obrigatorio
-              placeholder={pedidos.carregando ? 'Carregando pedidos…' : 'Escolha o pedido que a nota atende'}
+              placeholder={pedidos.carregando ? t('Carregando pedidos…') : t('Escolha o pedido que a nota atende')}
               opcoes={pedidos.opcoes}
-              ajuda="Só pedidos aguardando entrega ou recebidos parcialmente. O CNPJ do emitente precisa ser o do fornecedor do pedido."
+              ajuda={t('Só pedidos aguardando entrega ou recebidos parcialmente. O CNPJ do emitente precisa ser o do fornecedor do pedido.')}
               value={pedidoId}
               onChange={(e) => definirPedidoId(e.target.value)}
             />
             <div className="flex flex-col gap-1">
               <label htmlFor={idArquivo} className="text-label text-texto-secondary">
-                Arquivo XML da NF-e<span aria-hidden="true" className="ml-1 text-estado-pending">*</span>
+                {t('Arquivo XML da NF-e')}<span aria-hidden="true" className="ml-1 text-estado-pending">*</span>
               </label>
               <input
                 id={idArquivo}
@@ -241,7 +242,7 @@ function ConteudoImportar({ aoFechar, pedidoInicial }: Omit<ImportarXMLProps, 'a
                   const escolhido = e.target.files?.[0] ?? null;
                   // Limite do backend (arquivo.LimiteXML): avisa antes de enviar.
                   if (escolhido && escolhido.size > LIMITE_XML_BYTES) {
-                    definirErro('O XML passa de 2 MB: confira se é o arquivo da NF-e.');
+                    definirErro(t('O XML passa de 2 MB: confira se é o arquivo da NF-e.'));
                     definirArquivo(null);
                     return;
                   }
@@ -250,26 +251,26 @@ function ConteudoImportar({ aoFechar, pedidoInicial }: Omit<ImportarXMLProps, 'a
                 }}
                 className="text-body text-texto-primary file:mr-3 file:rounded-campo file:border file:border-borda-strong file:bg-surface-raised file:px-3 file:py-2"
               />
-              <p className="text-label text-texto-secondary">XML da NF-e modelo 55, até 2 MB.</p>
+              <p className="text-label text-texto-secondary">{t('XML da NF-e modelo 55, até 2 MB.')}</p>
             </div>
           </>
         ) : (
           <>
             <dl className="grid gap-3 rounded-cartao border border-borda-subtle bg-surface-sunken p-3 md:grid-cols-4">
-              <Dado rotulo="Emitente">
+              <Dado rotulo={t('Emitente')}>
                 {previa.nome_emitente} · <span className="font-mono">{formatarCNPJ(previa.cnpj_emitente)}</span>
               </Dado>
-              <Dado rotulo="Número / série">
+              <Dado rotulo={t('Número / série')}>
                 <span className="font-mono">
                   {previa.numero}/{previa.serie}
                 </span>
               </Dado>
-              <Dado rotulo="Emissão">{formatarData(previa.data_emissao ?? undefined)}</Dado>
-              <Dado rotulo="Valor total">
+              <Dado rotulo={t('Emissão')}>{formatarData(previa.data_emissao ?? undefined)}</Dado>
+              <Dado rotulo={t('Valor total')}>
                 <span className="tabular">{formatarMoeda(previa.valor_total)}</span>
               </Dado>
               <div className="md:col-span-4">
-                <Dado rotulo="Chave de acesso">
+                <Dado rotulo={t('Chave de acesso')}>
                   <span className="break-all font-mono">{previa.chave_acesso}</span>
                 </Dado>
               </div>
@@ -278,23 +279,23 @@ function ConteudoImportar({ aoFechar, pedidoInicial }: Omit<ImportarXMLProps, 'a
             {pendentes > 0 ? (
               <p role="status" className="flex items-center gap-2 rounded-campo border border-estado-warning bg-estado-warning-bg px-3 py-2 text-body text-estado-warning">
                 {pendentes === 1
-                  ? '1 item não reconhecido: vincule-o a uma peça para criar o rascunho.'
-                  : `${pendentes} itens não reconhecidos: vincule-os a uma peça para criar o rascunho.`}
+                  ? t('1 item não reconhecido: vincule-o a uma peça para criar o rascunho.')
+                  : t('{n} itens não reconhecidos: vincule-os a uma peça para criar o rascunho.', { n: pendentes })}
               </p>
             ) : (
               <p role="status" className="rounded-campo border border-estado-done bg-estado-done-bg px-3 py-2 text-body text-estado-done">
-                Todos os itens reconhecidos. Confira e crie o rascunho — lotes, séries e a contagem são completados na nota.
+                {t('Todos os itens reconhecidos. Confira e crie o rascunho — lotes, séries e a contagem são completados na nota.')}
               </p>
             )}
 
-            <ul aria-label="Itens do XML" className="flex flex-col gap-2">
+            <ul aria-label={t('Itens do XML')} className="flex flex-col gap-2">
               {previa.itens.map((i) => {
                 const reconhecido = !!i.parte_peca_id;
                 const v = vinculos[i.numero_item];
                 return (
                   <li
                     key={i.numero_item}
-                    aria-label={`Item ${i.numero_item} do XML — ${i.codigo_fornecedor}`}
+                    aria-label={t('Item {n} do XML — {codigo}', { n: i.numero_item, codigo: i.codigo_fornecedor })}
                     className={cn(
                       'flex flex-col gap-2 rounded-cartao border p-3',
                       reconhecido ? 'border-borda-subtle bg-surface-raised' : 'border-2 border-estado-warning bg-estado-warning-bg',
@@ -307,33 +308,38 @@ function ConteudoImportar({ aoFechar, pedidoInicial }: Omit<ImportarXMLProps, 'a
                         </span>
                         <span className="text-label text-texto-secondary">
                           {formatoQtd.format(i.quantidade)} {i.unidade} × {formatarMoeda(i.valor_unitario)} = {formatarMoeda(i.valor_total)}
-                          {(i.lotes ?? []).length > 0 && ` · lotes: ${(i.lotes ?? []).map((l) => `${l.numero_lote} (${l.quantidade})`).join(', ')}`}
+                          {(i.lotes ?? []).length > 0 &&
+                            ` · ${t('lotes:')} ${(i.lotes ?? []).map((l) => `${l.numero_lote} (${l.quantidade})`).join(', ')}`}
                         </span>
                       </div>
                       {reconhecido ? (
                         <Badge tom="done" icone="link">
-                          {`${i.peca_codigo} · fator ${formatoQtd.format(i.fator_conversao)} · recebe ${i.quantidade_recebida}`}
+                          {t('{codigo} · fator {fator} · recebe {qtd}', {
+                            codigo: i.peca_codigo ?? '',
+                            fator: formatoQtd.format(i.fator_conversao),
+                            qtd: i.quantidade_recebida,
+                          })}
                         </Badge>
                       ) : (
                         <Badge tom="warning" icone="alert-triangle">
-                          Não reconhecido
+                          {t('Não reconhecido')}
                         </Badge>
                       )}
                     </div>
                     {reconhecido && !i.item_pedido_compra_id && (
                       <p className="text-label text-estado-warning">
-                        A peça não está neste pedido: ajuste no rascunho (bonificação ou outro pedido).
+                        {t('A peça não está neste pedido: ajuste no rascunho (bonificação ou outro pedido).')}
                       </p>
                     )}
                     {memorizados.has(i.numero_item) && (
-                      <p className="text-label text-estado-done">Vínculo memorizado para as próximas notas deste fornecedor.</p>
+                      <p className="text-label text-estado-done">{t('Vínculo memorizado para as próximas notas deste fornecedor.')}</p>
                     )}
                     {!reconhecido && v && (
                       <div className="flex flex-wrap items-end gap-2">
                         <div className="min-w-[280px] flex-1">
                           <Selecao
-                            rotulo={`Peça do item ${i.codigo_fornecedor}`}
-                            placeholder="Escolha a peça"
+                            rotulo={t('Peça do item {codigo}', { codigo: i.codigo_fornecedor })}
+                            placeholder={t('Escolha a peça')}
                             opcoes={opcoesPeca}
                             erro={v.erro}
                             value={v.peca}
@@ -342,9 +348,9 @@ function ConteudoImportar({ aoFechar, pedidoInicial }: Omit<ImportarXMLProps, 'a
                         </div>
                         <div className="w-[160px]">
                           <Campo
-                            rotulo={`Fator — ${i.codigo_fornecedor}`}
+                            rotulo={t('Fator — {codigo}', { codigo: i.codigo_fornecedor })}
                             tipoDado="quantidade"
-                            ajuda={`1 ${i.unidade || 'un.'} = ? un. de consumo`}
+                            ajuda={t('1 {unidade} = ? un. de consumo', { unidade: i.unidade || t('un.') })}
                             value={v.fator}
                             onChange={(e) => definirVinculos((a) => ({ ...a, [i.numero_item]: { ...v, fator: e.target.value, erro: undefined } }))}
                           />
@@ -354,10 +360,10 @@ function ConteudoImportar({ aoFechar, pedidoInicial }: Omit<ImportarXMLProps, 'a
                           className="mb-[1.25rem]"
                           disabled={!v.peca || paraNumero(v.fator) <= 0 || !fornecedorId}
                           ocupado={vinculo.isPending && vinculo.variables?.item.numero_item === i.numero_item}
-                          rotuloOcupado="Vinculando…"
+                          rotuloOcupado={t('Vinculando…')}
                           onClick={() => vinculo.mutate({ item: i, v })}
                         >
-                          Vincular e memorizar
+                          {t('Vincular e memorizar')}
                         </Botao>
                       </div>
                     )}

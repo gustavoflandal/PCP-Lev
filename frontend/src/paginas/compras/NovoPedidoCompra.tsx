@@ -3,6 +3,7 @@ import { useMutation } from '@tanstack/react-query';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { z } from 'zod';
+import { t } from '@/i18n';
 import { Botao } from '@/componentes/ui/Botao';
 import { Campo } from '@/componentes/ui/Campo';
 import { Selecao } from '@/componentes/ui/Selecao';
@@ -14,19 +15,20 @@ import { formatarMoeda } from '@/lib/formato';
 import { criarCompra } from '@/servicos/compras';
 import type { PedidoCompra } from '@/tipos/compras';
 
-const itemEsquema = z.object({
-  parte_peca_id: z.string().trim().min(1, 'Selecione a peça'),
-  quantidade_solicitada: z.coerce.number().int().positive('A quantidade deve ser maior que zero'),
-  preco_unitario: z.coerce.number().positive('O preço deve ser maior que zero'),
-});
-
-const esquema = z.object({
-  numero_pc: z.string().trim().min(1, 'Informe o número'),
-  fornecedor_id: z.string().trim().min(1, 'Selecione o fornecedor'),
-  data_entrega_prevista: z.string().trim().min(1, 'Informe a data de entrega'),
-  condicao_pagamento: z.string().trim().max(50).default(''),
-  itens: z.array(itemEsquema).min(1, 'Informe ao menos um item'),
-});
+const criarEsquema = () => {
+  const itemEsquema = z.object({
+    parte_peca_id: z.string().trim().min(1, t('Selecione a peça')),
+    quantidade_solicitada: z.coerce.number().int().positive(t('A quantidade deve ser maior que zero')),
+    preco_unitario: z.coerce.number().positive(t('O preço deve ser maior que zero')),
+  });
+  return z.object({
+    numero_pc: z.string().trim().min(1, t('Informe o número')),
+    fornecedor_id: z.string().trim().min(1, t('Selecione o fornecedor')),
+    data_entrega_prevista: z.string().trim().min(1, t('Informe a data de entrega')),
+    condicao_pagamento: z.string().trim().max(50).default(''),
+    itens: z.array(itemEsquema).min(1, t('Informe ao menos um item')),
+  });
+};
 
 type Formulario = {
   numero_pc: string;
@@ -53,7 +55,7 @@ export function NovoPedidoCompra() {
     watch,
     formState: { errors },
   } = useForm<Formulario>({
-    resolver: zodResolver(esquema),
+    resolver: (valores, contexto, opcoes) => zodResolver(criarEsquema())(valores, contexto, opcoes),
     defaultValues: {
       numero_pc: '',
       fornecedor_id: '',
@@ -81,7 +83,7 @@ export function NovoPedidoCompra() {
         })),
       }),
     onSuccess: (criado) => {
-      mostrarToast('Pedido de compra cadastrado');
+      mostrarToast(t('Pedido de compra cadastrado'));
       navegar(`/pedidos-compra/${criado.id}`);
     },
   });
@@ -97,9 +99,9 @@ export function NovoPedidoCompra() {
   return (
     <div className="mx-auto flex max-w-[800px] flex-col gap-4">
       <div>
-        <h1 className="text-title text-texto-primary">Novo pedido de compra</h1>
+        <h1 className="text-title text-texto-primary">{t('Novo pedido de compra')}</h1>
         <p className="text-body text-texto-secondary">
-          Emita um pedido de compra manual ou complete os dados a partir de uma cotação.
+          {t('Emita um pedido de compra manual ou complete os dados a partir de uma cotação.')}
         </p>
       </div>
 
@@ -119,18 +121,18 @@ export function NovoPedidoCompra() {
 
         <div className="grid gap-4 md:grid-cols-2">
           <Campo
-            rotulo="Número"
+            rotulo={t('Número')}
             obrigatorio
             tipoDado="codigo"
-            ajuda="Ex.: PC-2026-001"
+            ajuda={t('Ex.: PC-2026-001')}
             erro={errors.numero_pc?.message}
             {...register('numero_pc')}
           />
           <Selecao
-            rotulo="Fornecedor"
+            rotulo={t('Fornecedor')}
             obrigatorio
             opcoes={opcoesFornecedor}
-            placeholder="Selecione"
+            placeholder={t('Selecione')}
             erro={errors.fornecedor_id?.message}
             {...register('fornecedor_id')}
           />
@@ -138,37 +140,37 @@ export function NovoPedidoCompra() {
 
         <div className="grid gap-4 md:grid-cols-2">
           <Campo
-            rotulo="Entrega prevista"
+            rotulo={t('Entrega prevista')}
             obrigatorio
-            ajuda="Formato AAAA-MM-DD"
+            ajuda={t('Formato AAAA-MM-DD')}
             erro={errors.data_entrega_prevista?.message}
             {...register('data_entrega_prevista')}
           />
-          <Campo rotulo="Condição de pagamento" {...register('condicao_pagamento')} />
+          <Campo rotulo={t('Condição de pagamento')} {...register('condicao_pagamento')} />
         </div>
 
         <div className="flex flex-col gap-3">
-          <h2 className="text-subtitle text-texto-primary">Itens</h2>
+          <h2 className="text-subtitle text-texto-primary">{t('Itens')}</h2>
 
           {fields.map((campo, indice) => (
             <div key={campo.id} className="grid gap-3 rounded-campo border border-borda-subtle p-3 md:grid-cols-[2fr_1fr_1fr_auto]">
               <Selecao
-                rotulo="Parte/peça"
+                rotulo={t('Parte/peça')}
                 obrigatorio
                 opcoes={opcoesPeca}
-                placeholder="Selecione"
+                placeholder={t('Selecione')}
                 erro={errors.itens?.[indice]?.parte_peca_id?.message}
                 {...register(`itens.${indice}.parte_peca_id` as const)}
               />
               <Campo
-                rotulo="Quantidade"
+                rotulo={t('Quantidade')}
                 obrigatorio
                 tipoDado="quantidade"
                 erro={errors.itens?.[indice]?.quantidade_solicitada?.message}
                 {...register(`itens.${indice}.quantidade_solicitada` as const)}
               />
               <Campo
-                rotulo="Preço unitário"
+                rotulo={t('Preço unitário')}
                 obrigatorio
                 tipoDado="quantidade"
                 erro={errors.itens?.[indice]?.preco_unitario?.message}
@@ -176,27 +178,27 @@ export function NovoPedidoCompra() {
               />
               {fields.length > 1 && (
                 <Botao variante="fantasma" icone="trash-2" className="self-end" onClick={() => remove(indice)}>
-                  Remover item
+                  {t('Remover item')}
                 </Botao>
               )}
             </div>
           ))}
 
           <Botao variante="secundaria" icone="plus" onClick={() => append(ITEM_VAZIO)} className="self-start">
-            Adicionar item
+            {t('Adicionar item')}
           </Botao>
 
           <p className="text-right text-body text-texto-secondary">
-            Total: <span className="font-mono text-texto-primary">{formatarMoeda(totalGeral)}</span>
+            {t('Total:')} <span className="font-mono text-texto-primary">{formatarMoeda(totalGeral)}</span>
           </p>
         </div>
 
         <div className="flex items-center justify-end gap-2">
           <Botao variante="secundaria" onClick={() => navegar('/pedidos-compra')} disabled={mutacao.isPending}>
-            Cancelar
+            {t('Cancelar')}
           </Botao>
-          <Botao type="submit" icone="save" ocupado={mutacao.isPending} rotuloOcupado="Salvando…">
-            Salvar
+          <Botao type="submit" icone="save" ocupado={mutacao.isPending} rotuloOcupado={t('Salvando…')}>
+            {t('Salvar')}
           </Botao>
         </div>
       </form>

@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { Botao } from '@/componentes/ui/Botao';
 import { Campo } from '@/componentes/ui/Campo';
 import { Selecao, type OpcaoSelecao } from '@/componentes/ui/Selecao';
+import { marcar, t, td } from '@/i18n';
 import { gerarSenhaTemporaria } from '@/servicos/usuarios';
 import type { CorpoUsuario, Usuario } from '@/tipos/usuarios';
 
@@ -13,13 +14,13 @@ const esquema = z.object({
     .string()
     .trim()
     .toLowerCase()
-    .regex(/^[a-z0-9._-]{3,50}$/, 'De 3 a 50 caracteres: letras minúsculas, números, ponto, hífen ou sublinhado'),
-  nome: z.string().trim().min(1, 'Informe o nome').max(100, 'Até 100 caracteres'),
-  email: z.string().trim().email('Informe um e-mail válido').max(100, 'Até 100 caracteres'),
-  perfil: z.string().min(1, 'Escolha o perfil'),
-  matricula: z.string().trim().max(30, 'Até 30 caracteres'),
-  telefone: z.string().trim().max(30, 'Até 30 caracteres'),
-  setor: z.string().trim().max(60, 'Até 60 caracteres'),
+    .regex(/^[a-z0-9._-]{3,50}$/, marcar('De 3 a 50 caracteres: letras minúsculas, números, ponto, hífen ou sublinhado')),
+  nome: z.string().trim().min(1, marcar('Informe o nome')).max(100, marcar('Até 100 caracteres')),
+  email: z.string().trim().email(marcar('Informe um e-mail válido')).max(100, marcar('Até 100 caracteres')),
+  perfil: z.string().min(1, marcar('Escolha o perfil')),
+  matricula: z.string().trim().max(30, marcar('Até 30 caracteres')),
+  telefone: z.string().trim().max(30, marcar('Até 30 caracteres')),
+  setor: z.string().trim().max(60, marcar('Até 60 caracteres')),
   data_admissao: z.string(),
   senha_temporaria: z.string(),
 });
@@ -50,7 +51,7 @@ export function FormularioUsuario({ inicial, perfis, ocupado, erroGeral, errosPo
       novo
         ? esquema.refine((d) => d.senha_temporaria.length >= 10, {
             path: ['senha_temporaria'],
-            message: 'A senha temporária deve ter ao menos 10 caracteres',
+            message: marcar('A senha temporária deve ter ao menos 10 caracteres'),
           })
         : esquema,
     ),
@@ -87,7 +88,7 @@ export function FormularioUsuario({ inicial, perfis, ocupado, erroGeral, errosPo
   }
 
   return (
-    <form noValidate aria-label={novo ? 'Novo usuário' : 'Editar usuário'} className="flex flex-col gap-4" onSubmit={handleSubmit(enviar)}>
+    <form noValidate aria-label={novo ? t('Novo usuário') : t('Editar usuário')} className="flex flex-col gap-4" onSubmit={handleSubmit(enviar)}>
       {erroGeral && (
         <p role="alert" className="rounded-campo border border-estado-pending bg-estado-pending-bg px-3 py-2 text-body text-estado-pending">
           {erroGeral}
@@ -96,56 +97,56 @@ export function FormularioUsuario({ inicial, perfis, ocupado, erroGeral, errosPo
 
       <div className="grid gap-4 sm:grid-cols-2">
         <Campo
-          rotulo="Usuário (login)"
+          rotulo={t('Usuário (login)')}
           obrigatorio
           tipoDado="codigo"
           disabled={!novo}
-          ajuda={novo ? 'Não muda depois. Ex.: maria.souza' : 'O login não muda.'}
+          ajuda={novo ? t('Não muda depois. Ex.: maria.souza') : t('O login não muda.')}
           autoComplete="off"
-          erro={errors.username?.message}
+          erro={td(errors.username?.message) || undefined}
           {...register('username')}
         />
-        <Campo rotulo="Nome completo" obrigatorio erro={errors.nome?.message} {...register('nome')} />
-        <Campo rotulo="E-mail" obrigatorio type="email" erro={errors.email?.message} {...register('email')} />
+        <Campo rotulo={t('Nome completo')} obrigatorio erro={td(errors.nome?.message) || undefined} {...register('nome')} />
+        <Campo rotulo={t('E-mail')} obrigatorio type="email" erro={td(errors.email?.message) || undefined} {...register('email')} />
         <Selecao
-          rotulo="Perfil"
+          rotulo={t('Perfil')}
           obrigatorio
-          placeholder="Escolha o perfil"
+          placeholder={t('Escolha o perfil')}
           opcoes={perfis}
-          erro={errors.perfil?.message}
+          erro={td(errors.perfil?.message) || undefined}
           {...register('perfil')}
         />
-        <Campo rotulo="Matrícula" tipoDado="codigo" erro={errors.matricula?.message} {...register('matricula')} />
-        <Campo rotulo="Telefone" type="tel" erro={errors.telefone?.message} {...register('telefone')} />
-        <Campo rotulo="Setor" erro={errors.setor?.message} {...register('setor')} />
-        <Campo rotulo="Data de admissão" type="date" erro={errors.data_admissao?.message} {...register('data_admissao')} />
+        <Campo rotulo={t('Matrícula')} tipoDado="codigo" erro={td(errors.matricula?.message) || undefined} {...register('matricula')} />
+        <Campo rotulo={t('Telefone')} type="tel" erro={td(errors.telefone?.message) || undefined} {...register('telefone')} />
+        <Campo rotulo={t('Setor')} erro={td(errors.setor?.message) || undefined} {...register('setor')} />
+        <Campo rotulo={t('Data de admissão')} type="date" erro={td(errors.data_admissao?.message) || undefined} {...register('data_admissao')} />
       </div>
 
       {novo && (
         <div className="flex items-end gap-2">
           <div className="flex-1">
             <Campo
-              rotulo="Senha temporária"
+              rotulo={t('Senha temporária')}
               obrigatorio
               tipoDado="codigo"
               autoComplete="off"
-              ajuda="Entregue ao usuário: ele cria a própria senha no primeiro acesso."
-              erro={errors.senha_temporaria?.message}
+              ajuda={t('Entregue ao usuário: ele cria a própria senha no primeiro acesso.')}
+              erro={td(errors.senha_temporaria?.message) || undefined}
               {...register('senha_temporaria')}
             />
           </div>
           <Botao type="button" variante="secundaria" icone="refresh-cw" className="mb-6" onClick={() => setValue('senha_temporaria', gerarSenhaTemporaria())}>
-            Gerar outra
+            {t('Gerar outra')}
           </Botao>
         </div>
       )}
 
       <div className="flex justify-end gap-2">
         <Botao type="button" variante="secundaria" onClick={aoCancelar}>
-          Cancelar
+          {t('Cancelar')}
         </Botao>
         <Botao type="submit" icone="save" ocupado={ocupado} rotuloOcupado="Salvando…">
-          {novo ? 'Cadastrar usuário' : 'Salvar'}
+          {novo ? t('Cadastrar usuário') : t('Salvar')}
         </Botao>
       </div>
     </form>

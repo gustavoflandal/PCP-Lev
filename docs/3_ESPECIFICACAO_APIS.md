@@ -88,6 +88,12 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 }
 ```
 
+### Idioma das mensagens (`Accept-Language`)
+
+A API responde em **português (padrão)** ou **espanhol**. O cliente envia o idioma no cabeçalho `Accept-Language` (`pt-BR` ou `es`; qualquer variante `es-*` vale como espanhol). Toda mensagem de texto da resposta — `erro.mensagem`, `erro.detalhes[].mensagem` (validação por campo), `mensagem` de sucesso, cabeçalhos de CSV exportado e o e-mail de teste do SMTP — sai no idioma pedido; sem tradução cadastrada, a mensagem sai em português. Códigos de erro (`erro.codigo`), nomes de campo e valores de domínio (status, etapas) não são traduzidos.
+
+O idioma preferido de cada usuário fica em `usuarios.idioma` e é lido/gravado em `PUT /auth/preferencias` (campo opcional `idioma`: `pt-BR` ou `es`; omitido, mantém o valor atual) e devolvido em `POST /auth/login` e `GET /auth/eu`. O frontend usa esse valor para escolher o `Accept-Language` de todas as requisições.
+
 ### Paginação
 
 ```json
@@ -288,7 +294,11 @@ Obter detalhes de uma BOM (com itens).
 
 #### POST /api/v1/boms/{id}/versionar
 
-Criar nova versão de uma BOM (inativa versão anterior).
+Cria uma nova versão a partir da BOM `{id}` (qualquer versão do produto, não só a vigente). Os itens do corpo formam a nova versão, que se torna a vigente; a que estava vigente é inativada.
+
+#### POST /api/v1/boms/{id}/ativar
+
+Define a versão `{id}` como a vigente do produto, inativando a que estava vigente. Sem corpo. Responde `200` com a BOM ativada; `404` se não existir.
 
 ---
 

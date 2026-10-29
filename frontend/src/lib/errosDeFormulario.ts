@@ -1,3 +1,4 @@
+import { t } from '@/i18n';
 import { ErroApi } from '@/servicos/api';
 
 /** Erro de um formulario de cadastro, ja separado em geral x por campo. */
@@ -9,7 +10,7 @@ export interface ErroDeFormulario {
 /** Separa o erro da API em "marca o campo" e "mostra no topo do modal". */
 export function separarErro(erro: unknown): ErroDeFormulario {
   if (!(erro instanceof ErroApi)) {
-    return { geral: erro ? 'Não foi possível salvar. Tente de novo.' : null, porCampo: {} };
+    return { geral: erro ? t('Não foi possível salvar. Tente de novo.') : null, porCampo: {} };
   }
   if (erro.detalhes?.length) {
     return {
