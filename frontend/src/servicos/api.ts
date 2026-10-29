@@ -1,4 +1,6 @@
+import { t } from '@/i18n';
 import { tokenAtual, useAutenticacao } from '@/store/autenticacao';
+import { usePreferencias } from '@/store/preferencias';
 import axios, { type AxiosInstance } from 'axios';
 
 /** Detalhe de validacao por campo, conforme o doc 3. */
@@ -55,6 +57,8 @@ export function criarClienteApi({ baseURL, obterToken, aoExpirarSessao, aoExigir
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    // A API responde (erros e validacoes) no idioma escolhido em Preferencias.
+    config.headers['Accept-Language'] = usePreferencias.getState().preferencias.idioma;
     return config;
   });
 
@@ -82,13 +86,13 @@ function normalizar(
   aoExigirTrocaDeSenha?: () => void,
 ): ErroApi {
   if (!axios.isAxiosError(erro)) {
-    return new ErroApi('Erro inesperado na aplicacao', 'ERRO_INTERNO');
+    return new ErroApi(t('Erro inesperado na aplicacao'), 'ERRO_INTERNO');
   }
 
   const resposta = erro.response;
   if (!resposta) {
     return new ErroApi(
-      'Nao foi possivel conectar ao servidor. Verifique sua rede e tente novamente.',
+      t('Nao foi possivel conectar ao servidor. Verifique sua rede e tente novamente.'),
       'INDISPONIVEL',
     );
   }
@@ -110,7 +114,7 @@ function normalizar(
   }
 
   return new ErroApi(
-    detalhe?.mensagem ?? 'Nao foi possivel concluir a operacao.',
+    detalhe?.mensagem ?? t('Nao foi possivel concluir a operacao.'),
     detalhe?.codigo ?? 'ERRO_INTERNO',
     resposta.status,
     detalhe?.detalhes,

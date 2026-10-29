@@ -108,7 +108,7 @@ func TestVersionarTrocaAAtiva(t *testing.T) {
 	require.False(t, antiga.DataVigenciaFim.IsZero())
 }
 
-func TestVersionarUmaJaSuperadaFalha(t *testing.T) {
+func TestVersionarAPartirDeUmaSuperadaTornaANovaVigente(t *testing.T) {
 	ctx := context.Background()
 	servico, pool := servicoComBanco(t)
 	produtoID := criarProdutoDeTeste(ctx, t, pool)
@@ -118,15 +118,20 @@ func TestVersionarUmaJaSuperadaFalha(t *testing.T) {
 	dados.ProdutoAcabadoID = produtoID
 	primeira, err := servico.Criar(ctx, dados, "gestor01")
 	require.NoError(t, err)
-	_, err = servico.Versionar(ctx, primeira.ID, dadosDeTeste(pecaID, "2026-10-01"), "gestor01")
+	segunda, err := servico.Versionar(ctx, primeira.ID, dadosDeTeste(pecaID, "2026-10-01"), "gestor01")
 	require.NoError(t, err)
 
-	_, err = servico.Versionar(ctx, primeira.ID, dadosDeTeste(pecaID, "2026-11-01"), "gestor01")
+	terceira, err := servico.Versionar(ctx, primeira.ID, dadosDeTeste(pecaID, "2026-11-01"), "gestor01")
 
-	require.ErrorIs(t, err, estrutura.ErrStatusInvalidoParaAcao)
+	require.NoError(t, err)
+	require.Equal(t, 3, terceira.Versao)
+	require.True(t, terceira.Ativo)
+	anterior, err := servico.BuscarPorID(ctx, segunda.ID)
+	require.NoError(t, err)
+	require.False(t, anterior.Ativo, "a vigente anterior deixa de ser vigente")
 }
 
-func TestVersionarComVigenciaAnteriorFalha(t *testing.T) {
+func TestVersionarComVigenciaAnteriorNaoQuebraOHistorico(t *testing.T) {
 	ctx := context.Background()
 	servico, pool := servicoComBanco(t)
 	produtoID := criarProdutoDeTeste(ctx, t, pool)
@@ -139,7 +144,55 @@ func TestVersionarComVigenciaAnteriorFalha(t *testing.T) {
 
 	_, err = servico.Versionar(ctx, primeira.ID, dadosDeTeste(pecaID, "2026-08-01"), "gestor01")
 
-	require.ErrorIs(t, err, estrutura.ErrVigenciaAnteriorAAtual)
+	require.NoError(t, err)
+	antiga, err := servico.BuscarPorID(ctx, primeira.ID)
+	require.NoError(t, err)
+	require.False(t, antiga.Ativo)
+	require.False(t, antiga.DataVigenciaFim.Time.Before(antiga.DataVigenciaInicio.Time))
+}
+
+func TestAtivarDefineAVersaoVigenteSejaQualFor(t *testing.T) {
+	ctx := context.Background()
+	servico, pool := servicoComBanco(t)
+	produtoID := criarProdutoDeTeste(ctx, t, pool)
+	pecaID := criarPecaDeTeste(ctx, t, pool)
+
+	dados := dadosDeTeste(pecaID, "2026-09-01")
+	dados.ProdutoAcabadoID = produtoID
+	primeira, err := servico.Criar(ctx, dados, "gestor01")
+	require.NoError(t, err)
+	segunda, err := servico.Versionar(ctx, primeira.ID, dadosDeTeste(pecaID, "2026-10-01"), "gestor01")
+	require.NoError(t, err)
+
+	ativada, err := servico.Ativar(ctx, primeira.ID, "gestor01")
+
+	require.NoError(t, err)
+	require.True(t, ativada.Ativo)
+	require.True(t, ativada.DataVigenciaFim.IsZero(), "a versao reativada fica sem data de fim")
+	superada, err := servico.BuscarPorID(ctx, segunda.ID)
+	require.NoError(t, err)
+	require.False(t, superada.Ativo)
+
+	// Ativar a que ja e a vigente nao muda nada.
+	_, err = servico.Ativar(ctx, primeira.ID, "gestor01")
+	require.NoError(t, err)
+	historico, err := servico.ListarPorProduto(ctx, produtoID)
+	require.NoError(t, err)
+	vigentes := 0
+	for _, e := range historico {
+		if e.Ativo {
+			vigentes++
+		}
+	}
+	require.Equal(t, 1, vigentes)
+}
+
+func TestAtivarInexistenteFalha(t *testing.T) {
+	servico, _ := servicoComBanco(t)
+
+	_, err := servico.Ativar(context.Background(), 999999, "gestor01")
+
+	require.ErrorIs(t, err, estrutura.ErrNaoEncontrado)
 }
 
 func TestPecaInexistenteFalha(t *testing.T) {

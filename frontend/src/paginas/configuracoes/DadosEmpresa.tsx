@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { Botao } from '@/componentes/ui/Botao';
 import { Campo } from '@/componentes/ui/Campo';
+import { marcar, t, td } from '@/i18n';
 import { useToasts } from '@/componentes/ui/Toast';
 import { chaveDadosEmpresa, useDadosEmpresa } from '@/hooks/useDadosEmpresa';
 import { separarErro } from '@/lib/errosDeFormulario';
@@ -26,7 +27,7 @@ import { PERMISSOES, usePode } from '@/lib/permissoes';
  * autoridade. Aqui so evitamos o ida-e-volta obvio.
  */
 const esquema = z.object({
-  razao_social: z.string().trim().min(1, 'Informe a razão social'),
+  razao_social: z.string().trim().min(1, marcar('Informe a razão social')),
   nome_fantasia: z.string().trim().default(''),
   cnpj: z.string().trim().default(''),
   inscricao_estadual: z.string().trim().default(''),
@@ -38,7 +39,7 @@ const esquema = z.object({
   complemento: z.string().trim().default(''),
   bairro: z.string().trim().default(''),
   cidade: z.string().trim().default(''),
-  uf: z.string().trim().max(2, 'A UF tem 2 letras').default(''),
+  uf: z.string().trim().max(2, marcar('A UF tem 2 letras')).default(''),
   telefone: z.string().trim().default(''),
   email: z.string().trim().default(''),
   site: z.string().trim().default(''),
@@ -149,11 +150,11 @@ function CampoLogotipo({ titulo, aceita, temImagem, url, ocupado, aoEnviar, aoRe
         )}
         <input ref={inputRef} type="file" accept={aceita} className="hidden" onChange={aoMudarArquivo} />
         <Botao variante="secundaria" ocupado={ocupado} onClick={() => inputRef.current?.click()}>
-          {temImagem ? 'Trocar' : 'Enviar'}
+          {temImagem ? t('Trocar') : t('Enviar')}
         </Botao>
         {temImagem && (
           <Botao variante="fantasma" disabled={ocupado} onClick={aoRemover}>
-            Remover
+            {t('Remover')}
           </Botao>
         )}
       </div>
@@ -183,34 +184,43 @@ export function DadosEmpresaPagina() {
     mutationFn: atualizarDadosEmpresa,
     onSuccess: (atualizada) => {
       queryClient.setQueryData(chaveDadosEmpresa, atualizada);
-      mostrarToast('Dados da empresa salvos');
+      mostrarToast(t('Dados da empresa salvos'));
     },
   });
 
-  function mutacaoImagem(rotulo: string) {
+  function mutacaoImagem(salvo: () => string, falha: () => string) {
     return {
       onSuccess: (atualizada: DadosDaEmpresa) => {
         queryClient.setQueryData(chaveDadosEmpresa, atualizada);
-        mostrarToast(`${rotulo} salvo`);
+        mostrarToast(salvo());
       },
       onError: (erro: unknown) => {
-        mostrarToast(separarErro(erro).geral ?? `Não foi possível salvar o ${rotulo.toLowerCase()}.`, 'pending' as const);
+        mostrarToast(separarErro(erro).geral ?? falha(), 'pending' as const);
       },
     };
   }
 
-  const mutacaoLogoClaro = useMutation({ mutationFn: atualizarLogoClaro, ...mutacaoImagem('Logotipo claro') });
-  const mutacaoLogoEscuro = useMutation({ mutationFn: atualizarLogoEscuro, ...mutacaoImagem('Logotipo escuro') });
-  const mutacaoFavicon = useMutation({ mutationFn: atualizarFavicon, ...mutacaoImagem('Favicon') });
+  const mutacaoLogoClaro = useMutation({
+    mutationFn: atualizarLogoClaro,
+    ...mutacaoImagem(() => t('Logotipo claro salvo'), () => t('Não foi possível salvar o logotipo claro.')),
+  });
+  const mutacaoLogoEscuro = useMutation({
+    mutationFn: atualizarLogoEscuro,
+    ...mutacaoImagem(() => t('Logotipo escuro salvo'), () => t('Não foi possível salvar o logotipo escuro.')),
+  });
+  const mutacaoFavicon = useMutation({
+    mutationFn: atualizarFavicon,
+    ...mutacaoImagem(() => t('Favicon salvo'), () => t('Não foi possível salvar o favicon.')),
+  });
 
   const erroDeFormulario = separarErro(mutacaoDados.error);
   const erroDe = (campo: keyof Formulario): string | undefined =>
-    errors[campo]?.message ?? erroDeFormulario.porCampo[campo];
+    td(errors[campo]?.message) || erroDeFormulario.porCampo[campo];
 
   async function buscarCep() {
     const cep = (getValues('cep') ?? '').replace(/\D/g, '');
     if (cep.length !== 8) {
-      mostrarToast('Informe um CEP com 8 dígitos', 'pending');
+      mostrarToast(t('Informe um CEP com 8 dígitos'), 'pending');
       return;
     }
 
@@ -219,7 +229,7 @@ export function DadosEmpresaPagina() {
       const resposta = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
       const dados = (await resposta.json()) as RespostaViaCep;
       if (!resposta.ok || dados.erro) {
-        mostrarToast('CEP não encontrado', 'pending');
+        mostrarToast(t('CEP não encontrado'), 'pending');
         return;
       }
       setValue('logradouro', dados.logradouro ?? '');
@@ -227,7 +237,7 @@ export function DadosEmpresaPagina() {
       setValue('cidade', dados.localidade ?? '');
       setValue('uf', dados.uf ?? '');
     } catch {
-      mostrarToast('Não foi possível consultar o CEP agora. Preencha manualmente.', 'pending');
+      mostrarToast(t('Não foi possível consultar o CEP agora. Preencha manualmente.'), 'pending');
     } finally {
       setBuscandoCep(false);
     }
@@ -235,7 +245,7 @@ export function DadosEmpresaPagina() {
 
   async function enviarImagem(mutacao: typeof mutacaoLogoClaro, arquivo: File, limiteBytes: number, rotuloLimite: string) {
     if (arquivo.size > limiteBytes) {
-      mostrarToast(`O arquivo excede o tamanho máximo de ${rotuloLimite}.`, 'pending');
+      mostrarToast(t('O arquivo excede o tamanho máximo de {limite}.', { limite: rotuloLimite }), 'pending');
       return;
     }
     try {
@@ -246,7 +256,7 @@ export function DadosEmpresaPagina() {
       // removido no meio da leitura, permissao negada) -- sem o catch, a
       // Promise rejeitada nunca chegava a um toast: o botao nem ficava
       // ocupado, e a pessoa clicava sem nada acontecer.
-      mostrarToast('Não foi possível ler o arquivo selecionado. Tente novamente.', 'pending');
+      mostrarToast(t('Não foi possível ler o arquivo selecionado. Tente novamente.'), 'pending');
     }
   }
 
@@ -261,14 +271,14 @@ export function DadosEmpresaPagina() {
           role="alert"
           className="rounded-campo border border-estado-pending bg-estado-pending-bg px-3 py-2 text-body text-estado-pending"
         >
-          Acesso restrito: seu perfil não tem permissão para esta tela.
+          {t('Acesso restrito: seu perfil não tem permissão para esta tela.')}
         </p>
       </div>
     );
   }
 
   if (isLoading) {
-    return <p className="text-body text-texto-secondary">Carregando dados da empresa…</p>;
+    return <p className="text-body text-texto-secondary">{t('Carregando dados da empresa…')}</p>;
   }
 
   if (isError || !empresa) {
@@ -282,7 +292,7 @@ export function DadosEmpresaPagina() {
           role="alert"
           className="rounded-campo border border-estado-pending bg-estado-pending-bg px-3 py-2 text-body text-estado-pending"
         >
-          Não foi possível carregar os dados da empresa. Recarregue a página para tentar de novo.
+          {t('Não foi possível carregar os dados da empresa. Recarregue a página para tentar de novo.')}
         </p>
       </div>
     );
@@ -291,10 +301,9 @@ export function DadosEmpresaPagina() {
   return (
     <div className="mx-auto flex max-w-[800px] flex-col gap-4">
       <div>
-        <h1 className="text-title text-texto-primary">Dados da empresa</h1>
+        <h1 className="text-title text-texto-primary">{t('Dados da empresa')}</h1>
         <p className="text-body text-texto-secondary">
-          Identificação, endereço e logotipo — aparecem no cabeçalho e na tela de login de
-          todo mundo que usa o sistema.
+          {t('Identificação, endereço e logotipo — aparecem no cabeçalho e na tela de login de todo mundo que usa o sistema.')}
         </p>
       </div>
 
@@ -304,7 +313,7 @@ export function DadosEmpresaPagina() {
         className="flex flex-col gap-6"
       >
         <section className="flex flex-col gap-4 rounded-cartao border border-borda-subtle bg-surface-raised p-6">
-          <h2 className="text-subtitle text-texto-primary">Identificação</h2>
+          <h2 className="text-subtitle text-texto-primary">{t('Identificação')}</h2>
           {erroDeFormulario.geral && (
             <p
               role="alert"
@@ -314,77 +323,77 @@ export function DadosEmpresaPagina() {
             </p>
           )}
 
-          <Campo rotulo="Razão social" obrigatorio erro={erroDe('razao_social')} {...register('razao_social')} />
+          <Campo rotulo={t('Razão social')} obrigatorio erro={erroDe('razao_social')} {...register('razao_social')} />
           <div className="grid gap-4 md:grid-cols-2">
-            <Campo rotulo="Nome fantasia" erro={erroDe('nome_fantasia')} {...register('nome_fantasia')} />
-            <Campo rotulo="CNPJ" tipoDado="codigo" ajuda="Com ou sem pontuação" erro={erroDe('cnpj')} {...register('cnpj')} />
+            <Campo rotulo={t('Nome fantasia')} erro={erroDe('nome_fantasia')} {...register('nome_fantasia')} />
+            <Campo rotulo={t('CNPJ')} tipoDado="codigo" ajuda={t('Com ou sem pontuação')} erro={erroDe('cnpj')} {...register('cnpj')} />
           </div>
           <div className="grid gap-4 md:grid-cols-3">
-            <Campo rotulo="Inscrição estadual" erro={erroDe('inscricao_estadual')} {...register('inscricao_estadual')} />
-            <Campo rotulo="Inscrição municipal" erro={erroDe('inscricao_municipal')} {...register('inscricao_municipal')} />
-            <Campo rotulo="CNAE" erro={erroDe('cnae')} {...register('cnae')} />
+            <Campo rotulo={t('Inscrição estadual')} erro={erroDe('inscricao_estadual')} {...register('inscricao_estadual')} />
+            <Campo rotulo={t('Inscrição municipal')} erro={erroDe('inscricao_municipal')} {...register('inscricao_municipal')} />
+            <Campo rotulo={t('CNAE')} erro={erroDe('cnae')} {...register('cnae')} />
           </div>
         </section>
 
         <section className="flex flex-col gap-4 rounded-cartao border border-borda-subtle bg-surface-raised p-6">
-          <h2 className="text-subtitle text-texto-primary">Endereço</h2>
+          <h2 className="text-subtitle text-texto-primary">{t('Endereço')}</h2>
           <div className="flex items-end gap-2">
             <div className="w-[200px]">
-              <Campo rotulo="CEP" tipoDado="codigo" erro={erroDe('cep')} {...register('cep')} />
+              <Campo rotulo={t('CEP')} tipoDado="codigo" erro={erroDe('cep')} {...register('cep')} />
             </div>
             <Botao variante="secundaria" ocupado={buscandoCep} rotuloOcupado="Buscando…" onClick={buscarCep}>
-              Buscar CEP
+              {t('Buscar CEP')}
             </Botao>
           </div>
           <div className="grid gap-4 md:grid-cols-[2fr_1fr]">
-            <Campo rotulo="Logradouro" erro={erroDe('logradouro')} {...register('logradouro')} />
-            <Campo rotulo="Número" erro={erroDe('numero')} {...register('numero')} />
+            <Campo rotulo={t('Logradouro')} erro={erroDe('logradouro')} {...register('logradouro')} />
+            <Campo rotulo={t('Número')} erro={erroDe('numero')} {...register('numero')} />
           </div>
           <div className="grid gap-4 md:grid-cols-2">
-            <Campo rotulo="Complemento" erro={erroDe('complemento')} {...register('complemento')} />
-            <Campo rotulo="Bairro" erro={erroDe('bairro')} {...register('bairro')} />
+            <Campo rotulo={t('Complemento')} erro={erroDe('complemento')} {...register('complemento')} />
+            <Campo rotulo={t('Bairro')} erro={erroDe('bairro')} {...register('bairro')} />
           </div>
           <div className="grid gap-4 md:grid-cols-[3fr_1fr]">
-            <Campo rotulo="Cidade" erro={erroDe('cidade')} {...register('cidade')} />
-            <Campo rotulo="UF" tipoDado="codigo" erro={erroDe('uf')} {...register('uf')} />
+            <Campo rotulo={t('Cidade')} erro={erroDe('cidade')} {...register('cidade')} />
+            <Campo rotulo={t('UF')} tipoDado="codigo" erro={erroDe('uf')} {...register('uf')} />
           </div>
         </section>
 
         <section className="flex flex-col gap-4 rounded-cartao border border-borda-subtle bg-surface-raised p-6">
-          <h2 className="text-subtitle text-texto-primary">Contato</h2>
+          <h2 className="text-subtitle text-texto-primary">{t('Contato')}</h2>
           <div className="grid gap-4 md:grid-cols-3">
-            <Campo rotulo="Telefone" erro={erroDe('telefone')} {...register('telefone')} />
-            <Campo rotulo="E-mail institucional" type="email" erro={erroDe('email')} {...register('email')} />
-            <Campo rotulo="Site" erro={erroDe('site')} {...register('site')} />
+            <Campo rotulo={t('Telefone')} erro={erroDe('telefone')} {...register('telefone')} />
+            <Campo rotulo={t('E-mail institucional')} type="email" erro={erroDe('email')} {...register('email')} />
+            <Campo rotulo={t('Site')} erro={erroDe('site')} {...register('site')} />
           </div>
         </section>
 
         <section className="flex flex-col gap-4 rounded-cartao border border-borda-subtle bg-surface-raised p-6">
-          <h2 className="text-subtitle text-texto-primary">Documentos</h2>
-          <Campo rotulo="Texto de rodapé padrão" erro={erroDe('rodape_padrao')} {...register('rodape_padrao')} />
+          <h2 className="text-subtitle text-texto-primary">{t('Documentos')}</h2>
+          <Campo rotulo={t('Texto de rodapé padrão')} erro={erroDe('rodape_padrao')} {...register('rodape_padrao')} />
           <Campo
-            rotulo="Condições gerais de compra"
+            rotulo={t('Condições gerais de compra')}
             erro={erroDe('condicoes_gerais_compra')}
             {...register('condicoes_gerais_compra')}
           />
-          <Campo rotulo="Responsável técnico" erro={erroDe('responsavel_tecnico')} {...register('responsavel_tecnico')} />
+          <Campo rotulo={t('Responsável técnico')} erro={erroDe('responsavel_tecnico')} {...register('responsavel_tecnico')} />
         </section>
 
         <div className="flex items-center justify-end gap-2">
           <Botao type="submit" icone="save" ocupado={mutacaoDados.isPending} rotuloOcupado="Salvando…">
-            Salvar
+            {t('Salvar')}
           </Botao>
         </div>
       </form>
 
       <section className="flex flex-col gap-4 rounded-cartao border border-borda-subtle bg-surface-raised p-6">
-        <h2 className="text-subtitle text-texto-primary">Logotipo</h2>
+        <h2 className="text-subtitle text-texto-primary">{t('Logotipo')}</h2>
         <p className="text-label text-texto-secondary">
-          PNG ou SVG, até 1&nbsp;MB. O favicon aceita só PNG, até 200&nbsp;KB.
+          {t('PNG ou SVG, até 1 MB. O favicon aceita só PNG, até 200 KB.')}
         </p>
 
         <CampoLogotipo
-          titulo="Logotipo (tema claro)"
+          titulo={t('Logotipo (tema claro)')}
           aceita="image/png,image/svg+xml"
           temImagem={empresa.tem_logo_claro}
           url={urlLogoClaro(empresa.updated_at)}
@@ -393,7 +402,7 @@ export function DadosEmpresaPagina() {
           aoRemover={() => removerImagem(mutacaoLogoClaro)}
         />
         <CampoLogotipo
-          titulo="Logotipo (tema escuro)"
+          titulo={t('Logotipo (tema escuro)')}
           aceita="image/png,image/svg+xml"
           temImagem={empresa.tem_logo_escuro}
           url={urlLogoEscuro(empresa.updated_at)}
@@ -402,7 +411,7 @@ export function DadosEmpresaPagina() {
           aoRemover={() => removerImagem(mutacaoLogoEscuro)}
         />
         <CampoLogotipo
-          titulo="Favicon"
+          titulo={t('Favicon')}
           aceita="image/png"
           temImagem={empresa.tem_favicon}
           url={urlFavicon(empresa.updated_at)}

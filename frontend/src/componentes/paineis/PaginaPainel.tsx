@@ -4,6 +4,7 @@ import { Botao } from '@/componentes/ui/Botao';
 import { icones } from '@/componentes/ui/icones';
 import { useControlesPainel } from '@/hooks/useControlesPainel';
 import { useTelaModoTV } from '@/hooks/useTelaModoTV';
+import { t } from '@/i18n';
 import { cn } from '@/lib/cn';
 import { ErroApi } from '@/servicos/api';
 import { BarraControles } from './BarraControles';
@@ -25,8 +26,8 @@ export interface PaginaPainelProps<T> {
 
 function mensagemDeErro(erro: unknown): string {
   return erro instanceof ErroApi && erro.message
-    ? `Não foi possível carregar o painel: ${erro.message}`
-    : 'Não foi possível carregar o painel. Verifique a conexão e tente de novo.';
+    ? t('Não foi possível carregar o painel: {erro}', { erro: erro.message })
+    : t('Não foi possível carregar o painel. Verifique a conexão e tente de novo.');
 }
 
 /**
@@ -74,7 +75,7 @@ export function PaginaPainel<T>({ titulo, descricao, setor, buscar, children }: 
           className="flex items-center gap-2 rounded-campo border border-estado-warning bg-estado-warning-bg px-3 py-2 text-body text-estado-warning"
         >
           <IconeFalha size={16} aria-hidden="true" />
-          Não foi possível atualizar agora. Os números mostrados são os da última atualização.
+          {t('Não foi possível atualizar agora. Os números mostrados são os da última atualização.')}
         </p>
       )}
 
@@ -88,7 +89,7 @@ export function PaginaPainel<T>({ titulo, descricao, setor, buscar, children }: 
             {mensagemDeErro(consulta.error)}
           </p>
           <Botao variante="secundaria" icone="refresh-cw" onClick={() => void consulta.refetch()}>
-            Tentar de novo
+            {t('Tentar de novo')}
           </Botao>
         </div>
       ) : (

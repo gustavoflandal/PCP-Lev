@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { t } from '@/i18n';
 import { cn } from '@/lib/cn';
 import type { Ordem } from '@/tipos/cadastros';
 import { Botao } from './Botao';
@@ -116,7 +117,7 @@ export function Tabela<T>({
                 scope="col"
                 className="border-b border-borda-subtle px-3 py-2 text-right text-label text-texto-secondary print:hidden"
               >
-                Ações
+                {t('Ações')}
               </th>
             )}
           </tr>
@@ -133,7 +134,7 @@ export function Tabela<T>({
                   </p>
                   {aoTentarDeNovo && (
                     <Botao variante="secundaria" icone="refresh-cw" onClick={aoTentarDeNovo}>
-                      Tentar de novo
+                      {t('Tentar de novo')}
                     </Botao>
                   )}
                 </div>

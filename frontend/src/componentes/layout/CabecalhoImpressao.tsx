@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
+import { t } from '@/i18n';
 import { useLogoEmpresa } from '@/hooks/useLogoEmpresa';
 import { formatarDataHora } from '@/lib/formato';
 import { nomeDoArquivo, prepararGraficos, restaurarGraficos, tituloDaTela } from '@/lib/impressao';
@@ -48,7 +49,7 @@ export function CabecalhoImpressaoBase({ marca, empresa }: { marca?: ReactNode; 
         </div>
       </div>
       <p className="text-right text-label text-texto-secondary">
-        {usuario ? `Impresso por ${usuario.nome}` : 'Impresso'}
+        {usuario ? t('Impresso por {nome}', { nome: usuario.nome }) : t('Impresso')}
         {impressao && <span className="block tabular">{formatarDataHora(impressao.quando.toISOString())}</span>}
       </p>
     </div>

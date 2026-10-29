@@ -12,6 +12,7 @@ import { usePartesPecasAtivas } from '@/hooks/usePartesPecasAtivas';
 import { listarDePara, removerDePara, salvarDePara } from '@/servicos/notasEntrada';
 import type { Fornecedor } from '@/tipos/cadastros';
 import type { DePara } from '@/tipos/notasEntrada';
+import { t } from '@/i18n';
 
 export interface DeParaFornecedorProps {
   fornecedor: Fornecedor;
@@ -57,7 +58,7 @@ export function DeParaFornecedor({ fornecedor, podeEditar, aoFechar }: DeParaFor
       }),
     onSuccess: () => {
       void clienteQuery.invalidateQueries({ queryKey: chave });
-      mostrarToast(editando ? 'Vínculo atualizado' : 'Vínculo salvo');
+      mostrarToast(editando ? t('Vínculo atualizado') : t('Vínculo salvo'));
       definirForm(VAZIO);
       definirEditando(false);
     },
@@ -67,11 +68,11 @@ export function DeParaFornecedor({ fornecedor, podeEditar, aoFechar }: DeParaFor
     mutationFn: (d: DePara) => removerDePara(d.id),
     onSuccess: () => {
       void clienteQuery.invalidateQueries({ queryKey: chave });
-      mostrarToast('Vínculo removido');
+      mostrarToast(t('Vínculo removido'));
       definirARemover(null);
     },
     onError: (e) => {
-      mostrarToast(mensagemDeErro(e, 'Não foi possível remover o vínculo.'), 'pending');
+      mostrarToast(mensagemDeErro(e, t('Não foi possível remover o vínculo.')), 'pending');
       definirARemover(null);
     },
   });
@@ -80,11 +81,11 @@ export function DeParaFornecedor({ fornecedor, podeEditar, aoFechar }: DeParaFor
     evento.preventDefault();
     const fator = Number(form.fator_conversao.replace(',', '.'));
     const novos: typeof erros = {};
-    if (!form.parte_peca_id) novos.parte_peca_id = 'Escolha a peça';
+    if (!form.parte_peca_id) novos.parte_peca_id = t('Escolha a peça');
     if (form.codigo_fornecedor.trim() === '' || form.codigo_fornecedor.trim().length > 60)
-      novos.codigo_fornecedor = 'Informe o código do fornecedor (até 60 caracteres)';
-    if (form.unidade_fornecedor.trim().length > 10) novos.unidade_fornecedor = 'Unidade com até 10 caracteres';
-    if (!Number.isFinite(fator) || fator <= 0) novos.fator_conversao = 'Fator maior que zero (ex.: 100 para caixa com 100)';
+      novos.codigo_fornecedor = t('Informe o código do fornecedor (até 60 caracteres)');
+    if (form.unidade_fornecedor.trim().length > 10) novos.unidade_fornecedor = t('Unidade com até 10 caracteres');
+    if (!Number.isFinite(fator) || fator <= 0) novos.fator_conversao = t('Fator maior que zero (ex.: 100 para caixa com 100)');
     definirErros(novos);
     if (Object.keys(novos).length === 0) salvar.mutate();
   }
@@ -102,13 +103,13 @@ export function DeParaFornecedor({ fornecedor, podeEditar, aoFechar }: DeParaFor
   }
 
   const colunas: Coluna<DePara>[] = [
-    { chave: 'codigo', rotulo: 'Código do fornecedor', renderizar: (d) => <span className="font-mono">{d.codigo_fornecedor}</span> },
-    { chave: 'descricao', rotulo: 'Descrição do fornecedor', renderizar: (d) => d.descricao_fornecedor || '—' },
-    { chave: 'unidade', rotulo: 'Unidade', renderizar: (d) => d.unidade_fornecedor || '—' },
-    { chave: 'fator', rotulo: 'Fator', alinhamento: 'direita', renderizar: (d) => formatoFator.format(d.fator_conversao) },
+    { chave: 'codigo', rotulo: t('Código do fornecedor'), renderizar: (d) => <span className="font-mono">{d.codigo_fornecedor}</span> },
+    { chave: 'descricao', rotulo: t('Descrição do fornecedor'), renderizar: (d) => d.descricao_fornecedor || '—' },
+    { chave: 'unidade', rotulo: t('Unidade'), renderizar: (d) => d.unidade_fornecedor || '—' },
+    { chave: 'fator', rotulo: t('Fator'), alinhamento: 'direita', renderizar: (d) => formatoFator.format(d.fator_conversao) },
     {
       chave: 'peca',
-      rotulo: 'Peça',
+      rotulo: t('Peça'),
       renderizar: (d) => (
         <span>
           <span className="font-mono">{d.peca_codigo}</span> {d.peca_descricao}
@@ -122,12 +123,12 @@ export function DeParaFornecedor({ fornecedor, podeEditar, aoFechar }: DeParaFor
       aberto
       aoFechar={aoFechar}
       largura="larga"
-      titulo={`Itens do fornecedor (de-para) — ${fornecedor.razao_social}`}
-      descricao="Código e unidade do fornecedor para a nossa peça. A importação do XML reconhece os itens por aqui."
+      titulo={t('Itens do fornecedor (de-para) — {razao_social}', { razao_social: fornecedor.razao_social })}
+      descricao={t('Código e unidade do fornecedor para a nossa peça. A importação do XML reconhece os itens por aqui.')}
     >
       <div className="flex flex-col gap-4">
         <Tabela<DePara>
-          rotulo="Vínculos de-para"
+          rotulo={t('Vínculos de-para')}
           colunas={colunas}
           itens={consulta.data ?? []}
           chaveDe={(d) => d.id}
@@ -135,18 +136,18 @@ export function DeParaFornecedor({ fornecedor, podeEditar, aoFechar }: DeParaFor
           ordem="asc"
           aoOrdenar={() => {}}
           carregando={consulta.isPending}
-          erro={consulta.isError ? mensagemDeErro(consulta.error, 'Não foi possível carregar os vínculos.') : null}
+          erro={consulta.isError ? mensagemDeErro(consulta.error, t('Não foi possível carregar os vínculos.')) : null}
           aoTentarDeNovo={() => void consulta.refetch()}
-          vazio="Nenhum vínculo ainda. Eles nascem ao importar o XML ou podem ser cadastrados aqui."
+          vazio={t('Nenhum vínculo ainda. Eles nascem ao importar o XML ou podem ser cadastrados aqui.')}
           acoes={
             podeEditar
               ? (d) => (
                   <span className="flex justify-end gap-1">
-                    <Botao variante="fantasma" icone="pencil" aria-label={`Editar vínculo ${d.codigo_fornecedor}`} onClick={() => editar(d)}>
-                      Editar
+                    <Botao variante="fantasma" icone="pencil" aria-label={t('Editar vínculo {codigo_fornecedor}', { codigo_fornecedor: d.codigo_fornecedor })} onClick={() => editar(d)}>
+                      {t('Editar')}
                     </Botao>
-                    <Botao variante="fantasma" icone="trash-2" aria-label={`Remover vínculo ${d.codigo_fornecedor}`} onClick={() => definirARemover(d)}>
-                      Remover
+                    <Botao variante="fantasma" icone="trash-2" aria-label={t('Remover vínculo {codigo_fornecedor}', { codigo_fornecedor: d.codigo_fornecedor })} onClick={() => definirARemover(d)}>
+                      {t('Remover')}
                     </Botao>
                   </span>
                 )
@@ -155,16 +156,16 @@ export function DeParaFornecedor({ fornecedor, podeEditar, aoFechar }: DeParaFor
         />
 
         {podeEditar && (
-          <form noValidate onSubmit={enviar} aria-label="Vínculo de-para" className="flex flex-col gap-3 rounded-cartao border border-borda-subtle bg-surface-sunken p-3">
-            <h3 className="text-subtitle text-texto-primary">{editando ? 'Editar vínculo' : 'Novo vínculo'}</h3>
+          <form noValidate onSubmit={enviar} aria-label={t('Vínculo de-para')} className="flex flex-col gap-3 rounded-cartao border border-borda-subtle bg-surface-sunken p-3">
+            <h3 className="text-subtitle text-texto-primary">{editando ? t('Editar vínculo') : t('Novo vínculo')}</h3>
             {salvar.isError && (
               <p role="alert" className="text-body text-estado-pending">
-                {mensagemDeErro(salvar.error, 'Não foi possível salvar o vínculo.')}
+                {mensagemDeErro(salvar.error, t('Não foi possível salvar o vínculo.'))}
               </p>
             )}
             <div className="grid gap-3 md:grid-cols-3">
               <Campo
-                rotulo="Código do fornecedor"
+                rotulo={t('Código do fornecedor')}
                 obrigatorio
                 tipoDado="codigo"
                 erro={erros.codigo_fornecedor}
@@ -174,9 +175,9 @@ export function DeParaFornecedor({ fornecedor, podeEditar, aoFechar }: DeParaFor
               />
               <div className="md:col-span-2">
                 <Selecao
-                  rotulo="Peça"
+                  rotulo={t('Peça')}
                   obrigatorio
-                  placeholder="Escolha a peça"
+                  placeholder={t('Escolha a peça')}
                   opcoes={pecas.opcoes}
                   erro={erros.parte_peca_id}
                   value={form.parte_peca_id}
@@ -184,23 +185,23 @@ export function DeParaFornecedor({ fornecedor, podeEditar, aoFechar }: DeParaFor
                 />
               </div>
               <Campo
-                rotulo="Descrição do fornecedor"
+                rotulo={t('Descrição do fornecedor')}
                 value={form.descricao_fornecedor}
                 onChange={(e) => definirForm({ ...form, descricao_fornecedor: e.target.value })}
               />
               <Campo
-                rotulo="Unidade do fornecedor"
+                rotulo={t('Unidade do fornecedor')}
                 erro={erros.unidade_fornecedor}
-                ajuda="Ex.: CX, RL, PCT"
+                ajuda={t('Ex.: CX, RL, PCT')}
                 value={form.unidade_fornecedor}
                 onChange={(e) => definirForm({ ...form, unidade_fornecedor: e.target.value })}
               />
               <Campo
-                rotulo="Fator de conversão"
+                rotulo={t('Fator de conversão')}
                 obrigatorio
                 tipoDado="quantidade"
                 erro={erros.fator_conversao}
-                ajuda="Quantas unidades de consumo há em 1 unidade do fornecedor."
+                ajuda={t('Quantas unidades de consumo há em 1 unidade do fornecedor.')}
                 value={form.fator_conversao}
                 onChange={(e) => definirForm({ ...form, fator_conversao: e.target.value })}
               />
@@ -215,11 +216,11 @@ export function DeParaFornecedor({ fornecedor, podeEditar, aoFechar }: DeParaFor
                     definirErros({});
                   }}
                 >
-                  Cancelar edição
+                  {t('Cancelar edição')}
                 </Botao>
               )}
-              <Botao type="submit" icone="save" ocupado={salvar.isPending} rotuloOcupado="Salvando…">
-                Salvar vínculo
+              <Botao type="submit" icone="save" ocupado={salvar.isPending} rotuloOcupado={t('Salvando…')}>
+                {t('Salvar vínculo')}
               </Botao>
             </div>
           </form>
@@ -228,10 +229,10 @@ export function DeParaFornecedor({ fornecedor, podeEditar, aoFechar }: DeParaFor
 
       <Confirmacao
         aberto={aRemover !== null}
-        titulo="Remover vínculo"
-        mensagem={aRemover ? `Remover o vínculo do código ${aRemover.codigo_fornecedor}? As próximas importações não reconhecerão mais esse item.` : ''}
-        rotuloConfirmar="Remover"
-        rotuloOcupado="Removendo…"
+        titulo={t('Remover vínculo')}
+        mensagem={aRemover ? t('Remover o vínculo do código {codigo_fornecedor}? As próximas importações não reconhecerão mais esse item.', { codigo_fornecedor: aRemover.codigo_fornecedor }) : ''}
+        rotuloConfirmar={t('Remover')}
+        rotuloOcupado={t('Removendo…')}
         ocupado={remover.isPending}
         aoConfirmar={() => aRemover && remover.mutate(aRemover)}
         aoCancelar={() => definirARemover(null)}

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Badge } from '@/componentes/ui/Badge';
 import { icones } from '@/componentes/ui/icones';
 import { cn } from '@/lib/cn';
+import { t } from '@/i18n';
 
 export interface MiniaturaProps {
   /** URL assinada da miniatura (vida de 5 min); ausente sem foto. */
@@ -49,7 +50,7 @@ export function Miniatura({ url, alt, critico, tamanho = 'pequena', className }:
       )}
       {critico && !url && (
         <Badge tom="warning" icone="alert-triangle">
-          Sem foto
+          {t('Sem foto')}
         </Badge>
       )}
     </span>

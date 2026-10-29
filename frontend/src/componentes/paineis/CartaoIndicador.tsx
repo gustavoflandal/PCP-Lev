@@ -1,6 +1,7 @@
 import { useId, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { icones, type NomeIcone } from '@/componentes/ui/icones';
+import { t } from '@/i18n';
 import { cn } from '@/lib/cn';
 import { formatarValor, type FormatoValor } from '@/lib/paineis';
 
@@ -52,7 +53,7 @@ export function CartaoIndicador({
       <div
         data-testid="esqueleto-indicador"
         aria-busy="true"
-        aria-label={`${rotulo}: carregando`}
+        aria-label={t('{rotulo}: carregando', { rotulo })}
         className="flex flex-col gap-2 rounded-cartao border border-borda-subtle bg-surface-raised p-4"
       >
         <span className="block h-3 w-1/2 rounded-campo bg-surface-sunken" />

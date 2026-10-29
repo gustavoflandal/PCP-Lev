@@ -7,6 +7,7 @@ import { Confirmacao } from '@/componentes/ui/Confirmacao';
 import { Selecao } from '@/componentes/ui/Selecao';
 import { icones } from '@/componentes/ui/icones';
 import { useToasts } from '@/componentes/ui/Toast';
+import { t, td } from '@/i18n';
 import { formatarBytes, formatarDataHora } from '@/lib/formato';
 import { anexar, enviarArquivo, listarAnexos, removerAnexo } from '@/servicos/arquivos';
 import type { Anexo } from '@/tipos/arquivos';
@@ -55,20 +56,20 @@ export function AnexosDaNota({ notaId, podeEditar, podeRemover = podeEditar }: A
     onMutate: () => definirErro(null),
     onSuccess: () => {
       void clienteQuery.invalidateQueries({ queryKey: chave });
-      mostrarToast('Anexo enviado');
+      mostrarToast(t('Anexo enviado'));
     },
-    onError: (e) => definirErro(mensagemDeErro(e, 'Não foi possível enviar o anexo. Tente de novo.')),
+    onError: (e) => definirErro(mensagemDeErro(e, t('Não foi possível enviar o anexo. Tente de novo.'))),
   });
 
   const remocao = useMutation({
     mutationFn: (a: Anexo) => removerAnexo(a.id),
     onSuccess: () => {
       void clienteQuery.invalidateQueries({ queryKey: chave });
-      mostrarToast('Anexo removido');
+      mostrarToast(t('Anexo removido'));
       definirARemover(null);
     },
     onError: (e) => {
-      definirErro(mensagemDeErro(e, 'Não foi possível remover o anexo.'));
+      definirErro(mensagemDeErro(e, t('Não foi possível remover o anexo.')));
       definirARemover(null);
     },
   });
@@ -81,14 +82,14 @@ export function AnexosDaNota({ notaId, podeEditar, podeRemover = podeEditar }: A
         <div className="flex flex-wrap items-end gap-2">
           <div className="w-[260px]">
             <Selecao
-              rotulo="Categoria do anexo"
-              opcoes={CATEGORIAS_ANEXO_NOTA.map((c) => ({ valor: c, rotulo: c }))}
+              rotulo={t('Categoria do anexo')}
+              opcoes={CATEGORIAS_ANEXO_NOTA.map((c) => ({ valor: c, rotulo: td(c) }))}
               value={categoria}
               onChange={(e) => definirCategoria(e.target.value)}
             />
           </div>
           <label htmlFor={idArquivo} className="sr-only">
-            Arquivo do anexo
+            {t('Arquivo do anexo')}
           </label>
           <input
             id={idArquivo}
@@ -103,8 +104,8 @@ export function AnexosDaNota({ notaId, podeEditar, podeRemover = podeEditar }: A
               if (arquivo) envio.mutate(arquivo);
             }}
           />
-          <Botao icone="upload" ocupado={envio.isPending} rotuloOcupado="Enviando…" onClick={() => entradaRef.current?.click()}>
-            Anexar arquivo
+          <Botao icone="upload" ocupado={envio.isPending} rotuloOcupado={t('Enviando…')} onClick={() => entradaRef.current?.click()}>
+            {t('Anexar arquivo')}
           </Botao>
         </div>
       )}
@@ -116,28 +117,28 @@ export function AnexosDaNota({ notaId, podeEditar, podeRemover = podeEditar }: A
       )}
 
       {consulta.isPending ? (
-        <p className="text-body text-texto-secondary">Carregando anexos…</p>
+        <p className="text-body text-texto-secondary">{t('Carregando anexos…')}</p>
       ) : consulta.isError ? (
         <p role="alert" className="text-body text-estado-pending">
-          {mensagemDeErro(consulta.error, 'Não foi possível carregar os anexos.')}
+          {mensagemDeErro(consulta.error, t('Não foi possível carregar os anexos.'))}
         </p>
       ) : anexos.length === 0 ? (
         <p className="text-body text-texto-secondary">
-          Nenhum anexo. {podeEditar ? 'Anexe o DANFE, o XML e as fotos da mercadoria recebida.' : ''}
+          {t('Nenhum anexo.')} {podeEditar ? t('Anexe o DANFE, o XML e as fotos da mercadoria recebida.') : ''}
         </p>
       ) : (
-        <ul aria-label="Anexos da nota" className="flex flex-col divide-y divide-borda-subtle rounded-cartao border border-borda-subtle">
+        <ul aria-label={t('Anexos da nota')} className="flex flex-col divide-y divide-borda-subtle rounded-cartao border border-borda-subtle">
           {anexos.map((a) => {
             const imagem = a.arquivo.tipo_mime.startsWith('image/');
             return (
               <li key={a.id} className="flex flex-wrap items-center gap-3 px-3 py-2">
                 {imagem ? (
-                  <Miniatura url={a.miniatura_url ?? a.url} alt={`${a.categoria || 'Anexo'}: ${a.arquivo.nome_original}`} />
+                  <Miniatura url={a.miniatura_url ?? a.url} alt={`${td(a.categoria) || t('Anexo')}: ${a.arquivo.nome_original}`} />
                 ) : (
                   <IconeArquivo size={20} aria-hidden="true" className="text-texto-secondary" />
                 )}
                 <div className="flex min-w-[200px] flex-1 flex-col">
-                  <span className="text-body text-texto-primary">{a.categoria || 'Anexo'}</span>
+                  <span className="text-body text-texto-primary">{td(a.categoria) || t('Anexo')}</span>
                   <span className="text-label text-texto-secondary">
                     {a.arquivo.nome_original} · {formatarBytes(a.arquivo.tamanho)} · {formatarDataHora(a.created_at)}
                     {a.created_by ? ` · ${a.created_by}` : ''}
@@ -151,17 +152,17 @@ export function AnexosDaNota({ notaId, podeEditar, podeRemover = podeEditar }: A
                     className="inline-flex items-center gap-1 text-body text-brand hover:underline"
                   >
                     <IconeAbrir size={14} aria-hidden="true" />
-                    Abrir
+                    {t('Abrir')}
                   </a>
                 )}
                 {podeEditar && podeRemover && (
                   <Botao
                     variante="fantasma"
                     icone="trash-2"
-                    aria-label={`Remover anexo ${a.arquivo.nome_original}`}
+                    aria-label={t('Remover anexo {nome}', { nome: a.arquivo.nome_original })}
                     onClick={() => definirARemover(a)}
                   >
-                    Remover
+                    {t('Remover')}
                   </Botao>
                 )}
               </li>
@@ -172,10 +173,10 @@ export function AnexosDaNota({ notaId, podeEditar, podeRemover = podeEditar }: A
 
       <Confirmacao
         aberto={aRemover !== null}
-        titulo="Remover anexo"
-        mensagem={aRemover ? `Remover o anexo ${aRemover.arquivo.nome_original} da nota?` : ''}
-        rotuloConfirmar="Remover"
-        rotuloOcupado="Removendo…"
+        titulo={t('Remover anexo')}
+        mensagem={aRemover ? t('Remover o anexo {nome} da nota?', { nome: aRemover.arquivo.nome_original }) : ''}
+        rotuloConfirmar={t('Remover')}
+        rotuloOcupado={t('Removendo…')}
         ocupado={remocao.isPending}
         aoConfirmar={() => aRemover && remocao.mutate(aRemover)}
         aoCancelar={() => definirARemover(null)}

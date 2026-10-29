@@ -1,6 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { PREFERENCIAS_PADRAO, usePreferencias } from '@/store/preferencias';
 import { entrarComoPerfil, instalarServidorFalso, renderizarComProvedores, type ServidorFalso } from '@/testes/utilitarios';
 import { OrdensProducao } from './OrdensProducao';
 
@@ -57,5 +58,29 @@ describe('OrdensProducao', () => {
     );
     // Sem filtro de etapa, o parametro nem vai.
     expect(servidor.requisicoes[0].params).not.toHaveProperty('etapa');
+  });
+
+  describe('em espanhol', () => {
+    afterEach(() => usePreferencias.getState().aplicar(PREFERENCIAS_PADRAO));
+
+    it('traduz titulo, colunas, etapa e situacao', async () => {
+      usePreferencias.getState().aplicar({ ...PREFERENCIAS_PADRAO, idioma: 'es' });
+      servidor.responder([
+        {
+          metodo: 'get',
+          url: '/ops',
+          status: 200,
+          corpo: { sucesso: true, dados: [op], paginacao: { pagina: 1, limite: 20, total: 1, total_paginas: 1 } },
+        },
+      ]);
+      renderizarComProvedores(<OrdensProducao />);
+
+      const linha = (await screen.findByRole('button', { name: 'OP-2026-00001' })).closest('tr')!;
+      expect(screen.getByRole('heading', { name: 'Órdenes de producción' })).toBeInTheDocument();
+      expect(within(linha).getByText('Montaje')).toBeInTheDocument();
+      expect(within(linha).getByText('Retrasada')).toBeInTheDocument();
+      expect(within(linha).getByText('Liberada')).toBeInTheDocument();
+      expect(screen.getByLabelText('Estado')).toBeInTheDocument();
+    });
   });
 });

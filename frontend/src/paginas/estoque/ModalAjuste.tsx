@@ -8,6 +8,7 @@ import { Campo } from '@/componentes/ui/Campo';
 import { Modal } from '@/componentes/ui/Modal';
 import { useToasts } from '@/componentes/ui/Toast';
 import { usePartesPecasAtivas } from '@/hooks/usePartesPecasAtivas';
+import { t } from '@/i18n';
 import { ajustarEstoque, type CorpoAjusteEstoque } from '@/servicos/estoque';
 import type { SaldoEstoque } from '@/tipos/estoque';
 import type { SerieItem } from '@/tipos/notasEntrada';
@@ -66,7 +67,7 @@ export function ModalAjuste({ item, aoFechar }: ModalAjusteProps) {
     onSuccess: () => {
       void clienteQuery.invalidateQueries({ queryKey: ['estoque'] });
       void clienteQuery.invalidateQueries({ queryKey: ['lotes'] });
-      mostrarToast('Estoque ajustado');
+      mostrarToast(t('Estoque ajustado'));
       aoFechar();
     },
   });
@@ -74,24 +75,24 @@ export function ModalAjuste({ item, aoFechar }: ModalAjusteProps) {
   function enviar() {
     definirErroLocal(null);
     if (comLote && numeroLote.trim() === '') {
-      definirErroLocal('Informe o lote do ajuste: este item controla lote.');
+      definirErroLocal(t('Informe o lote do ajuste: este item controla lote.'));
       return;
     }
     if (comLote && comValidade && !saida && validade === '') {
-      definirErroLocal('Informe a validade do lote: este item controla validade (igual à do lote, se ele já existir).');
+      definirErroLocal(t('Informe a validade do lote: este item controla validade (igual à do lote, se ele já existir).'));
       return;
     }
     if (comSerie && series.length !== absoluto) {
-      definirErroLocal(`Informe uma série por unidade ajustada: ${series.length} de ${absoluto}.`);
+      definirErroLocal(t('Informe uma série por unidade ajustada: {n} de {total}.', { n: series.length, total: absoluto }));
       return;
     }
     mutacao.mutate();
   }
 
-  const erro = erroLocal ?? (mutacao.isError ? mensagemDeErro(mutacao.error, 'Não foi possível ajustar o estoque.') : null);
+  const erro = erroLocal ?? (mutacao.isError ? mensagemDeErro(mutacao.error, t('Não foi possível ajustar o estoque.')) : null);
 
   return (
-    <Modal aberto aoFechar={aoFechar} titulo={`Ajustar saldo — ${item.codigo}`} largura={comSerie ? 'larga' : 'padrao'}>
+    <Modal aberto aoFechar={aoFechar} titulo={t('Ajustar saldo — {codigo}', { codigo: item.codigo })} largura={comSerie ? 'larga' : 'padrao'}>
       <form
         noValidate
         onSubmit={(evento) => {
@@ -106,24 +107,24 @@ export function ModalAjuste({ item, aoFechar }: ModalAjusteProps) {
           </p>
         )}
         <p className="text-body text-texto-secondary">
-          Saldo atual: {item.quantidade_atual}. Use um número negativo para registrar saída.
+          {t('Saldo atual: {saldo}. Use um número negativo para registrar saída.', { saldo: item.quantidade_atual })}
         </p>
         {(comLote || comSerie) && (
           <div className="flex flex-wrap gap-2">
             {comLote && (
               <Badge tom="blocked" icone="layers">
-                {comValidade ? 'Controla lote e validade' : 'Controla lote'}
+                {comValidade ? t('Controla lote e validade') : t('Controla lote')}
               </Badge>
             )}
             {comSerie && (
               <Badge tom="blocked" icone="scan-line">
-                Controla número de série
+                {t('Controla número de série')}
               </Badge>
             )}
           </div>
         )}
         <Campo
-          rotulo="Quantidade"
+          rotulo={t('Quantidade')}
           obrigatorio
           tipoDado="quantidade"
           value={quantidade}
@@ -132,17 +133,17 @@ export function ModalAjuste({ item, aoFechar }: ModalAjusteProps) {
         {comLote && (
           <div className="grid gap-3 md:grid-cols-3">
             <Campo
-              rotulo="Lote"
+              rotulo={t('Lote')}
               obrigatorio
               tipoDado="codigo"
-              ajuda={saida ? 'A saída baixa deste lote.' : 'Entrada cria o lote ou soma a ele.'}
+              ajuda={saida ? t('A saída baixa deste lote.') : t('Entrada cria o lote ou soma a ele.')}
               value={numeroLote}
               onChange={(e) => definirNumeroLote(e.target.value)}
             />
             {!saida && comValidade && (
-              <Campo rotulo="Validade do lote" type="date" obrigatorio value={validade} onChange={(e) => definirValidade(e.target.value)} />
+              <Campo rotulo={t('Validade do lote')} type="date" obrigatorio value={validade} onChange={(e) => definirValidade(e.target.value)} />
             )}
-            {!saida && <Campo rotulo="Fabricação" type="date" value={fabricacao} onChange={(e) => definirFabricacao(e.target.value)} />}
+            {!saida && <Campo rotulo={t('Fabricação')} type="date" value={fabricacao} onChange={(e) => definirFabricacao(e.target.value)} />}
           </div>
         )}
         {comSerie && (
@@ -154,16 +155,16 @@ export function ModalAjuste({ item, aoFechar }: ModalAjusteProps) {
           />
         )}
         {comSerie && saida && (
-          <p className="text-label text-texto-secondary">Na saída, as séries informadas são sucateadas (precisam estar em estoque).</p>
+          <p className="text-label text-texto-secondary">{t('Na saída, as séries informadas são sucateadas (precisam estar em estoque).')}</p>
         )}
-        <Campo rotulo="Motivo" obrigatorio value={motivo} onChange={(evento) => definirMotivo(evento.target.value)} />
-        <Campo rotulo="Observações" value={observacoes} onChange={(evento) => definirObservacoes(evento.target.value)} />
+        <Campo rotulo={t('Motivo')} obrigatorio value={motivo} onChange={(evento) => definirMotivo(evento.target.value)} />
+        <Campo rotulo={t('Observações')} value={observacoes} onChange={(evento) => definirObservacoes(evento.target.value)} />
         <div className="flex items-center justify-end gap-2">
           <Botao variante="secundaria" onClick={aoFechar} disabled={mutacao.isPending}>
-            Cancelar
+            {t('Cancelar')}
           </Botao>
-          <Botao type="submit" icone="save" ocupado={mutacao.isPending} rotuloOcupado="Salvando…">
-            Salvar ajuste
+          <Botao type="submit" icone="save" ocupado={mutacao.isPending} rotuloOcupado={t('Salvando…')}>
+            {t('Salvar ajuste')}
           </Botao>
         </div>
       </form>

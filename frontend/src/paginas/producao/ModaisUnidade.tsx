@@ -2,6 +2,7 @@ import { useState, type ChangeEvent } from 'react';
 import { Botao } from '@/componentes/ui/Botao';
 import { Campo } from '@/componentes/ui/Campo';
 import { Modal } from '@/componentes/ui/Modal';
+import { t, useIdioma } from '@/i18n';
 import type { Metrologia, Serie } from '@/tipos/producao';
 
 function AlertaErro({ mensagem }: { mensagem: string | null }) {
@@ -25,17 +26,18 @@ export interface ModalTesteProps {
 
 /** Resultado de teste de uma unidade. Na reprovacao, a descricao e obrigatoria. */
 export function ModalTeste({ serie, aprovado, ocupado, erro, aoFechar, aoEnviar }: ModalTesteProps) {
+  useIdioma();
   const [resultado, definirResultado] = useState(serie.resultado_teste ?? '');
   const [erroLocal, definirErroLocal] = useState<string | undefined>();
 
   function enviar() {
     const texto = resultado.trim();
     if (!aprovado && texto === '') {
-      definirErroLocal('Descreva o defeito encontrado — obrigatório na reprovação');
+      definirErroLocal(t('Descreva o defeito encontrado — obrigatório na reprovação'));
       return;
     }
     if (texto.length > 500) {
-      definirErroLocal('Use até 500 caracteres');
+      definirErroLocal(t('Use até 500 caracteres'));
       return;
     }
     aoEnviar(texto);
@@ -45,14 +47,14 @@ export function ModalTeste({ serie, aprovado, ocupado, erro, aoFechar, aoEnviar 
     <Modal
       aberto
       aoFechar={aoFechar}
-      titulo={aprovado ? `Aprovar unidade ${serie.numero}` : `Reprovar unidade ${serie.numero}`}
+      titulo={aprovado ? t('Aprovar unidade {numero}', { numero: serie.numero }) : t('Reprovar unidade {numero}', { numero: serie.numero })}
     >
       <div className="flex flex-col gap-4">
         <AlertaErro mensagem={erro} />
         <Campo
-          rotulo="Resultado do teste"
+          rotulo={t('Resultado do teste')}
           obrigatorio={!aprovado}
-          ajuda={aprovado ? 'Opcional. Ex.: leitura de velocidade conforme' : 'O que falhou e o que foi medido'}
+          ajuda={aprovado ? t('Opcional. Ex.: leitura de velocidade conforme') : t('O que falhou e o que foi medido')}
           erro={erroLocal}
           value={resultado}
           onChange={(e) => {
@@ -62,10 +64,10 @@ export function ModalTeste({ serie, aprovado, ocupado, erro, aoFechar, aoEnviar 
         />
         <div className="flex items-center justify-end gap-2">
           <Botao variante="secundaria" onClick={aoFechar} disabled={ocupado}>
-            Cancelar
+            {t('Cancelar')}
           </Botao>
-          <Botao icone={aprovado ? 'check-circle-2' : 'alert-triangle'} ocupado={ocupado} rotuloOcupado="Registrando…" onClick={enviar}>
-            {aprovado ? 'Registrar aprovação' : 'Registrar reprovação'}
+          <Botao icone={aprovado ? 'check-circle-2' : 'alert-triangle'} ocupado={ocupado} rotuloOcupado={t('Registrando…')} onClick={enviar}>
+            {aprovado ? t('Registrar aprovação') : t('Registrar reprovação')}
           </Botao>
         </div>
       </div>
@@ -87,6 +89,7 @@ type CamposMetrologia = keyof Metrologia;
 
 /** Verificacao metrologica (Inmetro) de uma unidade; regravar substitui a anterior. */
 export function ModalMetrologia({ serie, ocupado, erro, aoFechar, aoEnviar }: ModalMetrologiaProps) {
+  useIdioma();
   const [valores, definirValores] = useState<Metrologia>({
     numero_aprovacao_modelo: serie.metrologia?.numero_aprovacao_modelo ?? '',
     data_verificacao: serie.metrologia?.data_verificacao ?? '',
@@ -109,15 +112,15 @@ export function ModalMetrologia({ serie, ocupado, erro, aoFechar, aoEnviar }: Mo
     const v = Object.fromEntries(Object.entries(valores).map(([k, x]) => [k, x.trim()])) as unknown as Metrologia;
     const novos: Partial<Record<CamposMetrologia, string>> = {};
     if (!v.numero_aprovacao_modelo || v.numero_aprovacao_modelo.length > 60) {
-      novos.numero_aprovacao_modelo = 'Informe o nº da aprovação de modelo (até 60 caracteres)';
+      novos.numero_aprovacao_modelo = t('Informe o nº da aprovação de modelo (até 60 caracteres)');
     }
-    if (!v.numero_lacre || v.numero_lacre.length > 60) novos.numero_lacre = 'Informe o nº do lacre (até 60 caracteres)';
-    if (!DATA.test(v.data_verificacao)) novos.data_verificacao = 'Informe a data no formato AAAA-MM-DD';
-    if (!DATA.test(v.validade)) novos.validade = 'Informe a data no formato AAAA-MM-DD';
+    if (!v.numero_lacre || v.numero_lacre.length > 60) novos.numero_lacre = t('Informe o nº do lacre (até 60 caracteres)');
+    if (!DATA.test(v.data_verificacao)) novos.data_verificacao = t('Informe a data no formato AAAA-MM-DD');
+    if (!DATA.test(v.validade)) novos.validade = t('Informe a data no formato AAAA-MM-DD');
     else if (DATA.test(v.data_verificacao) && v.validade <= v.data_verificacao) {
-      novos.validade = 'A validade precisa ser depois da data de verificação';
+      novos.validade = t('A validade precisa ser depois da data de verificação');
     }
-    if (v.observacoes.length > 500) novos.observacoes = 'Use até 500 caracteres';
+    if (v.observacoes.length > 500) novos.observacoes = t('Use até 500 caracteres');
     if (Object.keys(novos).length > 0) {
       definirErros(novos);
       return;
@@ -126,22 +129,22 @@ export function ModalMetrologia({ serie, ocupado, erro, aoFechar, aoEnviar }: Mo
   }
 
   return (
-    <Modal aberto aoFechar={aoFechar} titulo={`Metrologia da unidade ${serie.numero}`}>
+    <Modal aberto aoFechar={aoFechar} titulo={t('Metrologia da unidade {numero}', { numero: serie.numero })}>
       <div className="flex flex-col gap-4">
         <AlertaErro mensagem={erro} />
         <div className="grid gap-4 md:grid-cols-2">
-          <Campo rotulo="Nº da aprovação de modelo (Inmetro)" obrigatorio tipoDado="codigo" {...campo('numero_aprovacao_modelo')} />
-          <Campo rotulo="Nº do lacre" obrigatorio tipoDado="codigo" {...campo('numero_lacre')} />
-          <Campo rotulo="Data da verificação" obrigatorio ajuda="Formato AAAA-MM-DD" {...campo('data_verificacao')} />
-          <Campo rotulo="Validade" obrigatorio ajuda="Formato AAAA-MM-DD" {...campo('validade')} />
+          <Campo rotulo={t('Nº da aprovação de modelo (Inmetro)')} obrigatorio tipoDado="codigo" {...campo('numero_aprovacao_modelo')} />
+          <Campo rotulo={t('Nº do lacre')} obrigatorio tipoDado="codigo" {...campo('numero_lacre')} />
+          <Campo rotulo={t('Data da verificação')} obrigatorio ajuda={t('Formato AAAA-MM-DD')} {...campo('data_verificacao')} />
+          <Campo rotulo={t('Validade')} obrigatorio ajuda={t('Formato AAAA-MM-DD')} {...campo('validade')} />
         </div>
-        <Campo rotulo="Observações" {...campo('observacoes')} />
+        <Campo rotulo={t('Observações')} {...campo('observacoes')} />
         <div className="flex items-center justify-end gap-2">
           <Botao variante="secundaria" onClick={aoFechar} disabled={ocupado}>
-            Cancelar
+            {t('Cancelar')}
           </Botao>
-          <Botao icone="save" ocupado={ocupado} rotuloOcupado="Salvando…" onClick={enviar}>
-            Salvar metrologia
+          <Botao icone="save" ocupado={ocupado} rotuloOcupado={t('Salvando…')} onClick={enviar}>
+            {t('Salvar metrologia')}
           </Botao>
         </div>
       </div>

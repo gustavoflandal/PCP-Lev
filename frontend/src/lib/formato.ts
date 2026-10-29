@@ -1,3 +1,4 @@
+import { t } from '@/i18n';
 import { configuracaoRegionalAtual } from '@/store/configuracaoRegional';
 import type { FormatoData, FormatoHora } from '@/tipos/regional';
 
@@ -41,7 +42,7 @@ export function formatarMilissegundos(ms: number): string {
 
 /** Lead time em dias, com concordancia. */
 export function formatarDias(dias: number): string {
-  return dias === 1 ? '1 dia' : `${dias} dias`;
+  return dias === 1 ? t('1 dia') : t('{n} dias', { n: dias });
 }
 
 /** Núcleo puro de formatação de data — sem depender da store, para a

@@ -1,6 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { PREFERENCIAS_PADRAO, usePreferencias } from '@/store/preferencias';
 import { entrarComoPerfil, instalarServidorFalso, renderizarComProvedores, type ServidorFalso } from '@/testes/utilitarios';
 import { Cotacoes } from './Cotacoes';
 
@@ -47,6 +48,23 @@ describe('Cotacoes', () => {
       { metodo: 'get', url: '/cotacoes', status: 200, corpo: paginaComUmaCotacao },
       { metodo: 'get', url: '/fornecedores', status: 200, corpo: paginaFornecedores },
     ]);
+  });
+
+  describe('em espanhol', () => {
+    afterEach(() => usePreferencias.getState().aplicar(PREFERENCIAS_PADRAO));
+
+    it('traduz titulo, colunas, situacao e botao', async () => {
+      usePreferencias.getState().aplicar({ ...PREFERENCIAS_PADRAO, idioma: 'es' });
+      renderizarComProvedores(<Cotacoes />);
+
+      expect(await screen.findByText('COT-2026-001')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Cotizaciones' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Nueva cotización' })).toBeInTheDocument();
+      const tabela = screen.getByRole('table');
+      expect(within(tabela).getByText('Proveedor')).toBeInTheDocument();
+      expect(within(tabela).getByText('Enviada')).toBeInTheDocument();
+      expect(screen.getByLabelText('Estado')).toBeInTheDocument();
+    });
   });
 
   it('mostra a cotacao com o fornecedor resolvido e o status em destaque', async () => {

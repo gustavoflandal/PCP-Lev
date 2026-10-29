@@ -7,10 +7,12 @@ type Repositorio interface {
 	Criar(ctx context.Context, e *Estrutura, autor string) error
 	BuscarPorID(ctx context.Context, id int64) (*Estrutura, error)
 	ListarPorProduto(ctx context.Context, produtoAcabadoID int64) ([]Estrutura, error)
-	// Versionar substitui a estrutura ativa em idAtual pela nova (que chega
-	// sem ID/Versao definidos -- o repositorio calcula a proxima versao e
-	// inativa a antiga, tudo numa transacao).
-	Versionar(ctx context.Context, idAtual int64, nova *Estrutura, autor string) (*Estrutura, error)
+	// Versionar grava a nova versao (que chega sem ID/Versao definidos -- o
+	// repositorio calcula a proxima versao) e a torna a vigente, inativando
+	// a que estava ativa, tudo numa transacao.
+	Versionar(ctx context.Context, nova *Estrutura, autor string) (*Estrutura, error)
+	// Ativar torna vigente a versao id, inativando a que estava ativa.
+	Ativar(ctx context.Context, id int64, autor string) (*Estrutura, error)
 }
 
 // Servico reune os casos de uso de estrutura de produto.
@@ -55,29 +57,30 @@ func (s *Servico) ListarPorProduto(ctx context.Context, produtoAcabadoID int64) 
 	return s.repo.ListarPorProduto(ctx, produtoAcabadoID)
 }
 
-// Versionar substitui a estrutura ativa em idAtual por uma nova versao —
-// so permitido se idAtual ainda for a ativa, e se a nova vigencia comecar
-// depois da vigencia atual.
-func (s *Servico) Versionar(ctx context.Context, idAtual int64, dados Dados, autor string) (*Estrutura, error) {
+// Versionar cria uma nova versao a partir dos itens informados (a tela
+// replica a versao de origem e o usuario ajusta) e a torna a vigente. A
+// versao de origem idBase so precisa existir: pode ser qualquer uma, nao so
+// a vigente.
+func (s *Servico) Versionar(ctx context.Context, idBase int64, dados Dados, autor string) (*Estrutura, error) {
 	if err := dados.Validar(); err != nil {
 		return nil, err
 	}
 
-	atual, err := s.repo.BuscarPorID(ctx, idAtual)
+	base, err := s.repo.BuscarPorID(ctx, idBase)
 	if err != nil {
 		return nil, err
 	}
-	if !atual.Ativo {
-		return nil, ErrStatusInvalidoParaAcao
-	}
-	if !dados.DataVigenciaInicio.After(atual.DataVigenciaInicio) {
-		return nil, ErrVigenciaAnteriorAAtual
-	}
 
 	nova := &Estrutura{
-		ProdutoAcabadoID:   atual.ProdutoAcabadoID,
+		ProdutoAcabadoID:   base.ProdutoAcabadoID,
 		DataVigenciaInicio: dados.DataVigenciaInicio, DataVigenciaFim: dados.DataVigenciaFim,
 		Ativo: true, Itens: calcularItens(dados.Itens),
 	}
-	return s.repo.Versionar(ctx, idAtual, nova, autor)
+	return s.repo.Versionar(ctx, nova, autor)
+}
+
+// Ativar define qual versao e a vigente do produto, seja ela qual for. E a
+// versao vigente que aparece em produtos acabados.
+func (s *Servico) Ativar(ctx context.Context, id int64, autor string) (*Estrutura, error) {
+	return s.repo.Ativar(ctx, id, autor)
 }

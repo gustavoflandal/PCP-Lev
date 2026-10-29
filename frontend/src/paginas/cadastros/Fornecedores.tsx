@@ -15,6 +15,7 @@ import { PERMISSOES, usePode } from '@/lib/permissoes';
 import type { Fornecedor } from '@/tipos/cadastros';
 import { DeParaFornecedor } from './DeParaFornecedor';
 import { FormularioFornecedor } from './FormularioFornecedor';
+import { t } from '@/i18n';
 
 export function Fornecedores() {
   const podeIncluir = usePode(PERMISSOES.fornecedoresIncluir);
@@ -29,27 +30,27 @@ export function Fornecedores() {
 
   const lista = useListagem<Fornecedor>('fornecedores', 'razao_social');
   const crud = useCadastroCrud<Fornecedor>('fornecedores', {
-    criado: 'Fornecedor cadastrado',
-    atualizado: 'Fornecedor atualizado',
-    inativado: 'Fornecedor inativado',
+    criado: t('Fornecedor cadastrado'),
+    atualizado: t('Fornecedor atualizado'),
+    inativado: t('Fornecedor inativado'),
   });
 
   const colunas: Coluna<Fornecedor>[] = [
     {
       chave: 'razao_social',
-      rotulo: 'Razão social',
+      rotulo: t('Razão social'),
       ordenavel: true,
       renderizar: (f) => f.razao_social,
     },
     {
       chave: 'cnpj',
-      rotulo: 'CNPJ',
+      rotulo: t('CNPJ'),
       ordenavel: true,
       renderizar: (f) => <span className="font-mono">{formatarCNPJ(f.cnpj)}</span>,
     },
     {
       chave: 'contato',
-      rotulo: 'Contato',
+      rotulo: t('Contato'),
       renderizar: (f) =>
         f.contato_nome || f.contato_email ? (
           <span className="flex flex-col">
@@ -64,40 +65,40 @@ export function Fornecedores() {
     },
     {
       chave: 'lead_time_medio',
-      rotulo: 'Lead time',
+      rotulo: t('Lead time'),
       ordenavel: true,
       alinhamento: 'direita',
       renderizar: (f) => formatarDias(f.lead_time_medio),
     },
-    { chave: 'ativo', rotulo: 'Situação', renderizar: (f) => <BadgeSituacao ativo={f.ativo} /> },
+    { chave: 'ativo', rotulo: t('Situação'), renderizar: (f) => <BadgeSituacao ativo={f.ativo} /> },
   ];
 
   return (
     <div className="mx-auto flex max-w-[1400px] flex-col gap-4">
       <div>
-        <h1 className="text-title text-texto-primary">Fornecedores</h1>
+        <h1 className="text-title text-texto-primary">{t('Fornecedores')}</h1>
         <p className="text-body text-texto-secondary">
-          Quem abastece as partes e peças usadas na produção.
+          {t('Quem abastece as partes e peças usadas na produção.')}
         </p>
       </div>
 
       <BarraDeFiltros
         busca={lista.busca}
         aoBuscar={lista.definirBusca}
-        rotuloBusca="Buscar por razão social, CNPJ ou contato"
+        rotuloBusca={t('Buscar por razão social, CNPJ ou contato')}
         filtroAtivo={lista.filtroAtivo}
         aoFiltrarSituacao={lista.definirFiltroAtivo}
       >
         {podeIncluir && (
           <Botao icone="plus" onClick={crud.abrirNovo}>
-            Novo fornecedor
+            {t('Novo fornecedor')}
           </Botao>
         )}
       </BarraDeFiltros>
 
       <div>
         <Tabela<Fornecedor>
-          rotulo="Fornecedores"
+          rotulo={t('Fornecedores')}
           colunas={colunas}
           itens={lista.itens}
           chaveDe={(f) => f.id}
@@ -107,45 +108,45 @@ export function Fornecedores() {
           carregando={lista.carregando}
           erro={lista.erro}
           aoTentarDeNovo={lista.recarregar}
-          vazio="Nenhum fornecedor cadastrado. Cadastre o primeiro para começar."
+          vazio={t('Nenhum fornecedor cadastrado. Cadastre o primeiro para começar.')}
           acoes={(f) => (
             <span className="flex flex-wrap items-center justify-end gap-x-2 gap-y-1">
               <Botao
                 variante="fantasma"
                 icone="paperclip"
-                aria-label={`Documentos de ${f.razao_social}`}
+                aria-label={t('Documentos de {razao_social}', { razao_social: f.razao_social })}
                 onClick={() => documentos.abrir({ id: f.id, nome: f.razao_social })}
               >
-                Documentos
+                {t('Documentos')}
               </Botao>
               {podeVerDePara && (
                 <Botao
                   variante="fantasma"
                   icone="link"
-                  aria-label={`Itens do fornecedor (de-para) de ${f.razao_social}`}
+                  aria-label={t('Itens do fornecedor (de-para) de {razao_social}', { razao_social: f.razao_social })}
                   onClick={() => definirDeParaDe(f)}
                 >
-                  De-para
+                  {t('De-para')}
                 </Botao>
               )}
               {podeEditar && (
                 <Botao
                   variante="fantasma"
                   icone="pencil"
-                  aria-label={`Editar ${f.razao_social}`}
+                  aria-label={t('Editar {razao_social}', { razao_social: f.razao_social })}
                   onClick={() => crud.abrirEdicao(f)}
                 >
-                  Editar
+                  {t('Editar')}
                 </Botao>
               )}
               {podeInativar && f.ativo && (
                 <Botao
                   variante="fantasma"
                   icone="trash-2"
-                  aria-label={`Inativar ${f.razao_social}`}
+                  aria-label={t('Inativar {razao_social}', { razao_social: f.razao_social })}
                   onClick={() => crud.pedirInativacao(f)}
                 >
-                  Inativar
+                  {t('Inativar')}
                 </Botao>
               )}
             </span>
@@ -162,8 +163,8 @@ export function Fornecedores() {
       <Modal
         aberto={crud.formularioAberto}
         aoFechar={crud.fecharFormulario}
-        titulo={crud.emEdicao ? 'Editar fornecedor' : 'Novo fornecedor'}
-        descricao="Campos com * são obrigatórios."
+        titulo={crud.emEdicao ? t('Editar fornecedor') : t('Novo fornecedor')}
+        descricao={t('Campos com * são obrigatórios.')}
       >
         <FormularioFornecedor
           // A chave remonta o formulario ao trocar de registro: sem isso os
@@ -189,14 +190,14 @@ export function Fornecedores() {
 
       <Confirmacao
         aberto={crud.aInativar !== null}
-        titulo="Inativar fornecedor"
+        titulo={t('Inativar fornecedor')}
         mensagem={
           crud.aInativar
-            ? `Inativar o fornecedor ${crud.aInativar.razao_social}? Ele deixa de aparecer nas listas de seleção. O histórico é preservado.`
+            ? t('Inativar o fornecedor {razao_social}? Ele deixa de aparecer nas listas de seleção. O histórico é preservado.', { razao_social: crud.aInativar.razao_social })
             : ''
         }
-        rotuloConfirmar="Inativar"
-        rotuloOcupado="Inativando…"
+        rotuloConfirmar={t('Inativar')}
+        rotuloOcupado={t('Inativando…')}
         ocupado={crud.inativando}
         aoConfirmar={crud.confirmarInativacao}
         aoCancelar={crud.cancelarInativacao}

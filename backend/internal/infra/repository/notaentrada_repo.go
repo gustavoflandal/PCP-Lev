@@ -616,7 +616,7 @@ func (r *NotaEntradaRepositorio) Efetivar(ctx context.Context, id int64, versao 
 					VALUES ($1, $2, $3, $4)`, it.PartePecaID, sr.Numero, loteID, it.ID); err != nil {
 					if violouIndiceUnico(err) {
 						return &notaentrada.ErroDePendencias{Base: notaentrada.ErrPendencias, Pendencias: []notaentrada.Pendencia{{
-							Tipo: "SERIE", Nivel: notaentrada.NivelBloqueio, Mensagem: "serie " + sr.Numero + " ja existe para " + it.PecaCodigo}}}
+							Tipo: "SERIE", Nivel: notaentrada.NivelBloqueio, Mensagem: "serie " + sr.Numero + " ja existe para a peca " + it.PecaCodigo}}}
 					}
 					return fmt.Errorf("gravar serie: %w", err)
 				}

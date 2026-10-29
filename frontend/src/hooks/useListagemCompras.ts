@@ -5,6 +5,7 @@ import { listar } from '@/servicos/compras';
 import type { DadosPaginacao, Ordem } from '@/tipos/cadastros';
 import type { ParametrosListagemCompras, RecursoComStatus } from '@/tipos/compras';
 import { useDebounce } from './useDebounce';
+import { t } from '@/i18n';
 
 const LIMITE_PADRAO = 20;
 
@@ -91,7 +92,7 @@ export function useListagemCompras<T>(
   const erro = consulta.error
     ? consulta.error instanceof ErroApi
       ? consulta.error.message
-      : 'Não foi possível carregar a lista. Tente de novo.'
+      : t('Não foi possível carregar a lista. Tente de novo.')
     : null;
 
   return {

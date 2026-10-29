@@ -1,3 +1,5 @@
+import { t } from '@/i18n';
+
 /**
  * Gira a imagem 90 graus no sentido horario num canvas e devolve o novo
  * conteudo, no mesmo tipo (JPEG, PNG ou WebP). E a unica edicao feita antes
@@ -12,7 +14,7 @@ export async function girar90(imagem: Blob): Promise<Blob> {
     canvas.height = origem.largura;
     const contexto = canvas.getContext('2d');
     if (!contexto) {
-      throw new Error('Este navegador não consegue girar a imagem. Gire no computador e envie de novo.');
+      throw new Error(t('Este navegador não consegue girar a imagem. Gire no computador e envie de novo.'));
     }
     contexto.translate(canvas.width, 0);
     contexto.rotate(Math.PI / 2);
@@ -21,7 +23,7 @@ export async function girar90(imagem: Blob): Promise<Blob> {
     return await new Promise<Blob>((resolver, rejeitar) => {
       canvas.toBlob(
         (resultado) =>
-          resultado ? resolver(resultado) : rejeitar(new Error('Não foi possível girar a imagem.')),
+          resultado ? resolver(resultado) : rejeitar(new Error(t('Não foi possível girar a imagem.'))),
         tipo,
         0.92,
       );
@@ -51,7 +53,7 @@ function carregar(imagem: Blob): Promise<ImagemCarregada> {
       });
     elemento.onerror = () => {
       URL.revokeObjectURL(url);
-      rejeitar(new Error('Não foi possível ler a imagem. Confira se o arquivo é JPG, PNG ou WebP.'));
+      rejeitar(new Error(t('Não foi possível ler a imagem. Confira se o arquivo é JPG, PNG ou WebP.')));
     };
     elemento.src = url;
   });

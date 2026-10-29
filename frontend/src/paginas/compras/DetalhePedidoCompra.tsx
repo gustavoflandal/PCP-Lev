@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { marcar, t, td } from '@/i18n';
 import { AnexosDoRegistro } from '@/componentes/arquivos/AnexosDoRegistro';
 import { SeloStatusNota } from '@/componentes/recebimento/Selos';
 import { Badge, type TomBadge } from '@/componentes/ui/Badge';
@@ -38,8 +39,8 @@ const STATUS_TERMINAIS = ['Concluido', 'Cancelado'];
 // uma pendencia do operador; "Recebido Parcial" usa "warning" por ser um
 // estado de atencao/acompanhamento.
 const STATUS_AMBIGUO_NA_TRILHA: Partial<Record<PedidoCompra['status'], { tom: TomBadge; icone: NomeIcone; rotulo: string }>> = {
-  'Aguardando Entrega': { tom: 'blocked', icone: 'shield-alert', rotulo: 'Aguardando entrega — nenhum item recebido ainda' },
-  'Recebido Parcial': { tom: 'warning', icone: 'alert-triangle', rotulo: 'Recebido parcial' },
+  'Aguardando Entrega': { tom: 'blocked', icone: 'shield-alert', rotulo: marcar('Aguardando entrega — nenhum item recebido ainda') },
+  'Recebido Parcial': { tom: 'warning', icone: 'alert-triangle', rotulo: marcar('Recebido parcial') },
 };
 
 function estadoDaEtapaEmitido(status: PedidoCompra['status']): EstadoEtapa {
@@ -101,13 +102,13 @@ export function DetalhePedidoCompra() {
     mutationFn: () => emitirPedidoCompra(pedidoId),
     onSuccess: () => {
       invalidar();
-      mostrarToast('Pedido de compra emitido');
+      mostrarToast(t('Pedido de compra emitido'));
       definirModalAberto(null);
     },
     // Sem isto, uma recusa da API (alcada do Gestor, cotacoes insuficientes,
     // status que ja mudou) so parava o "Emitindo…", sem dizer o porque.
     onError: (erro) => {
-      mostrarToast(separarErro(erro).geral ?? 'Não foi possível emitir o pedido de compra.', 'pending');
+      mostrarToast(separarErro(erro).geral ?? t('Não foi possível emitir o pedido de compra.'), 'pending');
       definirModalAberto(null);
     },
   });
@@ -116,11 +117,11 @@ export function DetalhePedidoCompra() {
     mutationFn: () => cancelarPedidoCompra(pedidoId),
     onSuccess: () => {
       invalidar();
-      mostrarToast('Pedido de compra cancelado');
+      mostrarToast(t('Pedido de compra cancelado'));
       definirModalAberto(null);
     },
     onError: (erro) => {
-      mostrarToast(separarErro(erro).geral ?? 'Não foi possível cancelar o pedido de compra.', 'pending');
+      mostrarToast(separarErro(erro).geral ?? t('Não foi possível cancelar o pedido de compra.'), 'pending');
       definirModalAberto(null);
     },
   });
@@ -129,16 +130,16 @@ export function DetalhePedidoCompra() {
     mutationFn: () => encerrarPedidoCompra(pedidoId, motivo.trim()),
     onSuccess: () => {
       invalidar();
-      mostrarToast('Pedido de compra encerrado');
+      mostrarToast(t('Pedido de compra encerrado'));
       definirModalAberto(null);
     },
   });
 
   if (consulta.isPending) {
-    return <p className="text-body text-texto-secondary">Carregando…</p>;
+    return <p className="text-body text-texto-secondary">{t('Carregando…')}</p>;
   }
   if (consulta.isError || !consulta.data) {
-    return <p className="text-body text-estado-pending">Não foi possível carregar o pedido de compra.</p>;
+    return <p className="text-body text-estado-pending">{t('Não foi possível carregar o pedido de compra.')}</p>;
   }
 
   const pedido = consulta.data;
@@ -148,16 +149,16 @@ export function DetalhePedidoCompra() {
   const motivoValido = motivo.trim().length >= 10 && motivo.trim().length <= 255;
 
   const etapas: Etapa[] = [
-    { chave: 'criado', nome: 'Criado', estado: 'concluida', timestamp: formatarData(pedido.data_pedido) },
+    { chave: 'criado', nome: t('Criado'), estado: 'concluida', timestamp: formatarData(pedido.data_pedido) },
     {
       chave: 'emitido',
-      nome: 'Emitido',
+      nome: t('Emitido'),
       estado: estadoDaEtapaEmitido(pedido.status),
       aoAcionar: podeEmitir ? () => definirModalAberto('emitir') : undefined,
     },
     {
       chave: 'concluido',
-      nome: 'Concluído',
+      nome: t('Concluído'),
       estado: estadoDaEtapaConcluido(pedido.status),
       timestamp: pedido.data_entrega_real ? formatarData(pedido.data_entrega_real) : undefined,
       aoAcionar: podeLancarNota && recebendo ? lancarNota : undefined,
@@ -165,16 +166,16 @@ export function DetalhePedidoCompra() {
   ];
 
   const colunasItens: Coluna<ItemPedidoCompra>[] = [
-    { chave: 'parte_peca_id', rotulo: 'Peça', renderizar: (i) => pecaPorId.get(i.parte_peca_id) ?? '—' },
-    { chave: 'quantidade_solicitada', rotulo: 'Qtd. solicitada', alinhamento: 'direita', renderizar: (i) => i.quantidade_solicitada },
-    { chave: 'quantidade_recebida', rotulo: 'Qtd. recebida', alinhamento: 'direita', renderizar: (i) => i.quantidade_recebida },
+    { chave: 'parte_peca_id', rotulo: t('Peça'), renderizar: (i) => pecaPorId.get(i.parte_peca_id) ?? '—' },
+    { chave: 'quantidade_solicitada', rotulo: t('Qtd. solicitada'), alinhamento: 'direita', renderizar: (i) => i.quantidade_solicitada },
+    { chave: 'quantidade_recebida', rotulo: t('Qtd. recebida'), alinhamento: 'direita', renderizar: (i) => i.quantidade_recebida },
     {
       chave: 'preco_unitario',
-      rotulo: 'Preço unitário',
+      rotulo: t('Preço unitário'),
       alinhamento: 'direita',
       renderizar: (i) => formatarMoeda(i.preco_unitario),
     },
-    { chave: 'total', rotulo: 'Total', alinhamento: 'direita', renderizar: (i) => formatarMoeda(i.total) },
+    { chave: 'total', rotulo: t('Total'), alinhamento: 'direita', renderizar: (i) => formatarMoeda(i.total) },
   ];
 
   return (
@@ -183,13 +184,15 @@ export function DetalhePedidoCompra() {
         <div>
           <h1 className="text-title text-texto-primary">{pedido.numero_pc}</h1>
           <p className="text-body text-texto-secondary">
-            {fornecedorPorId.get(pedido.fornecedor_id) ?? '—'} · Entrega prevista{' '}
-            {formatarData(pedido.data_entrega_prevista)}
+            {t('{fornecedor} · Entrega prevista {data}', {
+              fornecedor: fornecedorPorId.get(pedido.fornecedor_id) ?? '—',
+              data: formatarData(pedido.data_entrega_prevista),
+            })}
             {pedido.condicao_pagamento && ` · ${pedido.condicao_pagamento}`}
           </p>
           {pedido.cotacao_id && (
             <Link to={`/cotacoes/${pedido.cotacao_id}`} className="text-label text-brand hover:underline">
-              Ver cotação de origem
+              {t('Ver cotação de origem')}
             </Link>
           )}
         </div>
@@ -198,7 +201,7 @@ export function DetalhePedidoCompra() {
 
       {pedido.status === 'Cancelado' ? (
         <Badge tom="neutral" icone="circle" className="self-start">
-          Pedido cancelado em {formatarData(pedido.updated_at)}
+          {t('Pedido cancelado em {data}', { data: formatarData(pedido.updated_at) })}
         </Badge>
       ) : (
         <>
@@ -208,42 +211,49 @@ export function DetalhePedidoCompra() {
               icone={STATUS_AMBIGUO_NA_TRILHA[pedido.status]!.icone}
               className="self-start"
             >
-              {STATUS_AMBIGUO_NA_TRILHA[pedido.status]!.rotulo}
+              {td(STATUS_AMBIGUO_NA_TRILHA[pedido.status]!.rotulo)}
             </Badge>
           )}
-          <TrilhaEtapas rotulo="Status do pedido de compra" etapas={etapas} />
+          <TrilhaEtapas rotulo={t('Status do pedido de compra')} etapas={etapas} />
         </>
       )}
 
       <Tabela<ItemPedidoCompra>
-        rotulo="Itens do pedido de compra"
+        rotulo={t('Itens do pedido de compra')}
         colunas={colunasItens}
         itens={pedido.itens}
         chaveDe={(i) => i.id}
         ordenarPor="id"
         ordem="asc"
         aoOrdenar={() => {}}
-        vazio="Nenhum item neste pedido."
+        vazio={t('Nenhum item neste pedido.')}
       />
 
       {pedido.motivo_encerramento && (
         <p className="rounded-campo border border-borda-subtle bg-estado-neutral-bg px-3 py-2 text-body text-estado-neutral">
-          Encerrado com saldo pendente{pedido.encerrado_por ? ` por ${pedido.encerrado_por}` : ''}. Motivo: {pedido.motivo_encerramento}
+          {pedido.encerrado_por
+            ? t('Encerrado com saldo pendente por {usuario}. Motivo: {motivo}', {
+                usuario: pedido.encerrado_por,
+                motivo: pedido.motivo_encerramento,
+              })
+            : t('Encerrado com saldo pendente. Motivo: {motivo}', { motivo: pedido.motivo_encerramento })}
         </p>
       )}
 
       {podeVerNotas && (
-        <section aria-label="Notas fiscais do pedido" className="flex flex-col gap-2">
-          <h2 className="text-subtitle text-texto-primary">Notas fiscais de entrada</h2>
+        <section aria-label={t('Notas fiscais do pedido')} className="flex flex-col gap-2">
+          <h2 className="text-subtitle text-texto-primary">{t('Notas fiscais de entrada')}</h2>
           {notas.isPending ? (
-            <p className="text-body text-texto-secondary">Carregando notas…</p>
+            <p className="text-body text-texto-secondary">{t('Carregando notas…')}</p>
           ) : notas.isError ? (
             <p role="alert" className="text-body text-estado-pending">
-              Não foi possível carregar as notas deste pedido.
+              {t('Não foi possível carregar as notas deste pedido.')}
             </p>
           ) : (notas.data?.itens ?? []).length === 0 ? (
             <p className="text-body text-texto-secondary">
-              Nenhuma nota lançada para este pedido.{recebendo && podeLancarNota ? ' Use "Lançar nota fiscal" quando a mercadoria chegar.' : ''}
+              {recebendo && podeLancarNota
+                ? t('Nenhuma nota lançada para este pedido. Use "Lançar nota fiscal" quando a mercadoria chegar.')
+                : t('Nenhuma nota lançada para este pedido.')}
             </p>
           ) : (
             <ul className="flex flex-col divide-y divide-borda-subtle rounded-cartao border border-borda-subtle bg-surface-raised">
@@ -252,7 +262,9 @@ export function DetalhePedidoCompra() {
                   <Link to={`/notas-entrada/${n.id}`} className="font-mono text-brand hover:underline">
                     NF {n.numero}/{n.serie}
                   </Link>
-                  <span className="text-label text-texto-secondary">entrada {formatarData(n.data_entrada ?? undefined)}</span>
+                  <span className="text-label text-texto-secondary">
+                    {t('entrada {data}', { data: formatarData(n.data_entrada ?? undefined) })}
+                  </span>
                   <span className="tabular text-body text-texto-primary">{formatarMoeda(n.valor_total)}</span>
                   <SeloStatusNota status={n.status} />
                 </li>
@@ -265,7 +277,7 @@ export function DetalhePedidoCompra() {
       <div className="flex flex-wrap items-center justify-end gap-2">
         {podeCancelarPedido && podeCancelar && (
           <Botao variante="fantasma" icone="trash-2" onClick={() => definirModalAberto('cancelar')}>
-            Cancelar pedido
+            {t('Cancelar pedido')}
           </Botao>
         )}
         {podeEncerrar && recebendo && (
@@ -278,18 +290,18 @@ export function DetalhePedidoCompra() {
               definirModalAberto('encerrar');
             }}
           >
-            Encerrar com saldo pendente
+            {t('Encerrar com saldo pendente')}
           </Botao>
         )}
         {podeLancarNota && recebendo && (
           <Botao icone="file-input" onClick={lancarNota}>
-            Lançar nota fiscal
+            {t('Lançar nota fiscal')}
           </Botao>
         )}
       </div>
 
-      <section aria-label="Documentos do pedido" className="flex flex-col gap-2">
-        <h2 className="text-subtitle text-texto-primary">Documentos</h2>
+      <section aria-label={t('Documentos do pedido')} className="flex flex-col gap-2">
+        <h2 className="text-subtitle text-texto-primary">{t('Documentos')}</h2>
         <AnexosDoRegistro
           entidade="pedido_compra"
           entidadeId={pedido.id}
@@ -300,10 +312,10 @@ export function DetalhePedidoCompra() {
 
       <Confirmacao
         aberto={modalAberto === 'emitir'}
-        titulo="Emitir pedido de compra"
-        mensagem={`Emitir o pedido ${pedido.numero_pc} para o fornecedor?`}
-        rotuloConfirmar="Emitir"
-        rotuloOcupado="Emitindo…"
+        titulo={t('Emitir pedido de compra')}
+        mensagem={t('Emitir o pedido {numero} para o fornecedor?', { numero: pedido.numero_pc })}
+        rotuloConfirmar={t('Emitir')}
+        rotuloOcupado={t('Emitindo…')}
         ocupado={mutacaoEmitir.isPending}
         aoConfirmar={() => mutacaoEmitir.mutate()}
         aoCancelar={() => definirModalAberto(null)}
@@ -311,10 +323,10 @@ export function DetalhePedidoCompra() {
 
       <Confirmacao
         aberto={modalAberto === 'cancelar'}
-        titulo="Cancelar pedido de compra"
-        mensagem={`Cancelar o pedido ${pedido.numero_pc}? O histórico é preservado.`}
-        rotuloConfirmar="Cancelar pedido"
-        rotuloOcupado="Cancelando…"
+        titulo={t('Cancelar pedido de compra')}
+        mensagem={t('Cancelar o pedido {numero}? O histórico é preservado.', { numero: pedido.numero_pc })}
+        rotuloConfirmar={t('Cancelar pedido')}
+        rotuloOcupado={t('Cancelando…')}
         ocupado={mutacaoCancelar.isPending}
         aoConfirmar={() => mutacaoCancelar.mutate()}
         aoCancelar={() => definirModalAberto(null)}
@@ -323,22 +335,22 @@ export function DetalhePedidoCompra() {
       <Modal
         aberto={modalAberto === 'encerrar'}
         aoFechar={() => definirModalAberto(null)}
-        titulo="Encerrar com saldo pendente"
-        descricao="O pedido vai para Concluído sem receber o restante. O saldo pendente deixa de ser esperado."
+        titulo={t('Encerrar com saldo pendente')}
+        descricao={t('O pedido vai para Concluído sem receber o restante. O saldo pendente deixa de ser esperado.')}
         rodape={
           <>
             <Botao variante="secundaria" onClick={() => definirModalAberto(null)} disabled={mutacaoEncerrar.isPending}>
-              Voltar
+              {t('Voltar')}
             </Botao>
             <Botao
               variante="perigo"
               icone="ban"
               disabled={!motivoValido}
               ocupado={mutacaoEncerrar.isPending}
-              rotuloOcupado="Encerrando…"
+              rotuloOcupado={t('Encerrando…')}
               onClick={() => mutacaoEncerrar.mutate()}
             >
-              Encerrar pedido
+              {t('Encerrar pedido')}
             </Botao>
           </>
         }
@@ -346,14 +358,14 @@ export function DetalhePedidoCompra() {
         <div className="flex flex-col gap-3">
           {mutacaoEncerrar.isError && (
             <p role="alert" className="rounded-campo border border-estado-pending bg-estado-pending-bg px-3 py-2 text-body text-estado-pending">
-              {separarErro(mutacaoEncerrar.error).geral ?? 'Não foi possível encerrar o pedido de compra.'}
+              {separarErro(mutacaoEncerrar.error).geral ?? t('Não foi possível encerrar o pedido de compra.')}
             </p>
           )}
           <Campo
-            rotulo="Motivo do encerramento"
+            rotulo={t('Motivo do encerramento')}
             obrigatorio
             maxLength={255}
-            ajuda={`${motivo.trim().length} de 10 a 255 caracteres. Ex.: fornecedor descontinuou o item.`}
+            ajuda={t('{n} de 10 a 255 caracteres. Ex.: fornecedor descontinuou o item.', { n: motivo.trim().length })}
             value={motivo}
             onChange={(e) => definirMotivo(e.target.value)}
           />

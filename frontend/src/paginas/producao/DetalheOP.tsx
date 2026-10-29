@@ -12,6 +12,7 @@ import { Tabela, type Coluna } from '@/componentes/ui/Tabela';
 import { useToasts } from '@/componentes/ui/Toast';
 import { TrilhaEtapas, type Etapa, type EstadoEtapa } from '@/componentes/ui/TrilhaEtapas';
 import { useCentrosDaEtapa } from '@/hooks/useOpcoesProducao';
+import { t, td, useIdioma } from '@/i18n';
 import { separarErro } from '@/lib/errosDeFormulario';
 import { formatarData, formatarDataHora, formatarMoeda } from '@/lib/formato';
 import { PERMISSOES, usePode } from '@/lib/permissoes';
@@ -53,7 +54,7 @@ interface Falha {
 function falhaDe(erro: unknown, padrao: string): Falha {
   if (erro instanceof ErroApi && erro.codigo === CODIGO_MATERIAL_INSUFICIENTE) {
     return {
-      mensagem: 'Não há material disponível para liberar a OP. Falta:',
+      mensagem: t('Não há material disponível para liberar a OP. Falta:'),
       faltas: (erro.detalhes ?? []).map((d) => ({ codigo: d.campo, mensagem: d.mensagem })),
     };
   }
@@ -64,8 +65,8 @@ function falhaDe(erro: unknown, padrao: string): Falha {
 function etapasDaOP(op: Detalhe): Etapa[] {
   const indiceAtual = ETAPAS_OP.indexOf(op.etapa_atual);
   const saidas = new Map<string, string>();
-  for (const t of op.historico ?? []) {
-    if (t.etapa_anterior) saidas.set(t.etapa_anterior, t.data_hora);
+  for (const h of op.historico ?? []) {
+    if (h.etapa_anterior) saidas.set(h.etapa_anterior, h.data_hora);
   }
   return ETAPAS_OP.map((etapa, indice) => {
     let estado: EstadoEtapa;
@@ -77,7 +78,7 @@ function etapasDaOP(op: Detalhe): Etapa[] {
     const saida = saidas.get(etapa);
     return {
       chave: etapa,
-      nome: ROTULO_ETAPA_OP[etapa],
+      nome: td(ROTULO_ETAPA_OP[etapa]),
       estado,
       timestamp: estado === 'concluida' && saida ? formatarDataHora(saida) : undefined,
     };
@@ -85,10 +86,10 @@ function etapasDaOP(op: Detalhe): Etapa[] {
 }
 
 function formatarDuracao(minutos: number | undefined): string {
-  if (minutos === undefined) return 'em andamento';
+  if (minutos === undefined) return t('em andamento');
   const h = Math.floor(minutos / 60);
   const m = minutos % 60;
-  return h > 0 ? `${h} h ${String(m).padStart(2, '0')} min` : `${m} min`;
+  return h > 0 ? t('{h} h {m} min', { h, m: String(m).padStart(2, '0') }) : t('{m} min', { m });
 }
 
 const horas = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 2 });
@@ -104,6 +105,7 @@ function Secao({ titulo, children, descricao }: { titulo: string; descricao?: st
 }
 
 export function DetalheOP() {
+  useIdioma();
   const { id } = useParams<{ id: string }>();
   const opId = Number(id);
   const clienteQuery = useQueryClient();
@@ -158,21 +160,21 @@ export function DetalheOP() {
       },
     });
 
-  const mutacaoLiberar = useAcao(() => liberarOP(opId), 'OP liberada', 'Não foi possível liberar a OP.');
-  const mutacaoCancelar = useAcao(() => cancelarOP(opId), 'OP cancelada', 'Não foi possível cancelar a OP.', () =>
+  const mutacaoLiberar = useAcao(() => liberarOP(opId), t('OP liberada'), t('Não foi possível liberar a OP.'));
+  const mutacaoCancelar = useAcao(() => cancelarOP(opId), t('OP cancelada'), t('Não foi possível cancelar a OP.'), () =>
     definirConfirmarCancelar(false),
   );
   const mutacaoIniciar = useAcao(
     () => iniciarApontamento(opId, Number(centroId)),
-    'Apontamento iniciado',
-    'Não foi possível iniciar o apontamento.',
+    t('Apontamento iniciado'),
+    t('Não foi possível iniciar o apontamento.'),
     () => definirCentroId(''),
   );
-  const mutacaoEncerrar = useAcao(() => encerrarApontamento(opId), 'Apontamento encerrado', 'Não foi possível encerrar o apontamento.');
+  const mutacaoEncerrar = useAcao(() => encerrarApontamento(opId), t('Apontamento encerrado'), t('Não foi possível encerrar o apontamento.'));
   const mutacaoAvancar = useAcao(
     () => avancarOP(opId),
-    op?.etapa_atual === 'Expedicao' ? 'OP concluída' : 'Etapa avançada',
-    'Não foi possível avançar a etapa.',
+    op?.etapa_atual === 'Expedicao' ? t('OP concluída') : t('Etapa avançada'),
+    t('Não foi possível avançar a etapa.'),
   );
 
   const mutacaoTeste = useMutation({
@@ -180,7 +182,7 @@ export function DetalheOP() {
     onSuccess: (_, v) => {
       definirTeste(null);
       atualizar();
-      mostrarToast(v.aprovado ? 'Unidade aprovada' : 'Unidade reprovada');
+      mostrarToast(v.aprovado ? t('Unidade aprovada') : t('Unidade reprovada'));
     },
   });
 
@@ -189,13 +191,13 @@ export function DetalheOP() {
     onSuccess: () => {
       definirMetrologia(null);
       atualizar();
-      mostrarToast('Metrologia registrada');
+      mostrarToast(t('Metrologia registrada'));
     },
   });
 
-  if (consulta.isPending) return <p className="text-body text-texto-secondary">Carregando…</p>;
+  if (consulta.isPending) return <p className="text-body text-texto-secondary">{t('Carregando…')}</p>;
   if (consulta.isError || !op) {
-    return <p className="text-body text-estado-pending">Não foi possível carregar a ordem de produção.</p>;
+    return <p className="text-body text-estado-pending">{t('Não foi possível carregar a ordem de produção.')}</p>;
   }
 
   const ocupado =
@@ -210,10 +212,10 @@ export function DetalheOP() {
   const colunasReserva: Coluna<Reserva>[] = [
     {
       chave: 'peca',
-      rotulo: 'Peça',
+      rotulo: t('Peça'),
       renderizar: (r) => (
         <span className="flex items-center gap-3">
-          <Miniatura url={r.foto_url} alt={`Foto da peça ${r.codigo}`} />
+          <Miniatura url={r.foto_url} alt={t('Foto da peça {codigo}', { codigo: r.codigo })} />
           <span className="flex flex-col">
             <span className="font-mono">{r.codigo}</span>
             <span className="text-label text-texto-secondary">{r.descricao}</span>
@@ -221,25 +223,25 @@ export function DetalheOP() {
         </span>
       ),
     },
-    { chave: 'reservada', rotulo: 'Reservado', alinhamento: 'direita', renderizar: (r) => <span className="tabular">{r.quantidade_reservada}</span> },
-    { chave: 'consumida', rotulo: 'Consumido', alinhamento: 'direita', renderizar: (r) => <span className="tabular">{r.quantidade_consumida}</span> },
-    { chave: 'status', rotulo: 'Situação', renderizar: (r) => r.status },
+    { chave: 'reservada', rotulo: t('Reservado'), alinhamento: 'direita', renderizar: (r) => <span className="tabular">{r.quantidade_reservada}</span> },
+    { chave: 'consumida', rotulo: t('Consumido'), alinhamento: 'direita', renderizar: (r) => <span className="tabular">{r.quantidade_consumida}</span> },
+    { chave: 'status', rotulo: t('Situação'), renderizar: (r) => td(r.status) },
   ];
 
   const colunasSerie: Coluna<Serie>[] = [
     {
       chave: 'numero',
-      rotulo: 'Número de série',
+      rotulo: t('Número de série'),
       renderizar: (s) => (
         <Link to={`/rastreabilidade/${encodeURIComponent(s.numero)}`} className="font-mono text-brand hover:underline">
           {s.numero}
         </Link>
       ),
     },
-    { chave: 'status', rotulo: 'Situação', renderizar: (s) => <BadgeStatusSerie status={s.status} /> },
+    { chave: 'status', rotulo: t('Situação'), renderizar: (s) => <BadgeStatusSerie status={s.status} /> },
     {
       chave: 'teste',
-      rotulo: 'Resultado do teste',
+      rotulo: t('Resultado do teste'),
       renderizar: (s) =>
         s.resultado_teste || s.testado_por ? (
           <span className="flex flex-col">
@@ -259,21 +261,21 @@ export function DetalheOP() {
       ? [
           {
             chave: 'metrologia',
-            rotulo: 'Metrologia',
+            rotulo: t('Metrologia'),
             renderizar: (s: Serie) =>
               s.metrologia ? (
                 <span className="flex flex-col gap-1">
-                  <span className="font-mono">Lacre {s.metrologia.numero_lacre}</span>
-                  <span className="text-label text-texto-secondary">Validade {formatarData(s.metrologia.validade)}</span>
+                  <span className="font-mono">{t('Lacre {numero}', { numero: s.metrologia.numero_lacre })}</span>
+                  <span className="text-label text-texto-secondary">{t('Validade {data}', { data: formatarData(s.metrologia.validade) })}</span>
                   {s.metrologia.validade < hoje && (
                     <Badge tom="pending" icone="alert-triangle">
-                      Vencida — refaça a verificação
+                      {t('Vencida — refaça a verificação')}
                     </Badge>
                   )}
                 </span>
               ) : (
                 <Badge tom="warning" icone="alert-triangle">
-                  Pendente
+                  {t('Pendente')}
                 </Badge>
               ),
           },
@@ -287,17 +289,17 @@ export function DetalheOP() {
         <div className="flex flex-wrap justify-end gap-2">
           {naEtapaTestes && podeTestar && (
             <>
-              <Botao variante="secundaria" icone="check-circle-2" aria-label={`Aprovar ${s.numero}`} onClick={() => definirTeste({ serie: s, aprovado: true })}>
-                Aprovar
+              <Botao variante="secundaria" icone="check-circle-2" aria-label={t('Aprovar {numero}', { numero: s.numero })} onClick={() => definirTeste({ serie: s, aprovado: true })}>
+                {t('Aprovar')}
               </Botao>
-              <Botao variante="fantasma" icone="alert-triangle" aria-label={`Reprovar ${s.numero}`} onClick={() => definirTeste({ serie: s, aprovado: false })}>
-                Reprovar
+              <Botao variante="fantasma" icone="alert-triangle" aria-label={t('Reprovar {numero}', { numero: s.numero })} onClick={() => definirTeste({ serie: s, aprovado: false })}>
+                {t('Reprovar')}
               </Botao>
             </>
           )}
           {op.exige_metrologia && podeMetrologia && s.status !== 'Cancelado' && (
-            <Botao variante="secundaria" icone="gauge" aria-label={`Metrologia de ${s.numero}`} onClick={() => definirMetrologia(s)}>
-              Metrologia
+            <Botao variante="secundaria" icone="gauge" aria-label={t('Metrologia de {numero}', { numero: s.numero })} onClick={() => definirMetrologia(s)}>
+              {t('Metrologia')}
             </Botao>
           )}
         </div>
@@ -305,20 +307,20 @@ export function DetalheOP() {
     : undefined;
 
   const colunasApontamento: Coluna<Apontamento>[] = [
-    { chave: 'etapa', rotulo: 'Etapa', renderizar: (a) => <NomeEtapa etapa={a.etapa} /> },
-    { chave: 'operador', rotulo: 'Operador', renderizar: (a) => a.operador_nome || '—' },
+    { chave: 'etapa', rotulo: t('Etapa'), renderizar: (a) => <NomeEtapa etapa={a.etapa} /> },
+    { chave: 'operador', rotulo: t('Operador'), renderizar: (a) => a.operador_nome || '—' },
     {
       chave: 'centro',
-      rotulo: 'Centro de trabalho',
+      rotulo: t('Centro de trabalho'),
       renderizar: (a) => (
         <span>
           <span className="font-mono">{a.centro_codigo}</span> {a.centro_nome}
         </span>
       ),
     },
-    { chave: 'inicio', rotulo: 'Início', renderizar: (a) => formatarDataHora(a.inicio) },
-    { chave: 'fim', rotulo: 'Fim', renderizar: (a) => (a.fim ? formatarDataHora(a.fim) : '—') },
-    { chave: 'duracao', rotulo: 'Duração', alinhamento: 'direita', renderizar: (a) => formatarDuracao(a.duracao_minutos) },
+    { chave: 'inicio', rotulo: t('Início'), renderizar: (a) => formatarDataHora(a.inicio) },
+    { chave: 'fim', rotulo: t('Fim'), renderizar: (a) => (a.fim ? formatarDataHora(a.fim) : '—') },
+    { chave: 'duracao', rotulo: t('Duração'), alinhamento: 'direita', renderizar: (a) => formatarDuracao(a.duracao_minutos) },
   ];
 
   const historico = op.historico ?? [];
@@ -327,26 +329,26 @@ export function DetalheOP() {
     <div className="mx-auto flex max-w-[1200px] flex-col gap-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex items-start gap-4">
-          <Miniatura tamanho="media" url={op.produto_foto_url} alt={`Foto do produto ${op.produto_codigo}`} />
+          <Miniatura tamanho="media" url={op.produto_foto_url} alt={t('Foto do produto {codigo}', { codigo: op.produto_codigo })} />
           <div className="flex flex-col gap-1">
             <h1 className="font-mono text-title text-texto-primary">{op.numero_op}</h1>
             <p className="text-body text-texto-primary">
               <span className="font-mono">{op.produto_codigo}</span> — {op.produto_descricao} ·{' '}
-              <span className="font-mono tabular">{op.quantidade}</span> un.
+              <span className="font-mono tabular">{op.quantidade}</span> {t('un.')}
             </p>
             <p className="text-body text-texto-secondary">
-              Pedido{' '}
+              {t('Pedido')}{' '}
               <Link to={`/pedidos-venda/${op.pedido_venda_id}`} className="font-mono text-brand hover:underline">
                 {op.numero_pedido}
               </Link>{' '}
-              · {op.cliente_nome} · Prazo {formatarData(op.data_conclusao_prevista)} · BOM versão {op.estrutura_versao}
+              · {op.cliente_nome} · {t('Prazo')} {formatarData(op.data_conclusao_prevista)} · {t('BOM versão {versao}', { versao: op.estrutura_versao })}
             </p>
             <div className="flex flex-wrap items-center gap-2">
               <BadgeStatusOP status={op.status} />
-              {opAtrasada(op) && <SeloAtraso>Atrasada</SeloAtraso>}
+              {opAtrasada(op) && <SeloAtraso>{t('Atrasada')}</SeloAtraso>}
               {op.exige_metrologia && (
                 <Badge tom="blocked" icone="gauge">
-                  Exige metrologia
+                  {t('Exige metrologia')}
                 </Badge>
               )}
             </div>
@@ -356,10 +358,10 @@ export function DetalheOP() {
 
       {op.status === 'Cancelada' ? (
         <Badge tom="neutral" icone="x" className="self-start">
-          OP cancelada
+          {t('OP cancelada')}
         </Badge>
       ) : (
-        <TrilhaEtapas rotulo="Etapas da ordem de produção" etapas={etapasDaOP(op)} />
+        <TrilhaEtapas rotulo={t('Etapas da ordem de produção')} etapas={etapasDaOP(op)} />
       )}
 
       {falha && (
@@ -381,37 +383,43 @@ export function DetalheOP() {
       <div className="flex flex-col gap-3 rounded-cartao border border-borda-subtle bg-surface-raised p-4">
         {op.status === 'Aberta' && (
           <p className="text-body text-texto-secondary">
-            Liberar reserva todo o material da BOM (tudo ou nada) e coloca a OP no Kanban, na Separação.
+            {t('Liberar reserva todo o material da BOM (tudo ou nada) e coloca a OP no Kanban, na Separação.')}
           </p>
         )}
         {emAndamento && (
           <p className="text-body text-texto-secondary">
-            Etapa atual: <strong className="text-texto-primary"><NomeEtapa etapa={op.etapa_atual} /></strong>.{' '}
+            {t('Etapa atual:')} <strong className="text-texto-primary"><NomeEtapa etapa={op.etapa_atual} /></strong>.{' '}
             {ap
-              ? `Em apontamento por ${ap.operador_nome} no centro ${ap.centro_codigo} desde ${formatarDataHora(ap.inicio)}.`
-              : 'Ninguém apontando agora. Para avançar, é preciso ao menos um apontamento encerrado nesta etapa.'}
+              ? t('Em apontamento por {operador} no centro {centro} desde {inicio}.', {
+                  operador: ap.operador_nome ?? '',
+                  centro: ap.centro_codigo ?? '',
+                  inicio: formatarDataHora(ap.inicio),
+                })
+              : t('Ninguém apontando agora. Para avançar, é preciso ao menos um apontamento encerrado nesta etapa.')}
           </p>
         )}
         {op.status === 'Concluida' && (
           <p className="text-body text-texto-secondary">
-            OP concluída{op.data_conclusao_real ? ` em ${formatarData(op.data_conclusao_real)}` : ''}: as unidades entraram no estoque de produto acabado.
+            {op.data_conclusao_real
+              ? t('OP concluída em {data}: as unidades entraram no estoque de produto acabado.', { data: formatarData(op.data_conclusao_real) })
+              : t('OP concluída: as unidades entraram no estoque de produto acabado.')}
           </p>
         )}
 
         <div className="flex flex-wrap items-end gap-2">
           {op.status === 'Aberta' && podeLiberar && (
-            <Botao icone="unlock" ocupado={mutacaoLiberar.isPending} rotuloOcupado="Liberando…" disabled={ocupado} onClick={() => mutacaoLiberar.mutate()}>
-              Liberar OP
+            <Botao icone="unlock" ocupado={mutacaoLiberar.isPending} rotuloOcupado={t('Liberando…')} disabled={ocupado} onClick={() => mutacaoLiberar.mutate()}>
+              {t('Liberar OP')}
             </Botao>
           )}
           {emAndamento && podeApontar && !ap && (
             <>
               <div className="w-[280px] max-w-full">
                 <Selecao
-                  rotulo={`Centro de trabalho (${ROTULO_ETAPA_OP[op.etapa_atual]})`}
+                  rotulo={t('Centro de trabalho ({etapa})', { etapa: td(ROTULO_ETAPA_OP[op.etapa_atual]) })}
                   opcoes={opcoesCentro}
-                  placeholder="Selecione"
-                  ajuda={opcoesCentro.length === 0 ? 'Nenhum centro ativo nesta etapa — cadastre em Centros de trabalho' : undefined}
+                  placeholder={t('Selecione')}
+                  ajuda={opcoesCentro.length === 0 ? t('Nenhum centro ativo nesta etapa — cadastre em Centros de trabalho') : undefined}
                   value={centroId}
                   onChange={(e) => definirCentroId(e.target.value)}
                 />
@@ -419,17 +427,17 @@ export function DetalheOP() {
               <Botao
                 icone="play"
                 ocupado={mutacaoIniciar.isPending}
-                rotuloOcupado="Iniciando…"
+                rotuloOcupado={t('Iniciando…')}
                 disabled={ocupado || centroId === ''}
                 onClick={() => mutacaoIniciar.mutate()}
               >
-                Iniciar apontamento
+                {t('Iniciar apontamento')}
               </Botao>
             </>
           )}
           {emAndamento && podeEncerrar && (
-            <Botao icone="square" ocupado={mutacaoEncerrar.isPending} rotuloOcupado="Encerrando…" disabled={ocupado} onClick={() => mutacaoEncerrar.mutate()}>
-              Encerrar apontamento
+            <Botao icone="square" ocupado={mutacaoEncerrar.isPending} rotuloOcupado={t('Encerrando…')} disabled={ocupado} onClick={() => mutacaoEncerrar.mutate()}>
+              {t('Encerrar apontamento')}
             </Botao>
           )}
           {emAndamento && podeAvancar && (
@@ -437,72 +445,73 @@ export function DetalheOP() {
               variante={ap ? 'secundaria' : 'primaria'}
               icone={op.etapa_atual === 'Expedicao' ? 'check-circle-2' : 'arrow-right'}
               ocupado={mutacaoAvancar.isPending}
-              rotuloOcupado={op.etapa_atual === 'Expedicao' ? 'Concluindo…' : 'Avançando…'}
+              rotuloOcupado={op.etapa_atual === 'Expedicao' ? t('Concluindo…') : t('Avançando…')}
               disabled={ocupado}
               onClick={() => mutacaoAvancar.mutate()}
             >
-              {op.etapa_atual === 'Expedicao' ? 'Concluir OP' : 'Avançar etapa'}
+              {op.etapa_atual === 'Expedicao' ? t('Concluir OP') : t('Avançar etapa')}
             </Botao>
           )}
           {(op.status === 'Aberta' || op.status === 'Liberada') && podeCancelar && (
             <Botao variante="fantasma" icone="trash-2" disabled={ocupado} onClick={() => definirConfirmarCancelar(true)}>
-              Cancelar OP
+              {t('Cancelar OP')}
             </Botao>
           )}
         </div>
       </div>
 
-      <Secao titulo="Material" descricao="Reservado na liberação e consumido ao sair da Separação.">
+      <Secao titulo={t('Material')} descricao={t('Reservado na liberação e consumido ao sair da Separação.')}>
         <Tabela<Reserva>
-          rotulo="Material da OP"
+          rotulo={t('Material da OP')}
           colunas={colunasReserva}
           itens={op.reservas ?? []}
           chaveDe={(r) => r.parte_peca_id}
           ordenarPor="peca"
           ordem="asc"
           aoOrdenar={() => {}}
-          vazio="Nenhum material reservado ainda. Libere a OP para reservar."
+          vazio={t('Nenhum material reservado ainda. Libere a OP para reservar.')}
         />
       </Secao>
 
       <Secao
-        titulo="Unidades"
+        titulo={t('Unidades')}
         descricao={
           naEtapaTestes
-            ? 'Registre o resultado de cada unidade. Só avança com todas aprovadas' +
-              (op.exige_metrologia ? ' e com a metrologia preenchida.' : '.')
-            : 'Um número de série por unidade, gerado na liberação.'
+            ? op.exige_metrologia
+              ? t('Registre o resultado de cada unidade. Só avança com todas aprovadas e com a metrologia preenchida.')
+              : t('Registre o resultado de cada unidade. Só avança com todas aprovadas.')
+            : t('Um número de série por unidade, gerado na liberação.')
         }
       >
         <Tabela<Serie>
-          rotulo="Unidades da OP"
+          rotulo={t('Unidades da OP')}
           colunas={colunasSerie}
           itens={op.series ?? []}
           chaveDe={(s) => s.id}
           ordenarPor="numero"
           ordem="asc"
           aoOrdenar={() => {}}
-          vazio="As unidades (números de série) são geradas quando a OP é liberada."
+          vazio={t('As unidades (números de série) são geradas quando a OP é liberada.')}
           acoes={acoesSerie}
         />
       </Secao>
 
-      <Secao titulo="Apontamentos">
+      <Secao titulo={t('Apontamentos')}>
         <Tabela<Apontamento>
-          rotulo="Apontamentos da OP"
+          rotulo={t('Apontamentos da OP')}
           colunas={colunasApontamento}
           itens={op.apontamentos ?? []}
           chaveDe={(a) => a.id}
           ordenarPor="inicio"
           ordem="asc"
           aoOrdenar={() => {}}
-          vazio="Nenhum apontamento ainda."
+          vazio={t('Nenhum apontamento ainda.')}
         />
       </Secao>
 
       <Secao
-        titulo="Documentos e laudos"
-        descricao="Laudos de teste e relatórios de inspeção entram na ficha as-built de cada unidade."
+        titulo={t('Documentos e laudos')}
+        descricao={t('Laudos de teste e relatórios de inspeção entram na ficha as-built de cada unidade.')}
       >
         <AnexosDoRegistro
           entidade="ordem_producao"
@@ -512,24 +521,24 @@ export function DetalheOP() {
         />
       </Secao>
 
-      <Secao titulo="Histórico do Kanban">
+      <Secao titulo={t('Histórico do Kanban')}>
         {historico.length === 0 ? (
-          <p className="text-body text-texto-secondary">A OP ainda não entrou no Kanban.</p>
+          <p className="text-body text-texto-secondary">{t('A OP ainda não entrou no Kanban.')}</p>
         ) : (
           <ol className="flex flex-col gap-1 rounded-cartao border border-borda-subtle bg-surface-raised p-3">
-            {historico.map((t) => (
-              <li key={`${t.data_hora}-${t.etapa_nova}`} className="text-body text-texto-primary">
-                <span className="text-texto-secondary">{formatarDataHora(t.data_hora)}</span> ·{' '}
-                {t.etapa_anterior ? (
+            {historico.map((h) => (
+              <li key={`${h.data_hora}-${h.etapa_nova}`} className="text-body text-texto-primary">
+                <span className="text-texto-secondary">{formatarDataHora(h.data_hora)}</span> ·{' '}
+                {h.etapa_anterior ? (
                   <>
-                    <NomeEtapa etapa={t.etapa_anterior} /> → <NomeEtapa etapa={t.etapa_nova} />
+                    <NomeEtapa etapa={h.etapa_anterior} /> → <NomeEtapa etapa={h.etapa_nova} />
                   </>
                 ) : (
                   <>
-                    Liberada para <NomeEtapa etapa={t.etapa_nova} />
+                    {t('Liberada para')} <NomeEtapa etapa={h.etapa_nova} />
                   </>
                 )}{' '}
-                · {t.usuario}
+                · {h.usuario}
               </li>
             ))}
           </ol>
@@ -540,10 +549,10 @@ export function DetalheOP() {
 
       <Confirmacao
         aberto={confirmarCancelar}
-        titulo="Cancelar ordem de produção"
-        mensagem={`Cancelar a OP ${op.numero_op}? A reserva de material é devolvida ao estoque. Depois que o material é consumido (saída da Separação), a OP não pode mais ser cancelada.`}
-        rotuloConfirmar="Cancelar OP"
-        rotuloOcupado="Cancelando…"
+        titulo={t('Cancelar ordem de produção')}
+        mensagem={t('Cancelar a OP {numero}? A reserva de material é devolvida ao estoque. Depois que o material é consumido (saída da Separação), a OP não pode mais ser cancelada.', { numero: op.numero_op })}
+        rotuloConfirmar={t('Cancelar OP')}
+        rotuloOcupado={t('Cancelando…')}
         ocupado={mutacaoCancelar.isPending}
         aoConfirmar={() => mutacaoCancelar.mutate()}
         aoCancelar={() => definirConfirmarCancelar(false)}
@@ -567,7 +576,7 @@ export function DetalheOP() {
         <ModalMetrologia
           serie={metrologia}
           ocupado={mutacaoMetrologia.isPending}
-          erro={separarErro(mutacaoMetrologia.error).geral ?? (mutacaoMetrologia.error ? 'Confira os campos da metrologia.' : null)}
+          erro={separarErro(mutacaoMetrologia.error).geral ?? (mutacaoMetrologia.error ? t('Confira os campos da metrologia.') : null)}
           aoFechar={() => {
             definirMetrologia(null);
             mutacaoMetrologia.reset();
@@ -592,16 +601,17 @@ function LinhaCusto({ rotulo, valor, destaque }: { rotulo: string; valor: string
 
 /** Custo real (doc 0, 5.1.D): so aparece para quem tem producao.custos (a API omite o campo). */
 function SecaoCusto({ custo }: { custo: Custo }) {
+  useIdioma();
   const diferenca = custo.material_realizado - custo.material_orcado;
   return (
-    <Secao titulo="Custo" descricao="Orçado: BOM × custo médio na liberação. Realizado: material consumido + horas apontadas × custo/hora do centro.">
+    <Secao titulo={t('Custo')} descricao={t('Orçado: BOM × custo médio na liberação. Realizado: material consumido + horas apontadas × custo/hora do centro.')}>
       {custo.incompleto && (
         <div role="status" className="flex flex-col gap-1 rounded-campo border border-estado-warning bg-estado-warning-bg px-3 py-2 text-body text-estado-warning">
-          <p>Custo incompleto — os valores abaixo estão subestimados.</p>
+          <p>{t('Custo incompleto — os valores abaixo estão subestimados.')}</p>
           {(custo.avisos ?? []).length > 0 && (
             <ul className="flex flex-col gap-1">
               {(custo.avisos ?? []).map((a) => (
-                <li key={a}>{a}</li>
+                <li key={a}>{td(a)}</li>
               ))}
             </ul>
           )}
@@ -609,18 +619,18 @@ function SecaoCusto({ custo }: { custo: Custo }) {
       )}
       <dl className="grid gap-x-8 rounded-cartao border border-borda-subtle bg-surface-raised px-4 py-2 md:grid-cols-2">
         <div>
-          <LinhaCusto rotulo="Material orçado" valor={formatarMoeda(custo.material_orcado)} />
-          <LinhaCusto rotulo="Material realizado" valor={formatarMoeda(custo.material_realizado)} />
+          <LinhaCusto rotulo={t('Material orçado')} valor={formatarMoeda(custo.material_orcado)} />
+          <LinhaCusto rotulo={t('Material realizado')} valor={formatarMoeda(custo.material_realizado)} />
           <LinhaCusto
-            rotulo="Diferença de material"
+            rotulo={t('Diferença de material')}
             valor={`${diferenca > 0 ? '+' : ''}${formatarMoeda(diferenca)}`}
           />
         </div>
         <div>
-          <LinhaCusto rotulo="Horas apontadas" valor={`${horas.format(custo.horas_apontadas)} h`} />
-          <LinhaCusto rotulo="Mão de obra" valor={formatarMoeda(custo.mao_de_obra)} />
-          <LinhaCusto rotulo="Total realizado" valor={formatarMoeda(custo.total_realizado)} destaque />
-          <LinhaCusto rotulo="Custo por unidade" valor={formatarMoeda(custo.custo_unitario)} destaque />
+          <LinhaCusto rotulo={t('Horas apontadas')} valor={`${horas.format(custo.horas_apontadas)} h`} />
+          <LinhaCusto rotulo={t('Mão de obra')} valor={formatarMoeda(custo.mao_de_obra)} />
+          <LinhaCusto rotulo={t('Total realizado')} valor={formatarMoeda(custo.total_realizado)} destaque />
+          <LinhaCusto rotulo={t('Custo por unidade')} valor={formatarMoeda(custo.custo_unitario)} destaque />
         </div>
       </dl>
     </Secao>

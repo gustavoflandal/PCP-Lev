@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { marcar } from '@/i18n';
 import { PERIODOS_PAINEL, PERIODO_PADRAO, type PeriodoPainel } from '@/tipos/paineis';
 
 /** Intervalos de atualizacao automatica, em segundos (0 = desligada). */
@@ -7,21 +8,21 @@ export const INTERVALOS_ATUALIZACAO = [0, 30, 60, 120, 300, 600] as const;
 export type IntervaloAtualizacao = (typeof INTERVALOS_ATUALIZACAO)[number];
 export const ATUALIZACAO_PADRAO: IntervaloAtualizacao = 60;
 
-/** Rotulos dos seletores da barra de controles. */
+/** Rotulos dos seletores da barra de controles (textos de origem: quem exibe usa td()). */
 export const ROTULO_PERIODO: Record<PeriodoPainel, string> = {
-  30: 'Últimos 30 dias',
-  90: 'Últimos 90 dias',
-  180: 'Últimos 180 dias',
-  365: 'Últimos 365 dias',
+  30: marcar('Últimos 30 dias'),
+  90: marcar('Últimos 90 dias'),
+  180: marcar('Últimos 180 dias'),
+  365: marcar('Últimos 365 dias'),
 };
 
 export const ROTULO_ATUALIZACAO: Record<IntervaloAtualizacao, string> = {
-  0: 'Desligada',
-  30: '30 s',
-  60: '1 min',
-  120: '2 min',
-  300: '5 min',
-  600: '10 min',
+  0: marcar('Desligada'),
+  30: marcar('30 s'),
+  60: marcar('1 min'),
+  120: marcar('2 min'),
+  300: marcar('5 min'),
+  600: marcar('10 min'),
 };
 
 export interface ControlesPainel {

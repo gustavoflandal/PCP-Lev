@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { t, td } from '@/i18n';
 import { Botao } from '@/componentes/ui/Botao';
 import { icones } from '@/componentes/ui/icones';
 import { useLogoEmpresa } from '@/hooks/useLogoEmpresa';
@@ -29,19 +30,19 @@ export function Cabecalho() {
         {usuario && (
           <div className="text-right">
             <p className="text-body text-texto-primary">{usuario.nome}</p>
-            <p className="text-label text-texto-secondary">{usuario.perfil_nome || usuario.perfil}</p>
+            <p className="text-label text-texto-secondary">{td(usuario.perfil_nome || usuario.perfil)}</p>
           </div>
         )}
         {/* Toda tela interna: imprime ou salva em PDF o que esta na tela. */}
         <Botao variante="secundaria" icone="printer" onClick={imprimirTela}>
-          Imprimir / PDF
+          {t('Imprimir / PDF')}
         </Botao>
         <Botao variante="secundaria" icone="settings" onClick={() => navegar('/preferencias')}>
-          Preferências
+          {t('Preferências')}
         </Botao>
         <Ajuda />
         <Botao variante="secundaria" icone="log-out" onClick={() => sair()}>
-          Sair
+          {t('Sair')}
         </Botao>
       </div>
     </header>

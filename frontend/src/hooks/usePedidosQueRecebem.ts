@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import type { OpcaoSelecao } from '@/componentes/ui/Selecao';
 import { listar } from '@/servicos/compras';
 import type { PedidoCompra, StatusPedidoCompra } from '@/tipos/compras';
+import { t } from '@/i18n';
 
 /** Situacoes de PC que aceitam nota fiscal (notaentrada.statusQueRecebem). */
 export const STATUS_QUE_RECEBEM: StatusPedidoCompra[] = ['Aguardando Entrega', 'Recebido Parcial'];
@@ -48,7 +49,7 @@ export function usePedidosQueRecebem(fornecedorPorId?: Map<number, string>): Ped
     () =>
       itens.map((p) => ({
         valor: String(p.id),
-        rotulo: `${p.numero_pc} — ${fornecedorPorId?.get(p.fornecedor_id) ?? `fornecedor ${p.fornecedor_id}`} (${p.status === 'Recebido Parcial' ? 'recebido parcial' : 'aguardando entrega'})`,
+        rotulo: `${p.numero_pc} — ${fornecedorPorId?.get(p.fornecedor_id) ?? t('fornecedor {id}', { id: p.fornecedor_id })} (${p.status === 'Recebido Parcial' ? t('recebido parcial') : t('aguardando entrega')})`,
       })),
     [itens, fornecedorPorId],
   );

@@ -15,7 +15,7 @@ import (
 )
 
 const colunasUsuario = `id, username, nome, email, senha_hash, perfil, ativo,
-	ultimo_login, created_at, updated_at, tema, alto_contraste, densidade, tamanho_fonte,
+	ultimo_login, created_at, updated_at, tema, alto_contraste, densidade, tamanho_fonte, idioma,
 	situacao, matricula, telefone, setor, data_admissao, data_desligamento, deve_trocar_senha,
 	tentativas_falhas, bloqueado_ate, versao_sessao`
 
@@ -106,8 +106,9 @@ func (r *UsuarioRepositorio) AtualizarSenha(ctx context.Context, id int64, senha
 // AtualizarPreferencias grava as preferencias de aparencia do usuario.
 func (r *UsuarioRepositorio) AtualizarPreferencias(ctx context.Context, id int64, p usuario.Preferencias) error {
 	etiqueta, err := db.DoContexto(ctx, r.pool).Exec(ctx,
-		`UPDATE usuarios SET tema = $2, alto_contraste = $3, densidade = $4, tamanho_fonte = $5 WHERE id = $1`,
-		id, p.Tema, p.AltoContraste, p.Densidade, p.TamanhoFonte)
+		`UPDATE usuarios SET tema = $2, alto_contraste = $3, densidade = $4, tamanho_fonte = $5,
+		        idioma = COALESCE(NULLIF($6, ''), idioma) WHERE id = $1`,
+		id, p.Tema, p.AltoContraste, p.Densidade, p.TamanhoFonte, p.Idioma)
 	if err != nil {
 		return fmt.Errorf("atualizar preferencias: %w", err)
 	}
@@ -134,7 +135,7 @@ func lerUsuario(linha pgx.Row) (*usuario.Usuario, error) {
 	err := linha.Scan(
 		&u.ID, &u.Username, &u.Nome, &u.Email, &u.SenhaHash, &u.Perfil,
 		&u.Ativo, &u.UltimoLogin, &u.CreatedAt, &u.UpdatedAt,
-		&u.Tema, &u.AltoContraste, &u.Densidade, &u.TamanhoFonte,
+		&u.Tema, &u.AltoContraste, &u.Densidade, &u.TamanhoFonte, &u.Idioma,
 		&u.Situacao, &u.Matricula, &u.Telefone, &u.Setor, &u.DataAdmissao, &u.DataDesligamento, &u.DeveTrocarSenha,
 		&u.TentativasFalhas, &u.BloqueadoAte, &u.VersaoSessao,
 	)

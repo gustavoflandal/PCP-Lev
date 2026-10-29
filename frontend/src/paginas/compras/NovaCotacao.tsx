@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { z } from 'zod';
+import { t } from '@/i18n';
 import { Botao } from '@/componentes/ui/Botao';
 import { Campo } from '@/componentes/ui/Campo';
 import { Selecao } from '@/componentes/ui/Selecao';
@@ -15,18 +16,19 @@ import { formatarMoeda } from '@/lib/formato';
 import { criarCompra } from '@/servicos/compras';
 import type { Cotacao } from '@/tipos/compras';
 
-const itemEsquema = z.object({
-  parte_peca_id: z.string().trim().min(1, 'Selecione a peça'),
-  quantidade: z.coerce.number().int().positive('A quantidade deve ser maior que zero'),
-  preco_unitario: z.coerce.number().positive('O preço deve ser maior que zero'),
-});
-
-const esquema = z.object({
-  numero_cotacao: z.string().trim().min(1, 'Informe o número'),
-  fornecedor_id: z.string().trim().min(1, 'Selecione o fornecedor'),
-  data_validade: z.string().trim().min(1, 'Informe a validade'),
-  itens: z.array(itemEsquema).min(1, 'Informe ao menos um item'),
-});
+const criarEsquema = () => {
+  const itemEsquema = z.object({
+    parte_peca_id: z.string().trim().min(1, t('Selecione a peça')),
+    quantidade: z.coerce.number().int().positive(t('A quantidade deve ser maior que zero')),
+    preco_unitario: z.coerce.number().positive(t('O preço deve ser maior que zero')),
+  });
+  return z.object({
+    numero_cotacao: z.string().trim().min(1, t('Informe o número')),
+    fornecedor_id: z.string().trim().min(1, t('Selecione o fornecedor')),
+    data_validade: z.string().trim().min(1, t('Informe a validade')),
+    itens: z.array(itemEsquema).min(1, t('Informe ao menos um item')),
+  });
+};
 
 type Formulario = {
   numero_cotacao: string;
@@ -62,7 +64,7 @@ export function NovaCotacao() {
     setValue,
     formState: { errors },
   } = useForm<Formulario>({
-    resolver: zodResolver(esquema),
+    resolver: (valores, contexto, opcoes) => zodResolver(criarEsquema())(valores, contexto, opcoes),
     defaultValues: {
       numero_cotacao: '',
       fornecedor_id: '',
@@ -113,7 +115,7 @@ export function NovaCotacao() {
     }
 
     if (!fornecedorValido || itensValidos.length < preenchimento.itens.length) {
-      mostrarToast('Alguns dados não puderam ser pré-preenchidos automaticamente — confira o formulário antes de salvar.');
+      mostrarToast(t('Alguns dados não puderam ser pré-preenchidos automaticamente — confira o formulário antes de salvar.'));
     }
   }, [preenchimento, opcoesFornecedor, opcoesPeca, setValue, replace, mostrarToast]);
 
@@ -130,7 +132,7 @@ export function NovaCotacao() {
         })),
       }),
     onSuccess: (criada) => {
-      mostrarToast('Cotação cadastrada');
+      mostrarToast(t('Cotação cadastrada'));
       navegar(`/cotacoes/${criada.id}`);
     },
   });
@@ -146,8 +148,8 @@ export function NovaCotacao() {
   return (
     <div className="mx-auto flex max-w-[800px] flex-col gap-4">
       <div>
-        <h1 className="text-title text-texto-primary">Nova cotação</h1>
-        <p className="text-body text-texto-secondary">Registre o pedido de preço para um fornecedor.</p>
+        <h1 className="text-title text-texto-primary">{t('Nova cotação')}</h1>
+        <p className="text-body text-texto-secondary">{t('Registre o pedido de preço para um fornecedor.')}</p>
       </div>
 
       <form
@@ -166,53 +168,53 @@ export function NovaCotacao() {
 
         <div className="grid gap-4 md:grid-cols-2">
           <Campo
-            rotulo="Número"
+            rotulo={t('Número')}
             obrigatorio
             tipoDado="codigo"
-            ajuda="Ex.: COT-2026-001"
+            ajuda={t('Ex.: COT-2026-001')}
             erro={errors.numero_cotacao?.message}
             {...register('numero_cotacao')}
           />
           <Selecao
-            rotulo="Fornecedor"
+            rotulo={t('Fornecedor')}
             obrigatorio
             opcoes={opcoesFornecedor}
-            placeholder="Selecione"
+            placeholder={t('Selecione')}
             erro={errors.fornecedor_id?.message}
             {...register('fornecedor_id')}
           />
         </div>
 
         <Campo
-          rotulo="Validade"
+          rotulo={t('Validade')}
           obrigatorio
-          ajuda="Formato AAAA-MM-DD"
+          ajuda={t('Formato AAAA-MM-DD')}
           erro={errors.data_validade?.message}
           {...register('data_validade')}
         />
 
         <div className="flex flex-col gap-3">
-          <h2 className="text-subtitle text-texto-primary">Itens</h2>
+          <h2 className="text-subtitle text-texto-primary">{t('Itens')}</h2>
 
           {fields.map((campo, indice) => (
             <div key={campo.id} className="grid gap-3 rounded-campo border border-borda-subtle p-3 md:grid-cols-[2fr_1fr_1fr_auto]">
               <Selecao
-                rotulo="Parte/peça"
+                rotulo={t('Parte/peça')}
                 obrigatorio
                 opcoes={opcoesPeca}
-                placeholder="Selecione"
+                placeholder={t('Selecione')}
                 erro={errors.itens?.[indice]?.parte_peca_id?.message}
                 {...register(`itens.${indice}.parte_peca_id` as const)}
               />
               <Campo
-                rotulo="Quantidade"
+                rotulo={t('Quantidade')}
                 obrigatorio
                 tipoDado="quantidade"
                 erro={errors.itens?.[indice]?.quantidade?.message}
                 {...register(`itens.${indice}.quantidade` as const)}
               />
               <Campo
-                rotulo="Preço unitário"
+                rotulo={t('Preço unitário')}
                 obrigatorio
                 tipoDado="quantidade"
                 erro={errors.itens?.[indice]?.preco_unitario?.message}
@@ -225,27 +227,27 @@ export function NovaCotacao() {
                   className="self-end"
                   onClick={() => remove(indice)}
                 >
-                  Remover item
+                  {t('Remover item')}
                 </Botao>
               )}
             </div>
           ))}
 
           <Botao variante="secundaria" icone="plus" onClick={() => append(ITEM_VAZIO)} className="self-start">
-            Adicionar item
+            {t('Adicionar item')}
           </Botao>
 
           <p className="text-right text-body text-texto-secondary">
-            Total: <span className="font-mono text-texto-primary">{formatarMoeda(totalGeral)}</span>
+            {t('Total:')} <span className="font-mono text-texto-primary">{formatarMoeda(totalGeral)}</span>
           </p>
         </div>
 
         <div className="flex items-center justify-end gap-2">
           <Botao variante="secundaria" onClick={() => navegar('/cotacoes')} disabled={mutacao.isPending}>
-            Cancelar
+            {t('Cancelar')}
           </Botao>
-          <Botao type="submit" icone="save" ocupado={mutacao.isPending} rotuloOcupado="Salvando…">
-            Salvar
+          <Botao type="submit" icone="save" ocupado={mutacao.isPending} rotuloOcupado={t('Salvando…')}>
+            {t('Salvar')}
           </Botao>
         </div>
       </form>

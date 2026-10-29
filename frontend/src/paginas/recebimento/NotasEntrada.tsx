@@ -8,12 +8,13 @@ import { Paginacao } from '@/componentes/ui/Paginacao';
 import { Selecao } from '@/componentes/ui/Selecao';
 import { Tabela, type Coluna } from '@/componentes/ui/Tabela';
 import { useListagemCompras } from '@/hooks/useListagemCompras';
+import { t, td } from '@/i18n';
 import { formatarData, formatarMoeda } from '@/lib/formato';
 import { PERMISSOES, usePode } from '@/lib/permissoes';
 import { STATUS_NOTA, type NotaEntrada } from '@/tipos/notasEntrada';
 import { ImportarXML } from './ImportarXML';
 
-const OPCOES_STATUS = STATUS_NOTA.map((s) => ({ valor: s, rotulo: s }));
+const opcoesStatus = () => STATUS_NOTA.map((s) => ({ valor: s, rotulo: td(s) }));
 
 /** /notas-entrada — toda entrada de insumo comprado nasce de uma nota (RN-001). */
 export function NotasEntrada() {
@@ -25,7 +26,7 @@ export function NotasEntrada() {
   const colunas: Coluna<NotaEntrada>[] = [
     {
       chave: 'numero',
-      rotulo: 'Nota (série/número)',
+      rotulo: t('Nota (série/número)'),
       ordenavel: true,
       renderizar: (n) => (
         <Link to={`/notas-entrada/${n.id}`} className="font-mono text-brand hover:underline">
@@ -33,28 +34,28 @@ export function NotasEntrada() {
         </Link>
       ),
     },
-    { chave: 'fornecedor', rotulo: 'Fornecedor', renderizar: (n) => n.fornecedor_nome || '—' },
+    { chave: 'fornecedor', rotulo: t('Fornecedor'), renderizar: (n) => n.fornecedor_nome || '—' },
     {
       chave: 'pedido',
-      rotulo: 'Pedido de compra',
+      rotulo: t('Pedido de compra'),
       renderizar: (n) => (
         <Link to={`/pedidos-compra/${n.pedido_compra_id}`} className="font-mono text-brand hover:underline">
           {n.numero_pc}
         </Link>
       ),
     },
-    { chave: 'data_emissao', rotulo: 'Emissão', ordenavel: true, renderizar: (n) => formatarData(n.data_emissao ?? undefined) },
-    { chave: 'data_entrada', rotulo: 'Entrada', ordenavel: true, renderizar: (n) => formatarData(n.data_entrada ?? undefined) },
+    { chave: 'data_emissao', rotulo: t('Emissão'), ordenavel: true, renderizar: (n) => formatarData(n.data_emissao ?? undefined) },
+    { chave: 'data_entrada', rotulo: t('Entrada'), ordenavel: true, renderizar: (n) => formatarData(n.data_entrada ?? undefined) },
     {
       chave: 'valor_total',
-      rotulo: 'Valor total',
+      rotulo: t('Valor total'),
       ordenavel: true,
       alinhamento: 'direita',
       renderizar: (n) => formatarMoeda(n.valor_total),
     },
     {
       chave: 'status',
-      rotulo: 'Situação',
+      rotulo: t('Situação'),
       ordenavel: true,
       renderizar: (n) => (
         <span className="flex flex-wrap gap-1">
@@ -72,9 +73,9 @@ export function NotasEntrada() {
   return (
     <div className="mx-auto flex max-w-[1400px] flex-col gap-4">
       <div>
-        <h1 className="text-title text-texto-primary">Notas fiscais de entrada</h1>
+        <h1 className="text-title text-texto-primary">{t('Notas fiscais de entrada')}</h1>
         <p className="text-body text-texto-secondary">
-          Recebimento fiscal: nada entra no estoque sem nota vinculada a um pedido de compra.
+          {t('Recebimento fiscal: nada entra no estoque sem nota vinculada a um pedido de compra.')}
         </p>
       </div>
 
@@ -82,17 +83,17 @@ export function NotasEntrada() {
         <div className="flex flex-wrap items-end gap-4">
           <div className="w-[320px] max-w-full">
             <Campo
-              rotulo="Buscar por número, chave, pedido ou fornecedor"
+              rotulo={t('Buscar por número, chave, pedido ou fornecedor')}
               value={lista.busca}
               onChange={(e) => lista.definirBusca(e.target.value)}
-              placeholder="Digite para filtrar"
+              placeholder={t('Digite para filtrar')}
             />
           </div>
           <div className="w-[200px]">
             <Selecao
-              rotulo="Situação"
-              opcoes={OPCOES_STATUS}
-              placeholder="Todas"
+              rotulo={t('Situação')}
+              opcoes={opcoesStatus()}
+              placeholder={t('Todas')}
               value={lista.status ?? ''}
               onChange={(e) => lista.definirStatus(e.target.value || null)}
             />
@@ -101,10 +102,10 @@ export function NotasEntrada() {
         {podeLancar && (
           <div className="flex items-center gap-2">
             <Botao variante="secundaria" icone="file-code" onClick={() => definirImportando(true)}>
-              Importar XML
+              {t('Importar XML')}
             </Botao>
             <Botao icone="plus" onClick={() => navegar('/notas-entrada/nova')}>
-              Nova nota fiscal
+              {t('Nova nota fiscal')}
             </Botao>
           </div>
         )}
@@ -112,7 +113,7 @@ export function NotasEntrada() {
 
       <div>
         <Tabela<NotaEntrada>
-          rotulo="Notas fiscais de entrada"
+          rotulo={t('Notas fiscais de entrada')}
           colunas={colunas}
           itens={lista.itens}
           chaveDe={(n) => n.id}
@@ -124,8 +125,8 @@ export function NotasEntrada() {
           aoTentarDeNovo={lista.recarregar}
           vazio={
             podeLancar
-              ? 'Nenhuma nota fiscal lançada. Lance a primeira ou importe o XML da NF-e.'
-              : 'Nenhuma nota fiscal lançada.'
+              ? t('Nenhuma nota fiscal lançada. Lance a primeira ou importe o XML da NF-e.')
+              : t('Nenhuma nota fiscal lançada.')
           }
         />
         <Paginacao

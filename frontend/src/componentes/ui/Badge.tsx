@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { t } from '@/i18n';
 import { cn } from '@/lib/cn';
 import { icones, type NomeIcone } from './icones';
 
@@ -46,11 +47,11 @@ export function Badge({ tom, icone, children, className }: BadgeProps) {
 export function BadgeSituacao({ ativo }: { ativo: boolean }) {
   return ativo ? (
     <Badge tom="done" icone="check-circle-2">
-      Ativo
+      {t('Ativo')}
     </Badge>
   ) : (
     <Badge tom="neutral" icone="circle">
-      Inativo
+      {t('Inativo')}
     </Badge>
   );
 }

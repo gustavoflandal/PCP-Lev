@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/gustavoflandal/pcp-lev/backend/internal/platform/httpx"
+	"github.com/gustavoflandal/pcp-lev/backend/internal/platform/i18n"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -108,4 +109,36 @@ func TestErroValidacaoListaOsCamposInvalidos(t *testing.T) {
 	detalhes := erro["detalhes"].([]any)
 	require.Len(t, detalhes, 1)
 	assert.Equal(t, "codigo", detalhes[0].(map[string]any)["campo"])
+}
+
+func TestErrosSaemNoIdiomaDoAcceptLanguage(t *testing.T) {
+	e := echo.New()
+	e.Use(i18n.Middleware())
+	e.GET("/validar", func(c echo.Context) error {
+		return httpx.ErroValidacao(c, httpx.Validar(struct {
+			Nome string `json:"nome" validate:"required"`
+		}{}))
+	})
+	e.GET("/erro", func(c echo.Context) error {
+		return httpx.Erro(c, http.StatusBadRequest, httpx.CodigoRequisicaoInvalida, "Corpo da requisicao invalido")
+	})
+
+	chamar := func(rota, idioma string) map[string]any {
+		req := httptest.NewRequest(http.MethodGet, rota, nil)
+		if idioma != "" {
+			req.Header.Set("Accept-Language", idioma)
+		}
+		rec := httptest.NewRecorder()
+		e.ServeHTTP(rec, req)
+		return corpo(t, rec)["erro"].(map[string]any)
+	}
+
+	es := chamar("/validar", "es-AR,es;q=0.9")
+	assert.Equal(t, "Datos inválidos", es["mensagem"])
+	assert.Equal(t, "Campo obligatorio", es["detalhes"].([]any)[0].(map[string]any)["mensagem"])
+	assert.Equal(t, "Cuerpo de la solicitud inválido", chamar("/erro", "es")["mensagem"])
+
+	pt := chamar("/validar", "pt-BR")
+	assert.Equal(t, "Dados invalidos", pt["mensagem"])
+	assert.Equal(t, "Corpo da requisicao invalido", chamar("/erro", "")["mensagem"], "sem cabecalho, portugues")
 }

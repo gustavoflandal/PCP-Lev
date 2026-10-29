@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { z } from 'zod';
+import { t } from '@/i18n';
 import { Botao } from '@/componentes/ui/Botao';
 import { Campo } from '@/componentes/ui/Campo';
 import { Selecao } from '@/componentes/ui/Selecao';
@@ -17,32 +18,34 @@ import { hojeAAAAMMDD, pedidoEditavel, type CorpoPedidoVenda, type PedidoVenda }
 const DATA = /^\d{4}-\d{2}-\d{2}$/;
 const PRECO = /^\d{1,10}([.,]\d{1,2})?$/;
 
-const itemEsquema = z.object({
-  produto_acabado_id: z.string().trim().min(1, 'Selecione o produto'),
-  quantidade: z.coerce.number().int('Use um número inteiro').positive('A quantidade deve ser maior que zero'),
-  preco_unitario: z
-    .string()
-    .trim()
-    .refine((v) => PRECO.test(v) && Number(v.replace(',', '.')) > 0, 'Informe um preço maior que zero, com até duas casas'),
-});
-
-const esquema = z
-  .object({
-    numero_pedido: z.string().trim().min(1, 'Informe o número do pedido').max(50, 'Use até 50 caracteres'),
-    cliente_id: z.string().trim().min(1, 'Selecione o cliente'),
-    data_pedido: z.string().trim().regex(DATA, 'Informe a data no formato AAAA-MM-DD'),
-    data_entrega_prometida: z.string().trim().regex(DATA, 'Informe a data no formato AAAA-MM-DD'),
-    observacoes: z.string().trim().max(1000, 'Use até 1000 caracteres').default(''),
-    itens: z.array(itemEsquema).min(1, 'Informe ao menos um item'),
-  })
-  .refine((v) => v.data_entrega_prometida > v.data_pedido, {
-    path: ['data_entrega_prometida'],
-    message: 'A entrega prometida precisa ser depois da data do pedido',
-  })
-  .refine((v) => new Set(v.itens.map((i) => i.produto_acabado_id)).size === v.itens.length, {
-    path: ['itens'],
-    message: 'O mesmo produto aparece em mais de um item — some as quantidades',
+const criarEsquema = () => {
+  const itemEsquema = z.object({
+    produto_acabado_id: z.string().trim().min(1, t('Selecione o produto')),
+    quantidade: z.coerce.number().int(t('Use um número inteiro')).positive(t('A quantidade deve ser maior que zero')),
+    preco_unitario: z
+      .string()
+      .trim()
+      .refine((v) => PRECO.test(v) && Number(v.replace(',', '.')) > 0, t('Informe um preço maior que zero, com até duas casas')),
   });
+
+  return z
+    .object({
+      numero_pedido: z.string().trim().min(1, t('Informe o número do pedido')).max(50, t('Use até 50 caracteres')),
+      cliente_id: z.string().trim().min(1, t('Selecione o cliente')),
+      data_pedido: z.string().trim().regex(DATA, t('Informe a data no formato AAAA-MM-DD')),
+      data_entrega_prometida: z.string().trim().regex(DATA, t('Informe a data no formato AAAA-MM-DD')),
+      observacoes: z.string().trim().max(1000, t('Use até 1000 caracteres')).default(''),
+      itens: z.array(itemEsquema).min(1, t('Informe ao menos um item')),
+    })
+    .refine((v) => v.data_entrega_prometida > v.data_pedido, {
+      path: ['data_entrega_prometida'],
+      message: t('A entrega prometida precisa ser depois da data do pedido'),
+    })
+    .refine((v) => new Set(v.itens.map((i) => i.produto_acabado_id)).size === v.itens.length, {
+      path: ['itens'],
+      message: t('O mesmo produto aparece em mais de um item — some as quantidades'),
+    });
+};
 
 type Formulario = {
   numero_pedido: string;
@@ -86,18 +89,18 @@ export function FormularioPedidoVenda() {
   });
 
   if (pedidoId !== null) {
-    if (consulta.isPending) return <p className="text-body text-texto-secondary">Carregando…</p>;
+    if (consulta.isPending) return <p className="text-body text-texto-secondary">{t('Carregando…')}</p>;
     if (consulta.isError || !consulta.data) {
-      return <p className="text-body text-estado-pending">Não foi possível carregar o pedido de venda.</p>;
+      return <p className="text-body text-estado-pending">{t('Não foi possível carregar o pedido de venda.')}</p>;
     }
     if (!pedidoEditavel(consulta.data)) {
       return (
         <div className="mx-auto flex max-w-[800px] flex-col gap-2">
           <p role="alert" className="rounded-campo border border-estado-warning bg-estado-warning-bg px-3 py-2 text-body text-estado-warning">
-            Este pedido não pode mais ser editado: só pedidos Abertos e sem ordem de produção ativa.
+            {t('Este pedido não pode mais ser editado: só pedidos Abertos e sem ordem de produção ativa.')}
           </p>
           <Link to={`/pedidos-venda/${pedidoId}`} className="text-body text-brand hover:underline">
-            Voltar ao pedido
+            {t('Voltar ao pedido')}
           </Link>
         </div>
       );
@@ -124,7 +127,7 @@ function FormularioPedido({ inicial }: { inicial?: PedidoVenda }) {
     setError,
     formState: { errors },
   } = useForm<Formulario>({
-    resolver: zodResolver(esquema),
+    resolver: (valores, contexto, opcoes) => zodResolver(criarEsquema())(valores, contexto, opcoes),
     defaultValues: inicial
       ? {
           numero_pedido: inicial.numero_pedido,
@@ -167,7 +170,7 @@ function FormularioPedido({ inicial }: { inicial?: PedidoVenda }) {
       inicial ? atualizarPedidoVenda(inicial.id, corpo) : criarPedidoVenda(corpo),
     onSuccess: (salvo) => {
       void clienteQuery.invalidateQueries({ queryKey: ['pedidos-venda'] });
-      mostrarToast(inicial ? 'Pedido de venda atualizado' : 'Pedido de venda cadastrado');
+      mostrarToast(inicial ? t('Pedido de venda atualizado') : t('Pedido de venda cadastrado'));
       navegar(`/pedidos-venda/${salvo.id}`);
     },
     onError: (erro) => {
@@ -185,14 +188,14 @@ function FormularioPedido({ inicial }: { inicial?: PedidoVenda }) {
     0,
   );
 
-  const titulo = inicial ? `Editar pedido ${inicial.numero_pedido}` : 'Novo pedido de venda';
+  const titulo = inicial ? t('Editar pedido {numero}', { numero: inicial.numero_pedido }) : t('Novo pedido de venda');
 
   return (
     <div className="mx-auto flex max-w-[900px] flex-col gap-4">
       <div>
         <h1 className="text-title text-texto-primary">{titulo}</h1>
         <p className="text-body text-texto-secondary">
-          Informe o cliente, a entrega prometida e os produtos. Depois de salvar, gere a ordem de produção de cada item.
+          {t('Informe o cliente, a entrega prometida e os produtos. Depois de salvar, gere a ordem de produção de cada item.')}
         </p>
       </div>
 
@@ -209,18 +212,18 @@ function FormularioPedido({ inicial }: { inicial?: PedidoVenda }) {
 
         <div className="grid gap-4 md:grid-cols-2">
           <Campo
-            rotulo="Número do pedido"
+            rotulo={t('Número do pedido')}
             obrigatorio
             tipoDado="codigo"
-            ajuda="Ex.: PV-2026-001 (o número do cliente ou o interno)"
+            ajuda={t('Ex.: PV-2026-001 (o número do cliente ou o interno)')}
             erro={errors.numero_pedido?.message}
             {...register('numero_pedido')}
           />
           <Selecao
-            rotulo="Cliente"
+            rotulo={t('Cliente')}
             obrigatorio
             opcoes={opcoesCliente}
-            placeholder="Selecione"
+            placeholder={t('Selecione')}
             erro={errors.cliente_id?.message}
             {...register('cliente_id')}
           />
@@ -228,25 +231,25 @@ function FormularioPedido({ inicial }: { inicial?: PedidoVenda }) {
 
         <div className="grid gap-4 md:grid-cols-2">
           <Campo
-            rotulo="Data do pedido"
+            rotulo={t('Data do pedido')}
             obrigatorio
-            ajuda="Formato AAAA-MM-DD"
+            ajuda={t('Formato AAAA-MM-DD')}
             erro={errors.data_pedido?.message}
             {...register('data_pedido')}
           />
           <Campo
-            rotulo="Entrega prometida"
+            rotulo={t('Entrega prometida')}
             obrigatorio
-            ajuda="Formato AAAA-MM-DD"
+            ajuda={t('Formato AAAA-MM-DD')}
             erro={errors.data_entrega_prometida?.message}
             {...register('data_entrega_prometida')}
           />
         </div>
 
-        <Campo rotulo="Observações" erro={errors.observacoes?.message} {...register('observacoes')} />
+        <Campo rotulo={t('Observações')} erro={errors.observacoes?.message} {...register('observacoes')} />
 
         <div className="flex flex-col gap-3">
-          <h2 className="text-subtitle text-texto-primary">Itens</h2>
+          <h2 className="text-subtitle text-texto-primary">{t('Itens')}</h2>
           {errors.itens?.message && (
             <p role="alert" className="text-label text-estado-pending">
               {errors.itens.message}
@@ -261,22 +264,22 @@ function FormularioPedido({ inicial }: { inicial?: PedidoVenda }) {
           {fields.map((campo, indice) => (
             <div key={campo.id} className="grid gap-3 rounded-campo border border-borda-subtle p-3 md:grid-cols-[2fr_1fr_1fr_auto]">
               <Selecao
-                rotulo="Produto acabado"
+                rotulo={t('Produto acabado')}
                 obrigatorio
                 opcoes={opcoesProduto}
-                placeholder="Selecione"
+                placeholder={t('Selecione')}
                 erro={errors.itens?.[indice]?.produto_acabado_id?.message}
                 {...register(`itens.${indice}.produto_acabado_id` as const)}
               />
               <Campo
-                rotulo="Quantidade"
+                rotulo={t('Quantidade')}
                 obrigatorio
                 tipoDado="quantidade"
                 erro={errors.itens?.[indice]?.quantidade?.message}
                 {...register(`itens.${indice}.quantidade` as const)}
               />
               <Campo
-                rotulo="Preço unitário (R$)"
+                rotulo={t('Preço unitário (R$)')}
                 obrigatorio
                 tipoDado="quantidade"
                 inputMode="decimal"
@@ -285,18 +288,18 @@ function FormularioPedido({ inicial }: { inicial?: PedidoVenda }) {
               />
               {fields.length > 1 && (
                 <Botao variante="fantasma" icone="trash-2" className="self-end" onClick={() => remove(indice)}>
-                  Remover item
+                  {t('Remover item')}
                 </Botao>
               )}
             </div>
           ))}
 
           <Botao variante="secundaria" icone="plus" onClick={() => append(ITEM_VAZIO)} className="self-start">
-            Adicionar item
+            {t('Adicionar item')}
           </Botao>
 
           <p className="text-right text-body text-texto-secondary">
-            Total: <span className="font-mono tabular text-texto-primary">{formatarMoeda(total)}</span>
+            {t('Total:')} <span className="font-mono tabular text-texto-primary">{formatarMoeda(total)}</span>
           </p>
         </div>
 
@@ -306,10 +309,10 @@ function FormularioPedido({ inicial }: { inicial?: PedidoVenda }) {
             onClick={() => navegar(inicial ? `/pedidos-venda/${inicial.id}` : '/pedidos-venda')}
             disabled={mutacao.isPending}
           >
-            Cancelar
+            {t('Cancelar')}
           </Botao>
-          <Botao type="submit" icone="save" ocupado={mutacao.isPending} rotuloOcupado="Salvando…">
-            Salvar
+          <Botao type="submit" icone="save" ocupado={mutacao.isPending} rotuloOcupado={t('Salvando…')}>
+            {t('Salvar')}
           </Botao>
         </div>
       </form>

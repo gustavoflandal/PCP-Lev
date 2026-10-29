@@ -1,8 +1,9 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { useToasts } from '@/componentes/ui/Toast';
+import { PREFERENCIAS_PADRAO, usePreferencias } from '@/store/preferencias';
 import { notaBase, pagina, rotasDeApoio } from '@/testes/fixturasRecebimento';
 import { entrarComoPerfil, instalarServidorFalso, renderizarComProvedores, type ServidorFalso } from '@/testes/utilitarios';
 import { NotasEntrada } from './NotasEntrada';
@@ -181,5 +182,29 @@ describe('NotasEntrada', () => {
     await userEvent.click(within(modal).getByRole('button', { name: 'Ler XML' }));
 
     expect(await within(modal).findByRole('alert')).toHaveTextContent('nao e o do fornecedor do pedido');
+  });
+});
+
+describe('NotasEntrada em espanhol', () => {
+  afterEach(() => usePreferencias.getState().aplicar({ ...PREFERENCIAS_PADRAO, idioma: 'pt-BR' }));
+
+  it('traduz titulo, filtros, status da nota e botoes', async () => {
+    const servidor = instalarServidorFalso();
+    entrarComoPerfil('GESTOR');
+    usePreferencias.getState().aplicar({ ...PREFERENCIAS_PADRAO, idioma: 'es' });
+    servidor.responder([
+      ...rotasDeApoio(),
+      { metodo: 'get', url: '/notas-entrada', status: 200, corpo: pagina([notaBase('Efetivada', [], { origem: 'XML' })]) },
+    ]);
+    renderizar();
+
+    expect(await screen.findByRole('link', { name: '101/1' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Notas fiscales de entrada' })).toBeInTheDocument();
+    const tabela = screen.getByRole('table', { name: 'Notas fiscales de entrada' });
+    expect(within(tabela).getByText('Confirmada')).toBeInTheDocument();
+    expect(within(tabela).getByText('XML')).toBeInTheDocument();
+    expect(screen.getByLabelText('Buscar por número, clave, orden o proveedor')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Nueva nota fiscal' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Importar XML' })).toBeInTheDocument();
   });
 });

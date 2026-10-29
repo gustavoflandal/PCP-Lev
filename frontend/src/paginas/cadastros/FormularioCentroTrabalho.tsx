@@ -6,6 +6,7 @@ import { Campo } from '@/componentes/ui/Campo';
 import { Selecao } from '@/componentes/ui/Selecao';
 import { PERMISSOES, usePode } from '@/lib/permissoes';
 import { OPCOES_ETAPA, ROTULO_ETAPA, type CentroTrabalho, type EtapaProducao } from '@/tipos/cadastros';
+import { t, td, marcar } from '@/i18n';
 
 const ETAPAS = Object.keys(ROTULO_ETAPA) as [EtapaProducao, ...EtapaProducao[]];
 
@@ -19,9 +20,9 @@ const esquema = z.object({
     .string()
     .trim()
     .toUpperCase()
-    .regex(/^[A-Z0-9_-]{2,20}$/, 'Use de 2 a 20 caracteres: letras, números, "_" ou "-"'),
-  nome: z.string().trim().min(1, 'Informe o nome').max(100, 'Use até 100 caracteres'),
-  etapa: z.enum(ETAPAS, { errorMap: () => ({ message: 'Escolha a etapa' }) }),
+    .regex(/^[A-Z0-9_-]{2,20}$/, marcar('Use de 2 a 20 caracteres: letras, números, "_" ou "-"')),
+  nome: z.string().trim().min(1, marcar('Informe o nome')).max(100, marcar('Use até 100 caracteres')),
+  etapa: z.enum(ETAPAS, { errorMap: () => ({ message: marcar('Escolha a etapa') }) }),
   capacidade_horas_dia: z
     .string()
     .trim()
@@ -32,7 +33,7 @@ const esquema = z.object({
       if (!/^\d{1,2}([.,]\d)?$/.test(v)) return false;
       const n = Number(v.replace(',', '.'));
       return n > 0 && n <= 24;
-    }, 'Informe um valor maior que 0 e até 24 horas, com até uma casa decimal, ou deixe em branco'),
+    }, marcar('Informe um valor maior que 0 e até 24 horas, com até uma casa decimal, ou deixe em branco')),
   custo_hora: z
     .string()
     .trim()
@@ -42,8 +43,8 @@ const esquema = z.object({
       // Até duas casas decimais: é dinheiro.
       if (!/^\d{1,8}([.,]\d{1,2})?$/.test(v)) return false;
       return Number(v.replace(',', '.')) >= 0;
-    }, 'Informe um valor maior ou igual a zero, com até duas casas decimais, ou deixe em branco'),
-  descricao: z.string().trim().max(255, 'Use até 255 caracteres').default(''),
+    }, marcar('Informe um valor maior ou igual a zero, com até duas casas decimais, ou deixe em branco')),
+  descricao: z.string().trim().max(255, marcar('Use até 255 caracteres')).default(''),
   ativo: z.enum(['true', 'false']),
 });
 
@@ -73,9 +74,9 @@ export interface FormularioCentroTrabalhoProps {
   aoCancelar: () => void;
 }
 
-const SITUACAO = [
-  { valor: 'true', rotulo: 'Ativo' },
-  { valor: 'false', rotulo: 'Inativo' },
+const opcoesSituacao = () => [
+  { valor: 'true', rotulo: t('Ativo') },
+  { valor: 'false', rotulo: t('Inativo') },
 ];
 
 function capacidadeParaTexto(valor: number | null | undefined): string {
@@ -110,7 +111,7 @@ export function FormularioCentroTrabalho({
   });
 
   const erroDe = (campo: keyof Formulario): string | undefined =>
-    errors[campo]?.message ?? errosPorCampo[campo];
+    td(errors[campo]?.message ?? errosPorCampo[campo]) || undefined;
 
   return (
     <form
@@ -144,41 +145,41 @@ export function FormularioCentroTrabalho({
           // O codigo identifica o centro nas ordens de producao: nao muda.
           // Fica fora do register para o valor nao depender do campo desabilitado.
           <Campo
-            rotulo="Código"
+            rotulo={t('Código')}
             obrigatorio
             tipoDado="codigo"
             disabled
             value={inicial.codigo}
             readOnly
-            ajuda="O código não pode ser alterado"
+            ajuda={t('O código não pode ser alterado')}
           />
         ) : (
           <Campo
-            rotulo="Código"
+            rotulo={t('Código')}
             obrigatorio
             tipoDado="codigo"
-            ajuda="Ex.: MONT-01"
+            ajuda={t('Ex.: MONT-01')}
             erro={erroDe('codigo')}
             {...register('codigo')}
           />
         )}
-        <Campo rotulo="Nome" obrigatorio erro={erroDe('nome')} {...register('nome')} />
+        <Campo rotulo={t('Nome')} obrigatorio erro={erroDe('nome')} {...register('nome')} />
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
         <Selecao
-          rotulo="Etapa"
+          rotulo={t('Etapa')}
           obrigatorio
-          placeholder="Selecione"
-          opcoes={OPCOES_ETAPA}
+          placeholder={t('Selecione')}
+          opcoes={OPCOES_ETAPA.map((o) => ({ ...o, rotulo: td(o.rotulo) }))}
           erro={erroDe('etapa')}
           {...register('etapa')}
         />
         <Campo
-          rotulo="Capacidade (horas/dia)"
+          rotulo={t('Capacidade (horas/dia)')}
           tipoDado="quantidade"
           inputMode="decimal"
-          ajuda="Opcional, até 24"
+          ajuda={t('Opcional, até 24')}
           erro={erroDe('capacidade_horas_dia')}
           {...register('capacidade_horas_dia')}
         />
@@ -187,29 +188,29 @@ export function FormularioCentroTrabalho({
       <div className="grid gap-4 md:grid-cols-2">
         {podeVerCustos && (
           <Campo
-            rotulo="Custo por hora (R$)"
+            rotulo={t('Custo por hora (R$)')}
             tipoDado="quantidade"
             inputMode="decimal"
-            ajuda="Opcional — entra no custo real das ordens de produção"
+            ajuda={t('Opcional — entra no custo real das ordens de produção')}
             erro={erroDe('custo_hora')}
             {...register('custo_hora')}
           />
         )}
-        <Campo rotulo="Descrição" erro={erroDe('descricao')} {...register('descricao')} />
+        <Campo rotulo={t('Descrição')} erro={erroDe('descricao')} {...register('descricao')} />
       </div>
 
       {inicial && (
         <div className="w-[200px]">
-          <Selecao rotulo="Situação" opcoes={SITUACAO} {...register('ativo')} />
+          <Selecao rotulo={t('Situação')} opcoes={opcoesSituacao()} {...register('ativo')} />
         </div>
       )}
 
       <div className="flex items-center justify-end gap-2">
         <Botao variante="secundaria" onClick={aoCancelar} disabled={ocupado}>
-          Cancelar
+          {t('Cancelar')}
         </Botao>
-        <Botao type="submit" icone="save" ocupado={ocupado} rotuloOcupado="Salvando…">
-          Salvar
+        <Botao type="submit" icone="save" ocupado={ocupado} rotuloOcupado={t('Salvando…')}>
+          {t('Salvar')}
         </Botao>
       </div>
     </form>

@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { t, td } from '@/i18n';
 import { Badge, type TomBadge } from '@/componentes/ui/Badge';
 import { Botao } from '@/componentes/ui/Botao';
 import { Campo } from '@/componentes/ui/Campo';
@@ -12,11 +13,11 @@ import { formatarData, formatarMoeda } from '@/lib/formato';
 import type { Cotacao, StatusCotacao } from '@/tipos/compras';
 import { PERMISSOES, usePode } from '@/lib/permissoes';
 
-const OPCOES_STATUS = [
-  { valor: 'Rascunho', rotulo: 'Rascunho' },
-  { valor: 'Enviada', rotulo: 'Enviada' },
-  { valor: 'Respondida', rotulo: 'Respondida' },
-  { valor: 'Cancelada', rotulo: 'Cancelada' },
+const opcoesStatus = () => [
+  { valor: 'Rascunho', rotulo: t('Rascunho') },
+  { valor: 'Enviada', rotulo: t('Enviada') },
+  { valor: 'Respondida', rotulo: t('Respondida') },
+  { valor: 'Cancelada', rotulo: t('Cancelada') },
 ];
 
 /**
@@ -40,7 +41,7 @@ export function Cotacoes() {
   const colunas: Coluna<Cotacao>[] = [
     {
       chave: 'numero_cotacao',
-      rotulo: 'Número',
+      rotulo: t('Número'),
       ordenavel: true,
       renderizar: (c) => (
         <button
@@ -54,28 +55,28 @@ export function Cotacoes() {
     },
     {
       chave: 'fornecedor',
-      rotulo: 'Fornecedor',
+      rotulo: t('Fornecedor'),
       renderizar: (c) => fornecedorPorId.get(c.fornecedor_id) ?? '—',
     },
     {
       chave: 'data_validade',
-      rotulo: 'Validade',
+      rotulo: t('Validade'),
       ordenavel: true,
       renderizar: (c) => formatarData(c.data_validade),
     },
     {
       chave: 'valor_total',
-      rotulo: 'Valor total',
+      rotulo: t('Valor total'),
       ordenavel: true,
       alinhamento: 'direita',
       renderizar: (c) => formatarMoeda(c.valor_total),
     },
     {
       chave: 'status',
-      rotulo: 'Situação',
+      rotulo: t('Situação'),
       renderizar: (c) => (
         <Badge tom={TOM_STATUS[c.status].tom} icone={TOM_STATUS[c.status].icone}>
-          {c.status}
+          {td(c.status)}
         </Badge>
       ),
     },
@@ -84,25 +85,25 @@ export function Cotacoes() {
   return (
     <div className="mx-auto flex max-w-[1400px] flex-col gap-4">
       <div>
-        <h1 className="text-title text-texto-primary">Cotações</h1>
-        <p className="text-body text-texto-secondary">Pedidos de preço enviados a fornecedores.</p>
+        <h1 className="text-title text-texto-primary">{t('Cotações')}</h1>
+        <p className="text-body text-texto-secondary">{t('Pedidos de preço enviados a fornecedores.')}</p>
       </div>
 
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-wrap items-end gap-4">
           <div className="w-[320px] max-w-full">
             <Campo
-              rotulo="Buscar por número"
+              rotulo={t('Buscar por número')}
               value={lista.busca}
               onChange={(evento) => lista.definirBusca(evento.target.value)}
-              placeholder="Digite para filtrar"
+              placeholder={t('Digite para filtrar')}
             />
           </div>
           <div className="w-[160px]">
             <Selecao
-              rotulo="Situação"
-              opcoes={OPCOES_STATUS}
-              placeholder="Todos"
+              rotulo={t('Situação')}
+              opcoes={opcoesStatus()}
+              placeholder={t('Todos')}
               value={lista.status ?? ''}
               onChange={(evento) => lista.definirStatus(evento.target.value || null)}
             />
@@ -111,14 +112,14 @@ export function Cotacoes() {
 
         {podeIncluir && (
           <Botao icone="plus" onClick={() => navegar('/cotacoes/nova')}>
-            Nova cotação
+            {t('Nova cotação')}
           </Botao>
         )}
       </div>
 
       <div>
         <Tabela<Cotacao>
-          rotulo="Cotações"
+          rotulo={t('Cotações')}
           colunas={colunas}
           itens={lista.itens}
           chaveDe={(c) => c.id}
@@ -128,7 +129,7 @@ export function Cotacoes() {
           carregando={lista.carregando}
           erro={lista.erro}
           aoTentarDeNovo={lista.recarregar}
-          vazio="Nenhuma cotação cadastrada. Cadastre a primeira para começar."
+          vazio={t('Nenhuma cotação cadastrada. Cadastre a primeira para começar.')}
         />
         <Paginacao
           pagina={lista.paginacao.pagina}

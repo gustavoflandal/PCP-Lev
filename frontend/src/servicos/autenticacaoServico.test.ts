@@ -10,7 +10,7 @@ describe('atualizarPreferencias', () => {
   });
 
   it('envia PUT para /auth/preferencias e desembrulha o usuario atualizado', async () => {
-    const corpo = { tema: 'escuro' as const, alto_contraste: true, densidade: 'compacta' as const, tamanho_fonte: 'grande' as const };
+    const corpo = { tema: 'escuro' as const, alto_contraste: true, densidade: 'compacta' as const, tamanho_fonte: 'grande' as const, idioma: 'pt-BR' as const };
     servidor.responder([
       {
         metodo: 'put', url: '/auth/preferencias', status: 200,

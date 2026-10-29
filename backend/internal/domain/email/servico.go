@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"strings"
+
+	"github.com/gustavoflandal/pcp-lev/backend/internal/platform/i18n"
 )
 
 // Registro e a linha gravada: a configuracao publica mais a senha cifrada,
@@ -92,6 +94,12 @@ func (s *Servico) Atualizar(ctx context.Context, d Dados, autor string) (Configu
 // configuracao SALVA -- o teste confirma o que o sistema vai usar de verdade,
 // nao o que esta digitado na tela.
 func (s *Servico) EnviarTeste(ctx context.Context, destinatario, autor string) error {
+	return s.EnviarTesteIdioma(ctx, destinatario, autor, i18n.Padrao)
+}
+
+// EnviarTesteIdioma e o EnviarTeste com o texto do e-mail no idioma do
+// usuario que pediu o teste.
+func (s *Servico) EnviarTesteIdioma(ctx context.Context, destinatario, autor, idioma string) error {
 	destinatario = strings.TrimSpace(destinatario)
 	if !emailValido(destinatario) {
 		return ErrDestinatarioInvalido
@@ -122,9 +130,9 @@ func (s *Servico) EnviarTeste(ctx context.Context, destinatario, autor string) e
 		RemetenteEmail: r.RemetenteEmail,
 		RemetenteNome:  r.RemetenteNome,
 		Destinatario:   destinatario,
-		Assunto:        "Teste de envio — Sistema PCP",
-		Corpo: "Este e um e-mail de teste do Sistema PCP, enviado por " + autor + ".\r\n\r\n" +
-			"Se voce recebeu esta mensagem, a configuracao do servidor de e-mail esta funcionando.\r\n",
+		Assunto:        i18n.Traduzir(idioma, "Teste de envio — Sistema PCP"),
+		Corpo: i18n.Traduzir(idioma, "Este e um e-mail de teste do Sistema PCP, enviado por "+autor+".") + "\r\n\r\n" +
+			i18n.Traduzir(idioma, "Se voce recebeu esta mensagem, a configuracao do servidor de e-mail esta funcionando.") + "\r\n",
 	})
 	if err != nil {
 		return fmt.Errorf("%w: %s", ErrEnvioFalhou, semSenha(err.Error(), senha))

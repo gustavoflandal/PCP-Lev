@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { t } from '@/i18n';
 import { useConfiguracaoRegionalServidor } from '@/hooks/useConfiguracaoRegionalServidor';
 
 /**
@@ -12,7 +13,7 @@ export function ConfiguracaoRegionalCarregada({ children }: { children: ReactNod
   const { isPending } = useConfiguracaoRegionalServidor();
 
   if (isPending) {
-    return <p className="text-body text-texto-secondary">Carregando…</p>;
+    return <p className="text-body text-texto-secondary">{t('Carregando…')}</p>;
   }
   return children;
 }

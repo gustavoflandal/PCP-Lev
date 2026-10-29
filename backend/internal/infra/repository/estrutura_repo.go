@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/estrutura"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/infra/db"
@@ -192,13 +193,28 @@ func (r *EstruturaRepositorio) itensDeVariasEstruturas(ctx context.Context, estr
 	return porEstrutura, linhas.Err()
 }
 
-// Versionar substitui a estrutura ativa em idAtual: apura a proxima versao,
-// inativa a antiga (so se ainda estiver ativa — o UPDATE com "AND ativo" e
-// quem trava a linha; uma segunda chamada concorrente para o mesmo idAtual
-// bloqueia ate a primeira commitar, depois nao afeta nenhuma linha) e grava
-// a nova, tudo numa transacao.
+// inativarVigente tira a vigencia da versao ativa do produto (se houver),
+// encerrando-a no dia anterior a novoInicio -- ou no proprio inicio dela, se
+// a nova comecar antes (o CHECK chk_vigencia nao admite fim < inicio). Roda
+// antes de ativar a outra: o indice uk_estrutura_ativa_por_pa so admite uma.
+func inativarVigente(ctx context.Context, tx pgx.Tx, produtoID int64, novoInicio tempo.Data, autor string) error {
+	_, err := tx.Exec(ctx,
+		`UPDATE estrutura_produto
+		 SET ativo = false, data_vigencia_fim = GREATEST(data_vigencia_inicio, $2::date - 1), updated_by = $3
+		 WHERE produto_acabado_id = $1 AND ativo`,
+		produtoID, novoInicio, autor)
+	if err != nil {
+		return fmt.Errorf("inativar estrutura vigente: %w", err)
+	}
+	return nil
+}
+
+// Versionar grava a nova versao como a vigente: apura a proxima versao,
+// inativa a que estava ativa e insere a nova, tudo numa transacao. Duas
+// chamadas concorrentes para o mesmo produto: a segunda espera a primeira
+// commitar (o UPDATE trava a linha ativa) e entao inativa a recem-criada.
 func (r *EstruturaRepositorio) Versionar(
-	ctx context.Context, idAtual int64, nova *estrutura.Estrutura, autor string,
+	ctx context.Context, nova *estrutura.Estrutura, autor string,
 ) (*estrutura.Estrutura, error) {
 	tx, err := db.DoContexto(ctx, r.pool).Begin(ctx)
 	if err != nil {
@@ -214,15 +230,8 @@ func (r *EstruturaRepositorio) Versionar(
 	}
 	nova.Versao = maxVersao + 1
 
-	fimDaAntiga := tempo.Data{Time: nova.DataVigenciaInicio.Time.AddDate(0, 0, -1)}
-	etiqueta, err := tx.Exec(ctx,
-		`UPDATE estrutura_produto SET ativo = false, data_vigencia_fim = $2, updated_by = $3 WHERE id = $1 AND ativo`,
-		idAtual, fimDaAntiga, autor)
-	if err != nil {
-		return nil, fmt.Errorf("inativar estrutura anterior: %w", err)
-	}
-	if etiqueta.RowsAffected() == 0 {
-		return nil, estrutura.ErrStatusInvalidoParaAcao
+	if err := inativarVigente(ctx, tx, nova.ProdutoAcabadoID, nova.DataVigenciaInicio, autor); err != nil {
+		return nil, err
 	}
 
 	sql := `INSERT INTO estrutura_produto
@@ -261,4 +270,41 @@ func (r *EstruturaRepositorio) Versionar(
 	}
 	nova.CreatedBy, nova.UpdatedBy = &autor, &autor
 	return nova, nil
+}
+
+// Ativar torna vigente a versao id, qualquer que seja o seu historico: a
+// vigente atual e encerrada hoje e a escolhida reabre (fim = NULL).
+func (r *EstruturaRepositorio) Ativar(ctx context.Context, id int64, autor string) (*estrutura.Estrutura, error) {
+	tx, err := db.DoContexto(ctx, r.pool).Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("iniciar transacao: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	var produtoID int64
+	var ativa bool
+	err = tx.QueryRow(ctx,
+		`SELECT produto_acabado_id, ativo FROM estrutura_produto WHERE id = $1 FOR UPDATE`, id,
+	).Scan(&produtoID, &ativa)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, estrutura.ErrNaoEncontrado
+		}
+		return nil, fmt.Errorf("buscar estrutura a ativar: %w", err)
+	}
+
+	if !ativa {
+		if err := inativarVigente(ctx, tx, produtoID, tempo.Data{Time: time.Now()}, autor); err != nil {
+			return nil, err
+		}
+		if _, err := tx.Exec(ctx,
+			`UPDATE estrutura_produto SET ativo = true, data_vigencia_fim = NULL, updated_by = $2 WHERE id = $1`,
+			id, autor); err != nil {
+			return nil, fmt.Errorf("ativar estrutura: %w", err)
+		}
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("confirmar ativacao: %w", err)
+	}
+	return r.BuscarPorID(ctx, id)
 }

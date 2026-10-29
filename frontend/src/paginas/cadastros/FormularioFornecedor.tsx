@@ -7,15 +7,16 @@ import { Campo } from '@/componentes/ui/Campo';
 import { Selecao } from '@/componentes/ui/Selecao';
 import { LEAD_TIME_PADRAO_FALLBACK, useLeadTimePadrao } from '@/hooks/useParametrosNegocio';
 import type { Fornecedor } from '@/tipos/cadastros';
+import { t, td, marcar } from '@/i18n';
 
 /**
  * Validacao de forma, nao de regra: o dominio no backend e a autoridade sobre
  * CNPJ valido e e-mail valido. Aqui so evitamos o ida-e-volta obvio.
  */
 const esquema = z.object({
-  razao_social: z.string().trim().min(1, 'Informe a razão social'),
-  cnpj: z.string().trim().min(1, 'Informe o CNPJ'),
-  lead_time_medio: z.coerce.number().int().positive('O lead time deve ser maior que zero'),
+  razao_social: z.string().trim().min(1, marcar('Informe a razão social')),
+  cnpj: z.string().trim().min(1, marcar('Informe o CNPJ')),
+  lead_time_medio: z.coerce.number().int().positive(marcar('O lead time deve ser maior que zero')),
   contato_nome: z.string().trim().max(100).default(''),
   contato_email: z.string().trim().max(100).default(''),
   contato_telefone: z.string().trim().max(20).default(''),
@@ -49,9 +50,9 @@ export interface FormularioFornecedorProps {
   aoCancelar: () => void;
 }
 
-const SITUACAO = [
-  { valor: 'true', rotulo: 'Ativo' },
-  { valor: 'false', rotulo: 'Inativo' },
+const opcoesSituacao = () => [
+  { valor: 'true', rotulo: t('Ativo') },
+  { valor: 'false', rotulo: t('Inativo') },
 ];
 
 export function FormularioFornecedor({
@@ -95,7 +96,7 @@ export function FormularioFornecedor({
 
   /** O erro do formulario vence o da API: e o mais recente que a pessoa viu. */
   const erroDe = (campo: keyof Formulario): string | undefined =>
-    errors[campo]?.message ?? errosPorCampo[campo];
+    td(errors[campo]?.message ?? errosPorCampo[campo]) || undefined;
 
   return (
     <form
@@ -124,19 +125,19 @@ export function FormularioFornecedor({
         </p>
       )}
 
-      <Campo rotulo="Razão social" obrigatorio erro={erroDe('razao_social')} {...register('razao_social')} />
+      <Campo rotulo={t('Razão social')} obrigatorio erro={erroDe('razao_social')} {...register('razao_social')} />
 
       <div className="grid gap-4 md:grid-cols-2">
         <Campo
-          rotulo="CNPJ"
+          rotulo={t('CNPJ')}
           obrigatorio
           tipoDado="codigo"
-          ajuda="Com ou sem pontuação"
+          ajuda={t('Com ou sem pontuação')}
           erro={erroDe('cnpj')}
           {...register('cnpj')}
         />
         <Campo
-          rotulo="Lead time médio (dias)"
+          rotulo={t('Lead time médio (dias)')}
           obrigatorio
           tipoDado="quantidade"
           erro={erroDe('lead_time_medio')}
@@ -145,32 +146,32 @@ export function FormularioFornecedor({
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Campo rotulo="Nome do contato" erro={erroDe('contato_nome')} {...register('contato_nome')} />
-        <Campo rotulo="E-mail do contato" type="email" erro={erroDe('contato_email')} {...register('contato_email')} />
+        <Campo rotulo={t('Nome do contato')} erro={erroDe('contato_nome')} {...register('contato_nome')} />
+        <Campo rotulo={t('E-mail do contato')} type="email" erro={erroDe('contato_email')} {...register('contato_email')} />
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Campo rotulo="Telefone do contato" erro={erroDe('contato_telefone')} {...register('contato_telefone')} />
-        <Campo rotulo="Condição de pagamento" erro={erroDe('condicao_pagamento')} {...register('condicao_pagamento')} />
+        <Campo rotulo={t('Telefone do contato')} erro={erroDe('contato_telefone')} {...register('contato_telefone')} />
+        <Campo rotulo={t('Condição de pagamento')} erro={erroDe('condicao_pagamento')} {...register('condicao_pagamento')} />
       </div>
 
-      <Campo rotulo="Endereço" erro={erroDe('endereco')} {...register('endereco')} />
+      <Campo rotulo={t('Endereço')} erro={erroDe('endereco')} {...register('endereco')} />
 
       {inicial && (
         // So faz sentido escolher a situacao ao editar: e a unica forma de
         // reativar um fornecedor. Ao criar, o registro sempre nasce ativo, e
         // mostrar o campo aqui so adicionaria uma decisao sem sentido.
         <div className="w-[200px]">
-          <Selecao rotulo="Situação" opcoes={SITUACAO} {...register('ativo')} />
+          <Selecao rotulo={t('Situação')} opcoes={opcoesSituacao()} {...register('ativo')} />
         </div>
       )}
 
       <div className="flex items-center justify-end gap-2">
         <Botao variante="secundaria" onClick={aoCancelar} disabled={ocupado}>
-          Cancelar
+          {t('Cancelar')}
         </Botao>
-        <Botao type="submit" icone="save" ocupado={ocupado} rotuloOcupado="Salvando…">
-          Salvar
+        <Botao type="submit" icone="save" ocupado={ocupado} rotuloOcupado={t('Salvando…')}>
+          {t('Salvar')}
         </Botao>
       </div>
     </form>

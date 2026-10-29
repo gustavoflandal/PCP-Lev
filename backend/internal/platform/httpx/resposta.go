@@ -5,6 +5,7 @@ package httpx
 import (
 	"net/http"
 
+	"github.com/gustavoflandal/pcp-lev/backend/internal/platform/i18n"
 	"github.com/labstack/echo/v4"
 )
 
@@ -73,7 +74,7 @@ func OK(c echo.Context, dados any) error {
 
 // OKComMensagem responde 200 com dados e uma mensagem para o usuario.
 func OKComMensagem(c echo.Context, dados any, mensagem string) error {
-	return c.JSON(http.StatusOK, RespostaSucesso{Sucesso: true, Dados: dados, Mensagem: mensagem})
+	return c.JSON(http.StatusOK, RespostaSucesso{Sucesso: true, Dados: dados, Mensagem: i18n.T(c, mensagem)})
 }
 
 // Criado responde 201 com o recurso recem-criado.
@@ -95,17 +96,22 @@ func Lista(c echo.Context, dados any, paginacao *Paginacao) error {
 func Erro(c echo.Context, status int, codigo, mensagem string) error {
 	return c.JSON(status, RespostaErro{
 		Sucesso: false,
-		Erro:    DetalheErro{Codigo: codigo, Mensagem: mensagem},
+		Erro:    DetalheErro{Codigo: codigo, Mensagem: i18n.T(c, mensagem)},
 	})
 }
 
 // ErroValidacao responde 400 detalhando os campos invalidos.
 func ErroValidacao(c echo.Context, detalhes []CampoInvalido) error {
+	traduzidos := make([]CampoInvalido, len(detalhes))
+	for i, d := range detalhes {
+		traduzidos[i] = CampoInvalido{Campo: d.Campo, Mensagem: i18n.T(c, d.Mensagem)}
+	}
+	detalhes = traduzidos
 	return c.JSON(http.StatusBadRequest, RespostaErro{
 		Sucesso: false,
 		Erro: DetalheErro{
 			Codigo:   CodigoErroValidacao,
-			Mensagem: "Dados invalidos",
+			Mensagem: i18n.T(c, "Dados invalidos"),
 			Detalhes: detalhes,
 		},
 	})

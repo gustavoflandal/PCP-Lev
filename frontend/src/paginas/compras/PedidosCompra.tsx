@@ -1,5 +1,6 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
+import { t, td } from '@/i18n';
 import { Badge, type TomBadge } from '@/componentes/ui/Badge';
 import { Botao } from '@/componentes/ui/Botao';
 import { Campo } from '@/componentes/ui/Campo';
@@ -17,10 +18,11 @@ import { listarPedidosEmAtraso } from '@/servicos/compras';
 import { ROTULO_STATUS_PEDIDO_COMPRA, type PedidoCompra, type StatusPedidoCompra } from '@/tipos/compras';
 import { PERMISSOES, usePode } from '@/lib/permissoes';
 
-const OPCOES_STATUS = (Object.keys(ROTULO_STATUS_PEDIDO_COMPRA) as StatusPedidoCompra[]).map((s) => ({
-  valor: s,
-  rotulo: ROTULO_STATUS_PEDIDO_COMPRA[s],
-}));
+const opcoesStatus = () =>
+  (Object.keys(ROTULO_STATUS_PEDIDO_COMPRA) as StatusPedidoCompra[]).map((s) => ({
+    valor: s,
+    rotulo: td(ROTULO_STATUS_PEDIDO_COMPRA[s]),
+  }));
 
 /**
  * Tom por status (design system §2): as fases em andamento (Emitido, Aceito,
@@ -49,13 +51,13 @@ export function PedidosCompra() {
   const mutacaoExportar = useMutation({
     mutationFn: () => baixarArquivo('/pedidos-compra/relatorio.csv', 'pedidos-compra.csv'),
     onError: (erro) =>
-      mostrarToast(separarErro(erro).geral ?? 'Não foi possível exportar o relatório de pedidos de compra.'),
+      mostrarToast(separarErro(erro).geral ?? t('Não foi possível exportar o relatório de pedidos de compra.')),
   });
 
   const colunas: Coluna<PedidoCompra>[] = [
     {
       chave: 'numero_pc',
-      rotulo: 'Número',
+      rotulo: t('Número'),
       ordenavel: true,
       renderizar: (p) => (
         <button
@@ -69,28 +71,28 @@ export function PedidosCompra() {
     },
     {
       chave: 'fornecedor',
-      rotulo: 'Fornecedor',
+      rotulo: t('Fornecedor'),
       renderizar: (p) => fornecedorPorId.get(p.fornecedor_id) ?? '—',
     },
     {
       chave: 'data_entrega_prevista',
-      rotulo: 'Entrega prevista',
+      rotulo: t('Entrega prevista'),
       ordenavel: true,
       renderizar: (p) => formatarData(p.data_entrega_prevista),
     },
     {
       chave: 'valor_total',
-      rotulo: 'Valor total',
+      rotulo: t('Valor total'),
       ordenavel: true,
       alinhamento: 'direita',
       renderizar: (p) => formatarMoeda(p.valor_total),
     },
     {
       chave: 'status',
-      rotulo: 'Situação',
+      rotulo: t('Situação'),
       renderizar: (p) => (
         <Badge tom={TOM_STATUS[p.status].tom} icone={TOM_STATUS[p.status].icone}>
-          {p.status}
+          {td(p.status)}
         </Badge>
       ),
     },
@@ -99,13 +101,13 @@ export function PedidosCompra() {
   return (
     <div className="mx-auto flex max-w-[1400px] flex-col gap-4">
       <div>
-        <h1 className="text-title text-texto-primary">Pedidos de compra</h1>
-        <p className="text-body text-texto-secondary">Compras emitidas a fornecedores.</p>
+        <h1 className="text-title text-texto-primary">{t('Pedidos de compra')}</h1>
+        <p className="text-body text-texto-secondary">{t('Compras emitidas a fornecedores.')}</p>
       </div>
 
       {emAtraso.data && emAtraso.data.length > 0 && (
         <div className="flex flex-col gap-2 rounded-cartao border border-estado-warning bg-estado-warning-bg p-4">
-          <h2 className="flex items-center gap-2 text-subtitle text-estado-warning">Pedidos em atraso</h2>
+          <h2 className="flex items-center gap-2 text-subtitle text-estado-warning">{t('Pedidos em atraso')}</h2>
           <ul className="flex flex-col gap-1">
             {emAtraso.data.map((p) => (
               <li key={p.id}>
@@ -117,7 +119,7 @@ export function PedidosCompra() {
                   {p.numero_pc}
                 </button>
                 <span className="ml-2 text-label text-texto-secondary">
-                  entrega prevista {formatarData(p.data_entrega_prevista)}
+                  {t('entrega prevista {data}', { data: formatarData(p.data_entrega_prevista) })}
                 </span>
               </li>
             ))}
@@ -129,17 +131,17 @@ export function PedidosCompra() {
         <div className="flex flex-wrap items-end gap-4">
           <div className="w-[320px] max-w-full">
             <Campo
-              rotulo="Buscar por número"
+              rotulo={t('Buscar por número')}
               value={lista.busca}
               onChange={(evento) => lista.definirBusca(evento.target.value)}
-              placeholder="Digite para filtrar"
+              placeholder={t('Digite para filtrar')}
             />
           </div>
           <div className="w-[200px]">
             <Selecao
-              rotulo="Situação"
-              opcoes={OPCOES_STATUS}
-              placeholder="Todos"
+              rotulo={t('Situação')}
+              opcoes={opcoesStatus()}
+              placeholder={t('Todos')}
               value={lista.status ?? ''}
               onChange={(evento) => lista.definirStatus(evento.target.value || null)}
             />
@@ -152,15 +154,15 @@ export function PedidosCompra() {
               variante="secundaria"
               icone="save"
               ocupado={mutacaoExportar.isPending}
-              rotuloOcupado="Exportando…"
+              rotuloOcupado={t('Exportando…')}
               onClick={() => mutacaoExportar.mutate()}
             >
-              Exportar CSV
+              {t('Exportar CSV')}
             </Botao>
           )}
           {podeIncluir && (
             <Botao icone="plus" onClick={() => navegar('/pedidos-compra/novo')}>
-              Novo pedido de compra
+              {t('Novo pedido de compra')}
             </Botao>
           )}
         </div>
@@ -168,7 +170,7 @@ export function PedidosCompra() {
 
       <div>
         <Tabela<PedidoCompra>
-          rotulo="Pedidos de compra"
+          rotulo={t('Pedidos de compra')}
           colunas={colunas}
           itens={lista.itens}
           chaveDe={(p) => p.id}
@@ -178,7 +180,7 @@ export function PedidosCompra() {
           carregando={lista.carregando}
           erro={lista.erro}
           aoTentarDeNovo={lista.recarregar}
-          vazio="Nenhum pedido de compra cadastrado. Cadastre o primeiro para começar."
+          vazio={t('Nenhum pedido de compra cadastrado. Cadastre o primeiro para começar.')}
         />
         <Paginacao
           pagina={lista.paginacao.pagina}

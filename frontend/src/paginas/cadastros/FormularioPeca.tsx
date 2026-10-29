@@ -9,18 +9,19 @@ import { Selecao } from '@/componentes/ui/Selecao';
 import { useFornecedoresAtivos } from '@/hooks/useFornecedoresAtivos';
 import { LEAD_TIME_PADRAO_FALLBACK, useLeadTimePadrao } from '@/hooks/useParametrosNegocio';
 import type { PartePeca } from '@/tipos/cadastros';
+import { t, td, marcar } from '@/i18n';
 
 /**
  * Validacao de forma, nao de regra: o dominio no backend e a autoridade sobre
  * unicidade de codigo e regras de estoque. Aqui so evitamos o ida-e-volta obvio.
  */
 const esquema = z.object({
-  codigo: z.string().trim().min(1, 'Informe o código'),
-  descricao: z.string().trim().min(5, 'A descrição precisa de ao menos 5 caracteres'),
-  unidade_medida: z.string().trim().min(1, 'Informe a unidade de medida'),
-  estoque_minimo: z.coerce.number().int().min(0, 'O estoque mínimo não pode ser negativo'),
-  estoque_maximo: z.coerce.number().int().positive('O estoque máximo deve ser maior que zero'),
-  lead_time_compra: z.coerce.number().int().positive('O lead time deve ser maior que zero'),
+  codigo: z.string().trim().min(1, marcar('Informe o código')),
+  descricao: z.string().trim().min(5, marcar('A descrição precisa de ao menos 5 caracteres')),
+  unidade_medida: z.string().trim().min(1, marcar('Informe a unidade de medida')),
+  estoque_minimo: z.coerce.number().int().min(0, marcar('O estoque mínimo não pode ser negativo')),
+  estoque_maximo: z.coerce.number().int().positive(marcar('O estoque máximo deve ser maior que zero')),
+  lead_time_compra: z.coerce.number().int().positive(marcar('O lead time deve ser maior que zero')),
   fornecedor_padrao_id: z.string().default(''),
   ativo: z.enum(['true', 'false']),
   // Flags de controle do item (4.1.1). Validade so com lote: a tela impede a
@@ -31,11 +32,11 @@ const esquema = z.object({
   item_critico: z.boolean().default(false),
   exige_certificado: z.boolean().default(false),
   validade_minima_dias: z.coerce
-    .number({ invalid_type_error: 'Informe a validade mínima em dias' })
-    .int('Use um número inteiro de dias')
-    .min(0, 'A validade mínima vai de 0 a 3650 dias')
-    .max(3650, 'A validade mínima vai de 0 a 3650 dias'),
-  mascara_serie: z.string().trim().max(120, 'A máscara aceita até 120 caracteres').default(''),
+    .number({ invalid_type_error: marcar('Informe a validade mínima em dias') })
+    .int(marcar('Use um número inteiro de dias'))
+    .min(0, marcar('A validade mínima vai de 0 a 3650 dias'))
+    .max(3650, marcar('A validade mínima vai de 0 a 3650 dias')),
+  mascara_serie: z.string().trim().max(120, marcar('A máscara aceita até 120 caracteres')).default(''),
 });
 
 type Formulario = z.input<typeof esquema>;
@@ -69,9 +70,9 @@ export interface FormularioPecaProps {
   aoCancelar: () => void;
 }
 
-const SITUACAO = [
-  { valor: 'true', rotulo: 'Ativo' },
-  { valor: 'false', rotulo: 'Inativo' },
+const opcoesSituacao = () => [
+  { valor: 'true', rotulo: t('Ativo') },
+  { valor: 'false', rotulo: t('Inativo') },
 ];
 
 export function FormularioPeca({
@@ -128,7 +129,7 @@ export function FormularioPeca({
 
   /** O erro do formulario vence o da API: e o mais recente que a pessoa viu. */
   const erroDe = (campo: keyof Formulario): string | undefined =>
-    errors[campo]?.message ?? errosPorCampo[campo];
+    td(errors[campo]?.message ?? errosPorCampo[campo]) || undefined;
 
   return (
     <form
@@ -170,34 +171,34 @@ export function FormularioPeca({
 
       <div className="grid gap-4 md:grid-cols-2">
         <Campo
-          rotulo="Código"
+          rotulo={t('Código')}
           obrigatorio
           tipoDado="codigo"
           erro={erroDe('codigo')}
           {...register('codigo')}
         />
-        <Campo rotulo="Unidade" obrigatorio erro={erroDe('unidade_medida')} {...register('unidade_medida')} />
+        <Campo rotulo={t('Unidade')} obrigatorio erro={erroDe('unidade_medida')} {...register('unidade_medida')} />
       </div>
 
-      <Campo rotulo="Descrição" obrigatorio erro={erroDe('descricao')} {...register('descricao')} />
+      <Campo rotulo={t('Descrição')} obrigatorio erro={erroDe('descricao')} {...register('descricao')} />
 
       <div className="grid gap-4 md:grid-cols-3">
         <Campo
-          rotulo="Estoque mínimo"
+          rotulo={t('Estoque mínimo')}
           obrigatorio
           tipoDado="quantidade"
           erro={erroDe('estoque_minimo')}
           {...register('estoque_minimo')}
         />
         <Campo
-          rotulo="Estoque máximo"
+          rotulo={t('Estoque máximo')}
           obrigatorio
           tipoDado="quantidade"
           erro={erroDe('estoque_maximo')}
           {...register('estoque_maximo')}
         />
         <Campo
-          rotulo="Lead time de compra (dias)"
+          rotulo={t('Lead time de compra (dias)')}
           obrigatorio
           tipoDado="quantidade"
           erro={erroDe('lead_time_compra')}
@@ -207,24 +208,24 @@ export function FormularioPeca({
 
       <div className="w-full md:w-1/2">
         <Selecao
-          rotulo="Fornecedor padrão"
-          placeholder="Sem fornecedor padrão"
+          rotulo={t('Fornecedor padrão')}
+          placeholder={t('Sem fornecedor padrão')}
           opcoes={opcoesFornecedor}
           {...register('fornecedor_padrao_id')}
         />
       </div>
 
       <fieldset className="flex flex-col gap-3 rounded-cartao border border-borda-subtle p-4">
-        <legend className="px-1 text-label text-texto-secondary">Controle do item</legend>
+        <legend className="px-1 text-label text-texto-secondary">{t('Controle do item')}</legend>
         <div className="grid gap-3 md:grid-cols-2">
           <CaixaMarcacao
-            rotulo="Controla número de série"
-            ajuda="Cada unidade recebida e consumida é identificada pela série."
+            rotulo={t('Controla número de série')}
+            ajuda={t('Cada unidade recebida e consumida é identificada pela série.')}
             {...register('controla_numero_serie')}
           />
           <CaixaMarcacao
-            rotulo="Controla lote"
-            ajuda="O recebimento exige o lote; o consumo segue o lote."
+            rotulo={t('Controla lote')}
+            ajuda={t('O recebimento exige o lote; o consumo segue o lote.')}
             {...register('controla_lote', {
               onChange: (evento: { target: { checked: boolean } }) => {
                 if (!evento.target.checked) {
@@ -234,19 +235,19 @@ export function FormularioPeca({
             })}
           />
           <CaixaMarcacao
-            rotulo="Controla validade"
-            ajuda={controlaLote ? 'O recebimento exige a validade de cada lote.' : 'Marque "Controla lote" antes: validade é do lote.'}
+            rotulo={t('Controla validade')}
+            ajuda={controlaLote ? t('O recebimento exige a validade de cada lote.') : t('Marque "Controla lote" antes: validade é do lote.')}
             disabled={!controlaLote}
             {...register('controla_validade')}
           />
           <CaixaMarcacao
-            rotulo="Item crítico (exige foto principal)"
-            ajuda="A foto principal passa a ser obrigatória e aparece na separação."
+            rotulo={t('Item crítico (exige foto principal)')}
+            ajuda={t('A foto principal passa a ser obrigatória e aparece na separação.')}
             {...register('item_critico')}
           />
           <CaixaMarcacao
-            rotulo="Exige certificado no recebimento"
-            ajuda="O recebimento só é concluído com o certificado anexado."
+            rotulo={t('Exige certificado no recebimento')}
+            ajuda={t('O recebimento só é concluído com o certificado anexado.')}
             {...register('exige_certificado')}
           />
         </div>
@@ -255,25 +256,24 @@ export function FormularioPeca({
           <div className="grid gap-4 md:grid-cols-2">
             {controlaLote && controlaValidade && (
               <Campo
-                rotulo="Validade mínima no recebimento (dias)"
+                rotulo={t('Validade mínima no recebimento (dias)')}
                 tipoDado="quantidade"
                 min={0}
                 max={3650}
-                ajuda="Lote com menos dias de validade restante é recusado. 0 = sem mínimo."
+                ajuda={t('Lote com menos dias de validade restante é recusado. 0 = sem mínimo.')}
                 erro={erroDe('validade_minima_dias')}
                 {...register('validade_minima_dias')}
               />
             )}
             {controlaSerie && (
               <Campo
-                rotulo="Máscara do número de série"
+                rotulo={t('Máscara do número de série')}
                 // Sem tipoDado="codigo": expressao regular diferencia maiusculas.
                 className="font-mono"
                 autoCapitalize="off"
                 autoCorrect="off"
                 spellCheck={false}
-                // Atributo JSX literal: a barra invertida chega a tela como esta.
-                ajuda="Expressão regular, opcional. Ex.: SN-\d{6} — não use ^ nem $: a série inteira precisa casar."
+                ajuda={t('Expressão regular, opcional. Ex.: SN-\\d{6} — não use ^ nem $: a série inteira precisa casar.')}
                 erro={erroDe('mascara_serie')}
                 {...register('mascara_serie')}
               />
@@ -287,16 +287,16 @@ export function FormularioPeca({
         // reativar uma peca. Ao criar, o registro sempre nasce ativo, e
         // mostrar o campo aqui so adicionaria uma decisao sem sentido.
         <div className="w-[200px]">
-          <Selecao rotulo="Situação" opcoes={SITUACAO} {...register('ativo')} />
+          <Selecao rotulo={t('Situação')} opcoes={opcoesSituacao()} {...register('ativo')} />
         </div>
       )}
 
       <div className="flex items-center justify-end gap-2">
         <Botao variante="secundaria" onClick={aoCancelar} disabled={ocupado}>
-          Cancelar
+          {t('Cancelar')}
         </Botao>
-        <Botao type="submit" icone="save" ocupado={ocupado} rotuloOcupado="Salvando…">
-          Salvar
+        <Botao type="submit" icone="save" ocupado={ocupado} rotuloOcupado={t('Salvando…')}>
+          {t('Salvar')}
         </Botao>
       </div>
     </form>

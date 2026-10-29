@@ -68,7 +68,11 @@ services:
     <<: *log
 
   frontend:
-    build: { context: ./frontend }
+    build:
+      context: ./frontend
+      args:
+        APP_COMMIT: ${PCP_VERSAO:-}
+        APP_PUBLICADO_EM: ${PCP_PUBLICADO_EM:-}
     image: pcp-frontend:${PCP_VERSAO:-local}
     restart: unless-stopped
     volumes:

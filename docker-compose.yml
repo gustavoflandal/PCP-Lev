@@ -64,6 +64,10 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      # Versao mostrada na tela de entrada; use ./publicar.ps1 (ou .sh).
+      args:
+        APP_COMMIT: ${PCP_VERSAO:-}
+        APP_PUBLICADO_EM: ${PCP_PUBLICADO_EM:-}
     container_name: pcp_frontend
     restart: unless-stopped
     ports:

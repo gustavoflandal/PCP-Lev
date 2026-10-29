@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Badge, type TomBadge } from '@/componentes/ui/Badge';
 import { Botao } from '@/componentes/ui/Botao';
 import { Campo } from '@/componentes/ui/Campo';
+import { marcar, t, td } from '@/i18n';
 import { Modal } from '@/componentes/ui/Modal';
 import { Paginacao } from '@/componentes/ui/Paginacao';
 import { Selecao } from '@/componentes/ui/Selecao';
@@ -20,48 +21,48 @@ const LIMITE = 20;
 /** Espelha auditoria.TabelasAuditadas no backend (migration 007) -- so o
  * rotulo de exibicao muda aqui, a lista de valores tem que bater com o que
  * o backend aceita no filtro `tabela`. */
-const TABELAS_AUDITADAS = [
-  { valor: 'usuarios', rotulo: 'Usuários' },
-  { valor: 'fornecedores', rotulo: 'Fornecedores' },
-  { valor: 'clientes', rotulo: 'Clientes' },
-  { valor: 'produtos_acabados', rotulo: 'Produtos acabados' },
-  { valor: 'partes_pecas', rotulo: 'Partes e peças' },
-  { valor: 'estrutura_produto', rotulo: 'Estrutura de produtos' },
-  { valor: 'itens_estrutura_produto', rotulo: 'Itens de estrutura' },
-  { valor: 'centros_trabalho', rotulo: 'Centros de trabalho' },
-  { valor: 'cotacoes', rotulo: 'Cotações' },
-  { valor: 'pedidos_compra', rotulo: 'Pedidos de compra' },
-  { valor: 'pedidos_venda', rotulo: 'Pedidos de venda' },
-  { valor: 'itens_pedido_venda', rotulo: 'Itens de pedido de venda' },
-  { valor: 'ordens_producao', rotulo: 'Ordens de produção' },
-  { valor: 'apontamento_producao', rotulo: 'Apontamentos' },
-  { valor: 'numeros_serie', rotulo: 'Números de série' },
-  { valor: 'metrologia_serie', rotulo: 'Metrologia' },
-  { valor: 'reserva_estoque', rotulo: 'Reserva de estoque' },
-  { valor: 'configuracao_negocio', rotulo: 'Parâmetros de negócio' },
-  { valor: 'configuracao_smtp', rotulo: 'Servidor de e-mail' },
-  { valor: 'perfis', rotulo: 'Perfis de acesso' },
-  { valor: 'perfil_permissoes', rotulo: 'Permissões dos perfis' },
-  { valor: 'usuario_permissoes', rotulo: 'Permissões individuais' },
+const tabelasAuditadas = () => [
+  { valor: 'usuarios', rotulo: t('Usuários') },
+  { valor: 'fornecedores', rotulo: t('Fornecedores') },
+  { valor: 'clientes', rotulo: t('Clientes') },
+  { valor: 'produtos_acabados', rotulo: t('Produtos acabados') },
+  { valor: 'partes_pecas', rotulo: t('Partes e peças') },
+  { valor: 'estrutura_produto', rotulo: t('Estrutura de produtos') },
+  { valor: 'itens_estrutura_produto', rotulo: t('Itens de estrutura') },
+  { valor: 'centros_trabalho', rotulo: t('Centros de trabalho') },
+  { valor: 'cotacoes', rotulo: t('Cotações') },
+  { valor: 'pedidos_compra', rotulo: t('Pedidos de compra') },
+  { valor: 'pedidos_venda', rotulo: t('Pedidos de venda') },
+  { valor: 'itens_pedido_venda', rotulo: t('Itens de pedido de venda') },
+  { valor: 'ordens_producao', rotulo: t('Ordens de produção') },
+  { valor: 'apontamento_producao', rotulo: t('Apontamentos') },
+  { valor: 'numeros_serie', rotulo: t('Números de série') },
+  { valor: 'metrologia_serie', rotulo: t('Metrologia') },
+  { valor: 'reserva_estoque', rotulo: t('Reserva de estoque') },
+  { valor: 'configuracao_negocio', rotulo: t('Parâmetros de negócio') },
+  { valor: 'configuracao_smtp', rotulo: t('Servidor de e-mail') },
+  { valor: 'perfis', rotulo: t('Perfis de acesso') },
+  { valor: 'perfil_permissoes', rotulo: t('Permissões dos perfis') },
+  { valor: 'usuario_permissoes', rotulo: t('Permissões individuais') },
   // Migrations 018/019 (v1.2): anexos, recebimento fiscal, lotes e series.
-  { valor: 'anexos', rotulo: 'Anexos (fotos e documentos)' },
-  { valor: 'fornecedor_itens', rotulo: 'Itens do fornecedor (de-para)' },
-  { valor: 'notas_fiscais_entrada', rotulo: 'Notas fiscais de entrada' },
-  { valor: 'itens_nf_entrada', rotulo: 'Itens de nota fiscal de entrada' },
-  { valor: 'lotes', rotulo: 'Lotes' },
-  { valor: 'series_componente', rotulo: 'Séries de componentes' },
+  { valor: 'anexos', rotulo: t('Anexos (fotos e documentos)') },
+  { valor: 'fornecedor_itens', rotulo: t('Itens do fornecedor (de-para)') },
+  { valor: 'notas_fiscais_entrada', rotulo: t('Notas fiscais de entrada') },
+  { valor: 'itens_nf_entrada', rotulo: t('Itens de nota fiscal de entrada') },
+  { valor: 'lotes', rotulo: t('Lotes') },
+  { valor: 'series_componente', rotulo: t('Séries de componentes') },
 ];
 
-const OPERACOES = [
-  { valor: 'INSERT', rotulo: 'Incluído' },
-  { valor: 'UPDATE', rotulo: 'Alterado' },
-  { valor: 'DELETE', rotulo: 'Excluído' },
+const operacoes = () => [
+  { valor: 'INSERT', rotulo: t('Incluído') },
+  { valor: 'UPDATE', rotulo: t('Alterado') },
+  { valor: 'DELETE', rotulo: t('Excluído') },
 ];
 
 const ROTULO_OPERACAO: Record<OperacaoAuditoria, string> = {
-  INSERT: 'Incluído',
-  UPDATE: 'Alterado',
-  DELETE: 'Excluído',
+  INSERT: marcar('Incluído'),
+  UPDATE: marcar('Alterado'),
+  DELETE: marcar('Excluído'),
 };
 
 const TOM_OPERACAO: Record<OperacaoAuditoria, TomBadge> = {
@@ -77,12 +78,12 @@ const ICONE_OPERACAO = {
 } as const;
 
 function rotuloDaTabela(tabela: string): string {
-  return TABELAS_AUDITADAS.find((t) => t.valor === tabela)?.rotulo ?? tabela;
+  return tabelasAuditadas().find((item) => item.valor === tabela)?.rotulo ?? tabela;
 }
 
 function formatarValor(valor: unknown): string {
   if (valor === null || valor === undefined) return '—';
-  if (typeof valor === 'boolean') return valor ? 'Sim' : 'Não';
+  if (typeof valor === 'boolean') return valor ? t('Sim') : t('Não');
   if (typeof valor === 'object') return JSON.stringify(valor);
   return String(valor);
 }
@@ -145,7 +146,7 @@ export function Auditoria() {
     enabled: autorizado,
   });
 
-  const erro = consulta.error ? (separarErro(consulta.error).geral ?? 'Não foi possível carregar a auditoria.') : null;
+  const erro = consulta.error ? (separarErro(consulta.error).geral ?? t('Não foi possível carregar a auditoria.')) : null;
 
   function aoMudarFiltro(aplicar: () => void) {
     aplicar();
@@ -163,22 +164,22 @@ export function Auditoria() {
       });
       await baixarArquivo(`/auditoria/exportar${query ? `?${query}` : ''}`, 'auditoria.csv');
     } catch (erroExportacao) {
-      mostrarToast(separarErro(erroExportacao).geral ?? 'Não foi possível exportar a auditoria.', 'pending');
+      mostrarToast(separarErro(erroExportacao).geral ?? t('Não foi possível exportar a auditoria.'), 'pending');
     } finally {
       definirExportando(false);
     }
   }
 
   const colunas: Coluna<RegistroAuditoria>[] = [
-    { chave: 'data_hora', rotulo: 'Data/hora', renderizar: (r) => formatarDataHora(r.data_hora) },
-    { chave: 'usuario_nome', rotulo: 'Usuário', renderizar: (r) => r.usuario_nome ?? '—' },
-    { chave: 'tabela', rotulo: 'Tabela', renderizar: (r) => rotuloDaTabela(r.tabela) },
+    { chave: 'data_hora', rotulo: t('Data/hora'), renderizar: (r) => formatarDataHora(r.data_hora) },
+    { chave: 'usuario_nome', rotulo: t('Usuário'), renderizar: (r) => r.usuario_nome ?? '—' },
+    { chave: 'tabela', rotulo: t('Tabela'), renderizar: (r) => rotuloDaTabela(r.tabela) },
     {
       chave: 'operacao',
-      rotulo: 'Ação',
+      rotulo: t('Ação'),
       renderizar: (r) => (
         <Badge tom={TOM_OPERACAO[r.operacao]} icone={ICONE_OPERACAO[r.operacao]}>
-          {ROTULO_OPERACAO[r.operacao]}
+          {td(ROTULO_OPERACAO[r.operacao])}
         </Badge>
       ),
     },
@@ -192,7 +193,7 @@ export function Auditoria() {
           role="alert"
           className="rounded-campo border border-estado-pending bg-estado-pending-bg px-3 py-2 text-body text-estado-pending"
         >
-          Acesso restrito: seu perfil não tem permissão para esta tela.
+          {t('Acesso restrito: seu perfil não tem permissão para esta tela.')}
         </p>
       </div>
     );
@@ -205,9 +206,9 @@ export function Auditoria() {
   return (
     <div className="mx-auto flex max-w-[1400px] flex-col gap-4">
       <div>
-        <h1 className="text-title text-texto-primary">Auditoria</h1>
+        <h1 className="text-title text-texto-primary">{t('Auditoria')}</h1>
         <p className="text-body text-texto-secondary">
-          Trilha de alterações do sistema — quem, quando e o que mudou em cada registro.
+          {t('Trilha de alterações do sistema — quem, quando e o que mudou em cada registro.')}
         </p>
       </div>
 
@@ -215,7 +216,7 @@ export function Auditoria() {
         <div className="flex flex-wrap items-end gap-4">
           <div className="w-[160px]">
             <Campo
-              rotulo="De"
+              rotulo={t('De')}
               type="date"
               value={dataInicio}
               onChange={(evento) => aoMudarFiltro(() => definirDataInicio(evento.target.value))}
@@ -223,7 +224,7 @@ export function Auditoria() {
           </div>
           <div className="w-[160px]">
             <Campo
-              rotulo="Até"
+              rotulo={t('Até')}
               type="date"
               value={dataFim}
               onChange={(evento) => aoMudarFiltro(() => definirDataFim(evento.target.value))}
@@ -231,18 +232,18 @@ export function Auditoria() {
           </div>
           <div className="w-[220px]">
             <Selecao
-              rotulo="Tabela"
-              placeholder="Todas"
-              opcoes={TABELAS_AUDITADAS}
+              rotulo={t('Tabela')}
+              placeholder={t('Todas')}
+              opcoes={tabelasAuditadas()}
               value={tabela}
               onChange={(evento) => aoMudarFiltro(() => definirTabela(evento.target.value))}
             />
           </div>
           <div className="w-[160px]">
             <Selecao
-              rotulo="Ação"
-              placeholder="Todas"
-              opcoes={OPERACOES}
+              rotulo={t('Ação')}
+              placeholder={t('Todas')}
+              opcoes={operacoes()}
               value={operacao}
               onChange={(evento) => aoMudarFiltro(() => definirOperacao(evento.target.value))}
             />
@@ -250,15 +251,15 @@ export function Auditoria() {
         </div>
 
         {podeExportar && (
-          <Botao variante="secundaria" icone="save" ocupado={exportando} rotuloOcupado="Exportando…" onClick={exportar}>
-            Exportar CSV
+          <Botao variante="secundaria" icone="save" ocupado={exportando} rotuloOcupado={t('Exportando…')} onClick={exportar}>
+            {t('Exportar CSV')}
           </Botao>
         )}
       </div>
 
       <div>
         <Tabela<RegistroAuditoria>
-          rotulo="Auditoria"
+          rotulo={t('Auditoria')}
           colunas={colunas}
           itens={consulta.data?.itens ?? []}
           chaveDe={(r) => r.id}
@@ -268,10 +269,10 @@ export function Auditoria() {
           carregando={consulta.isPending}
           erro={erro}
           aoTentarDeNovo={() => void consulta.refetch()}
-          vazio="Nenhum registro de auditoria para os filtros selecionados."
+          vazio={t('Nenhum registro de auditoria para os filtros selecionados.')}
           acoes={(r) => (
             <Botao variante="fantasma" onClick={() => definirRegistroEmDetalhe(r)}>
-              Ver detalhes
+              {t('Ver detalhes')}
             </Botao>
           )}
         />
@@ -286,7 +287,7 @@ export function Auditoria() {
       <Modal
         aberto={registroEmDetalhe !== null}
         aoFechar={() => definirRegistroEmDetalhe(null)}
-        titulo="Detalhes da alteração"
+        titulo={t('Detalhes da alteração')}
         descricao={
           registroEmDetalhe
             ? `${rotuloDaTabela(registroEmDetalhe.tabela)} · ${formatarDataHora(registroEmDetalhe.data_hora)}`
@@ -294,7 +295,7 @@ export function Auditoria() {
         }
       >
         {diferencas.length === 0 ? (
-          <p className="text-body text-texto-secondary">Nenhum campo com valor registrado para este evento.</p>
+          <p className="text-body text-texto-secondary">{t('Nenhum campo com valor registrado para este evento.')}</p>
         ) : (
           <ul className="flex flex-col gap-3 text-body text-texto-primary">
             {diferencas.map((d) => (

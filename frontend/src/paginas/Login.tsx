@@ -1,10 +1,11 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { Ajuda } from '@/componentes/layout/Ajuda';
+import { marcar, t, td } from '@/i18n';
 import { Botao } from '@/componentes/ui/Botao';
 import { Campo } from '@/componentes/ui/Campo';
 import { LogoFabrica } from '@/componentes/marca/LogoFabrica';
@@ -13,22 +14,25 @@ import { useLogoEmpresa } from '@/hooks/useLogoEmpresa';
 import { ErroApi } from '@/servicos/api';
 import { autenticar } from '@/servicos/autenticacaoServico';
 import { MINUTOS_INATIVIDADE } from '@/hooks/useInatividade';
+import { descreverVersao, VERSAO_ATUAL } from '@/lib/versao';
 import { useAutenticacao, type MotivoSaida } from '@/store/autenticacao';
 
-const esquema = z.object({
-  username: z.string().trim().min(1, 'Informe o usuário'),
-  password: z.string().min(1, 'Informe a senha'),
-});
+// Funcao (nao constante): as mensagens saem no idioma vigente na renderizacao.
+const criarEsquema = () =>
+  z.object({
+    username: z.string().trim().min(1, t('Informe o usuário')),
+    password: z.string().min(1, t('Informe a senha')),
+  });
 
-type Formulario = z.infer<typeof esquema>;
+type Formulario = z.infer<ReturnType<typeof criarEsquema>>;
 
 /** Explica ao usuario por que ele voltou para esta tela. */
-const AVISO_POR_MOTIVO: Record<Exclude<MotivoSaida, null>, string> = {
-  inatividade: `Sessão encerrada após ${MINUTOS_INATIVIDADE} minutos de inatividade. Entre novamente.`,
-  expirada: 'Sua sessão expirou. Entre novamente para continuar.',
-  desativado: 'Seu acesso foi bloqueado ou desativado. Procure o administrador do sistema.',
-  encerrada: 'Sua sessão foi encerrada porque a senha foi alterada ou o acesso foi revisto pelo administrador. Entre novamente.',
-};
+const avisoPorMotivo = (): Record<Exclude<MotivoSaida, null>, string> => ({
+  inatividade: t('Sessão encerrada após {minutos} minutos de inatividade. Entre novamente.', { minutos: MINUTOS_INATIVIDADE }),
+  expirada: t('Sua sessão expirou. Entre novamente para continuar.'),
+  desativado: t('Seu acesso foi bloqueado ou desativado. Procure o administrador do sistema.'),
+  encerrada: t('Sua sessão foi encerrada porque a senha foi alterada ou o acesso foi revisto pelo administrador. Entre novamente.'),
+});
 
 export function Login() {
   const entrar = useAutenticacao((estado) => estado.entrar);
@@ -42,6 +46,7 @@ export function Login() {
   // RotaProtegida guarda em `state.de` a tela que o usuario tentou abrir.
   const destino = (local.state as { de?: string } | null)?.de ?? '/';
 
+  const esquema = useMemo(criarEsquema, []);
   const {
     register,
     handleSubmit,
@@ -64,7 +69,7 @@ export function Login() {
     login.error instanceof ErroApi
       ? login.error.message
       : login.error
-        ? 'Não foi possível entrar. Tente novamente.'
+        ? t('Não foi possível entrar. Tente novamente.')
         : null;
 
   // Sessao ja aberta (aba duplicada, ou volta ao /login pelo historico):
@@ -95,11 +100,11 @@ export function Login() {
               <span className="text-subtitle text-texto-primary">PCP-Lev</span>
             </div>
             {temLogo && <img src={urlLogo} alt={nomeExibido} className="mb-4 h-10 w-auto" />}
-            <h1 className="text-title text-texto-primary">Entrar</h1>
+            <h1 className="text-title text-texto-primary">{t('Entrar')}</h1>
             <p className="text-body text-texto-secondary">
-              {temLogo || nomeExibido === 'Sistema PCP'
-                ? 'Use o usuário e a senha fornecidos pelo administrador.'
-                : `${nomeExibido} · use o usuário e a senha fornecidos pelo administrador.`}
+              {temLogo || nomeExibido === t('Sistema PCP')
+                ? t('Use o usuário e a senha fornecidos pelo administrador.')
+                : t('{nome} · use o usuário e a senha fornecidos pelo administrador.', { nome: nomeExibido })}
             </p>
           </header>
 
@@ -108,7 +113,7 @@ export function Login() {
               role="status"
               className="mb-4 rounded-campo border border-borda-subtle bg-estado-warning-bg px-3 py-2 text-label text-estado-warning"
             >
-              {AVISO_POR_MOTIVO[motivoSaida]}
+              {avisoPorMotivo()[motivoSaida]}
             </p>
           )}
 
@@ -118,7 +123,7 @@ export function Login() {
             className="flex flex-col gap-4 rounded-cartao border border-borda-subtle bg-surface-raised p-6 shadow-elevado"
           >
             <Campo
-              rotulo="Usuário"
+              rotulo={t('Usuário')}
               autoComplete="username"
               autoFocus
               erro={errors.username?.message}
@@ -127,7 +132,7 @@ export function Login() {
 
             <div className="relative">
               <Campo
-                rotulo="Senha"
+                rotulo={t('Senha')}
                 type={senhaVisivel ? 'text' : 'password'}
                 autoComplete="current-password"
                 className="pr-12"
@@ -137,7 +142,7 @@ export function Login() {
               <button
                 type="button"
                 onClick={() => setSenhaVisivel((visivel) => !visivel)}
-                aria-label={senhaVisivel ? 'Ocultar senha' : 'Mostrar senha'}
+                aria-label={senhaVisivel ? t('Ocultar senha') : t('Mostrar senha')}
                 className="absolute right-1 top-[22px] flex h-[40px] w-[40px] items-center justify-center rounded-campo text-texto-secondary hover:bg-surface-sunken"
               >
                 <OlhoIcone size={16} aria-hidden="true" />
@@ -159,15 +164,18 @@ export function Login() {
               type="submit"
               icone="log-in"
               ocupado={login.isPending}
-              rotuloOcupado="Entrando…"
+              rotuloOcupado={t('Entrando…')}
               className="w-full"
             >
-              Entrar
+              {t('Entrar')}
             </Botao>
           </form>
 
           <p className="mt-6 text-center text-label text-texto-secondary">
-            Esqueceu a senha ou a conta foi bloqueada? Procure o administrador do sistema.
+            {t('Esqueceu a senha ou a conta foi bloqueada? Procure o administrador do sistema.')}
+          </p>
+          <p data-testid="versao-sistema" className="mt-2 text-center text-label text-texto-secondary">
+            {descreverVersao(VERSAO_ATUAL)}
           </p>
         </div>
       </section>
@@ -177,10 +185,10 @@ export function Login() {
 
 /** Etapas do fluxo que o sistema acompanha -- a trilha e a assinatura visual do produto. */
 const ETAPAS_DA_MARCA = [
-  { icone: 'shopping-cart', rotulo: 'Compra' },
-  { icone: 'file-input', rotulo: 'Recebimento' },
-  { icone: 'factory', rotulo: 'Produção' },
-  { icone: 'package-check', rotulo: 'Expedição' },
+  { icone: 'shopping-cart', rotulo: marcar('Compra') },
+  { icone: 'file-input', rotulo: marcar('Recebimento') },
+  { icone: 'factory', rotulo: marcar('Produção') },
+  { icone: 'package-check', rotulo: marcar('Expedição') },
 ] as const;
 
 /**
@@ -205,27 +213,26 @@ function PainelMarca() {
         </span>
         <span className="flex flex-col">
           <span className="text-subtitle">PCP-Lev</span>
-          <span className="text-label text-white/70">Planejamento e controle da produção</span>
+          <span className="text-label text-white/70">{t('Planejamento e controle da produção')}</span>
         </span>
       </div>
 
       <div className="relative">
         <h2 className="max-w-lg text-[2.5rem] font-semibold leading-[1.1] tracking-tight">
-          PCP-Lev - Sistema de controle de produção.
+          {t('PCP-Lev - Sistema de controle de produção.')}
         </h2>
         <p className="mt-4 max-w-md text-body text-white/75">
-          Pedidos, ordens de produção, estoque e rastreabilidade de cada série — num só lugar, para toda a
-          fábrica.
+          {t('Pedidos, ordens de produção, estoque e rastreabilidade de cada série — num só lugar, para toda a fábrica.')}
         </p>
 
         <p className="mt-8 text-label text-white/70">
-          Projeto e desenvolvimento: Gustavo Frederico Landal. E-mail:{' '}
+          {t('Projeto e desenvolvimento: Gustavo Frederico Landal. E-mail:')}{' '}
           <a href="mailto:gustavoflandal@gmail.com" className="text-white underline-offset-2 hover:underline">
             gustavoflandal@gmail.com
           </a>
         </p>
 
-        <ol aria-label="Etapas acompanhadas" className="mt-3 flex items-center">
+        <ol aria-label={t('Etapas acompanhadas')} className="mt-3 flex items-center">
           {ETAPAS_DA_MARCA.map((etapa, i) => {
             const Icone = icones[etapa.icone];
             return (
@@ -233,7 +240,7 @@ function PainelMarca() {
                 {i > 0 && <span aria-hidden="true" className="mx-2 h-px w-4 bg-white/30 xl:w-8" />}
                 <span className="flex items-center gap-2 rounded-campo bg-white/[0.08] px-3 py-2 text-label ring-1 ring-white/15">
                   <Icone size={16} aria-hidden="true" />
-                  {etapa.rotulo}
+                  {td(etapa.rotulo)}
                 </span>
               </li>
             );

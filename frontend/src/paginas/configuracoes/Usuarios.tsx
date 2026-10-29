@@ -7,6 +7,7 @@ import { Modal } from '@/componentes/ui/Modal';
 import { Paginacao } from '@/componentes/ui/Paginacao';
 import { Selecao } from '@/componentes/ui/Selecao';
 import { Tabela, type Coluna } from '@/componentes/ui/Tabela';
+import { marcar, t, td } from '@/i18n';
 import { useToasts } from '@/componentes/ui/Toast';
 import { useDebounce } from '@/hooks/useDebounce';
 import { separarErro, type ErroDeFormulario } from '@/lib/errosDeFormulario';
@@ -31,18 +32,22 @@ import { PermissoesIndividuais } from './PermissoesIndividuais';
 
 const PAGINACAO_VAZIA: DadosPaginacao = { pagina: 1, limite: 20, total: 0, total_paginas: 0 };
 
-const OPCOES_SITUACAO = [
-  { valor: 'ATIVO', rotulo: 'Ativos' },
-  { valor: 'INATIVO', rotulo: 'Inativos' },
-  { valor: 'BLOQUEADO', rotulo: 'Bloqueados' },
+const opcoesSituacao = () => [
+  { valor: 'ATIVO', rotulo: t('Ativos') },
+  { valor: 'INATIVO', rotulo: t('Inativos') },
+  { valor: 'BLOQUEADO', rotulo: t('Bloqueados') },
 ];
 
-const ROTULO_SITUACAO: Record<SituacaoUsuario, string> = { ATIVO: 'Ativo', INATIVO: 'Inativo', BLOQUEADO: 'Bloqueado' };
+const ROTULO_SITUACAO: Record<SituacaoUsuario, string> = {
+  ATIVO: marcar('Ativo'),
+  INATIVO: marcar('Inativo'),
+  BLOQUEADO: marcar('Bloqueado'),
+};
 
 function BadgeSituacaoUsuario({ situacao }: { situacao: SituacaoUsuario }) {
-  if (situacao === 'ATIVO') return <Badge tom="done" icone="check-circle-2">Ativo</Badge>;
-  if (situacao === 'BLOQUEADO') return <Badge tom="blocked" icone="lock">Bloqueado</Badge>;
-  return <Badge tom="neutral" icone="circle">Inativo</Badge>;
+  if (situacao === 'ATIVO') return <Badge tom="done" icone="check-circle-2">{t('Ativo')}</Badge>;
+  if (situacao === 'BLOQUEADO') return <Badge tom="blocked" icone="lock">{t('Bloqueado')}</Badge>;
+  return <Badge tom="neutral" icone="circle">{t('Inativo')}</Badge>;
 }
 
 type Dialogo =
@@ -64,15 +69,15 @@ function DialogoSituacao({ usuario, aoFechar }: { usuario: Usuario; aoFechar: ()
     mutationFn: () => alterarSituacao(usuario.id, situacao, situacao === 'INATIVO' && desligamento ? desligamento : null),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: chaveUsuarios });
-      mostrarToast(`${usuario.nome}: ${ROTULO_SITUACAO[situacao].toLowerCase()}`);
+      mostrarToast(t('{nome}: {situacao}', { nome: usuario.nome, situacao: td(ROTULO_SITUACAO[situacao]).toLowerCase() }));
       aoFechar();
     },
-    onError: (erro) => mostrarToast(separarErro(erro).geral ?? 'Não foi possível alterar a situação.', 'pending'),
+    onError: (erro) => mostrarToast(separarErro(erro).geral ?? t('Não foi possível alterar a situação.'), 'pending'),
   });
 
   return (
     <form
-      aria-label="Alterar situação"
+      aria-label={t('Alterar situação')}
       className="flex flex-col gap-4"
       onSubmit={(e) => {
         e.preventDefault();
@@ -80,28 +85,28 @@ function DialogoSituacao({ usuario, aoFechar }: { usuario: Usuario; aoFechar: ()
       }}
     >
       <p className="text-body text-texto-secondary">
-        Situação atual: <strong className="text-texto-primary">{ROTULO_SITUACAO[usuario.situacao]}</strong>. Bloqueio e
-        inativação valem na hora: a pessoa perde o acesso mesmo com a sessão aberta.
+        {t('Situação atual:')} <strong className="text-texto-primary">{td(ROTULO_SITUACAO[usuario.situacao])}</strong>.{' '}
+        {t('Bloqueio e inativação valem na hora: a pessoa perde o acesso mesmo com a sessão aberta.')}
       </p>
       <Selecao
-        rotulo="Nova situação"
+        rotulo={t('Nova situação')}
         opcoes={[
-          { valor: 'ATIVO', rotulo: 'Ativo — pode entrar' },
-          { valor: 'BLOQUEADO', rotulo: 'Bloqueado — suspensão temporária' },
-          { valor: 'INATIVO', rotulo: 'Inativo — desligado da empresa' },
+          { valor: 'ATIVO', rotulo: t('Ativo — pode entrar') },
+          { valor: 'BLOQUEADO', rotulo: t('Bloqueado — suspensão temporária') },
+          { valor: 'INATIVO', rotulo: t('Inativo — desligado da empresa') },
         ]}
         value={situacao}
         onChange={(e) => definirSituacao(e.target.value as SituacaoUsuario)}
       />
       {situacao === 'INATIVO' && (
-        <Campo rotulo="Data de desligamento" type="date" value={desligamento} onChange={(e) => definirDesligamento(e.target.value)} />
+        <Campo rotulo={t('Data de desligamento')} type="date" value={desligamento} onChange={(e) => definirDesligamento(e.target.value)} />
       )}
       <div className="flex justify-end gap-2">
         <Botao type="button" variante="secundaria" onClick={aoFechar}>
-          Cancelar
+          {t('Cancelar')}
         </Botao>
         <Botao type="submit" icone="save" disabled={situacao === usuario.situacao} ocupado={salvar.isPending} rotuloOcupado="Salvando…">
-          Salvar situação
+          {t('Salvar situação')}
         </Botao>
       </div>
     </form>
@@ -117,15 +122,15 @@ function DialogoSenha({ usuario, aoFechar }: { usuario: Usuario; aoFechar: () =>
     mutationFn: () => redefinirSenha(usuario.id, senha),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: chaveUsuarios });
-      mostrarToast(`Senha temporária de ${usuario.nome} definida`);
+      mostrarToast(t('Senha temporária de {nome} definida', { nome: usuario.nome }));
       aoFechar();
     },
-    onError: (erro) => mostrarToast(separarErro(erro).geral ?? 'Não foi possível redefinir a senha.', 'pending'),
+    onError: (erro) => mostrarToast(separarErro(erro).geral ?? t('Não foi possível redefinir a senha.'), 'pending'),
   });
 
   return (
     <form
-      aria-label="Redefinir senha"
+      aria-label={t('Redefinir senha')}
       className="flex flex-col gap-4"
       onSubmit={(e) => {
         e.preventDefault();
@@ -133,23 +138,22 @@ function DialogoSenha({ usuario, aoFechar }: { usuario: Usuario; aoFechar: () =>
       }}
     >
       <p className="text-body text-texto-secondary">
-        Entregue a senha temporária a {usuario.nome}. No próximo acesso o sistema pede uma senha nova antes de qualquer outra
-        coisa. A senha atual deixa de valer agora.
+        {t('Entregue a senha temporária a {nome}. No próximo acesso o sistema pede uma senha nova antes de qualquer outra coisa. A senha atual deixa de valer agora.', { nome: usuario.nome })}
       </p>
       <Campo
-        rotulo="Senha temporária"
+        rotulo={t('Senha temporária')}
         tipoDado="codigo"
         autoComplete="off"
         value={senha}
-        erro={senha.length < 10 ? 'Ao menos 10 caracteres' : undefined}
+        erro={senha.length < 10 ? t('Ao menos 10 caracteres') : undefined}
         onChange={(e) => definirSenha(e.target.value)}
       />
       <div className="flex justify-end gap-2">
         <Botao type="button" variante="secundaria" onClick={aoFechar}>
-          Cancelar
+          {t('Cancelar')}
         </Botao>
         <Botao type="submit" icone="key-round" disabled={senha.length < 8} ocupado={salvar.isPending} rotuloOcupado="Salvando…">
-          Redefinir senha
+          {t('Redefinir senha')}
         </Botao>
       </div>
     </form>
@@ -180,8 +184,8 @@ export function Usuarios() {
   });
 
   const perfis = useMemo(() => opcoes.data?.perfis ?? [], [opcoes.data]);
-  const nomeDoPerfil = (codigo: string) => perfis.find((p) => p.codigo === codigo)?.nome ?? codigo;
-  const opcoesPerfil = perfis.map((p) => ({ valor: p.codigo, rotulo: p.nome }));
+  const nomeDoPerfil = (codigo: string) => td(perfis.find((p) => p.codigo === codigo)?.nome ?? codigo);
+  const opcoesPerfil = perfis.map((p) => ({ valor: p.codigo, rotulo: td(p.nome) }));
 
   function fechar() {
     definirDialogo(null);
@@ -193,7 +197,7 @@ export function Usuarios() {
       dialogo?.tipo === 'editar' ? atualizarUsuario(dialogo.usuario.id, corpo) : criarUsuario(corpo),
     onSuccess: (u) => {
       void queryClient.invalidateQueries({ queryKey: chaveUsuarios });
-      mostrarToast(dialogo?.tipo === 'editar' ? `Usuário ${u.nome} atualizado` : `Usuário ${u.nome} cadastrado`);
+      mostrarToast(dialogo?.tipo === 'editar' ? t('Usuário {nome} atualizado', { nome: u.nome }) : t('Usuário {nome} cadastrado', { nome: u.nome }));
       fechar();
     },
     onError: (erro) => definirErroFormulario(separarErro(erro)),
@@ -211,22 +215,22 @@ export function Usuarios() {
   const colunas: Coluna<Usuario>[] = [
     {
       chave: 'nome',
-      rotulo: 'Nome',
+      rotulo: t('Nome'),
       ordenavel: true,
       renderizar: (u) => (
         <span className="flex flex-col">
           <span>
             {u.nome}
-            {u.id === eu && <span className="text-label text-texto-secondary"> (você)</span>}
+            {u.id === eu && <span className="text-label text-texto-secondary"> {t('(você)')}</span>}
           </span>
           <span className="font-mono text-label text-texto-secondary">{u.username}</span>
         </span>
       ),
     },
-    { chave: 'perfil', rotulo: 'Perfil', ordenavel: true, renderizar: (u) => nomeDoPerfil(u.perfil) },
+    { chave: 'perfil', rotulo: t('Perfil'), ordenavel: true, renderizar: (u) => nomeDoPerfil(u.perfil) },
     {
       chave: 'setor',
-      rotulo: 'Setor / matrícula',
+      rotulo: t('Setor / matrícula'),
       renderizar: (u) => (
         <span className="flex flex-col">
           <span>{u.setor || '—'}</span>
@@ -236,49 +240,49 @@ export function Usuarios() {
     },
     {
       chave: 'situacao',
-      rotulo: 'Situação',
+      rotulo: t('Situação'),
       ordenavel: true,
       renderizar: (u) => (
         <span className="flex flex-col items-start gap-1">
           <BadgeSituacaoUsuario situacao={u.situacao} />
           {u.deve_trocar_senha && u.situacao === 'ATIVO' && (
-            <Badge tom="warning" icone="key-round">Senha temporária</Badge>
+            <Badge tom="warning" icone="key-round">{t('Senha temporária')}</Badge>
           )}
           {u.data_desligamento && (
-            <span className="text-label text-texto-secondary">Desligado em {formatarData(u.data_desligamento)}</span>
+            <span className="text-label text-texto-secondary">{t('Desligado em {data}', { data: formatarData(u.data_desligamento) })}</span>
           )}
         </span>
       ),
     },
     {
       chave: 'ultimo_login',
-      rotulo: 'Último acesso',
+      rotulo: t('Último acesso'),
       ordenavel: true,
-      renderizar: (u) => (u.ultimo_login ? formatarDataHora(u.ultimo_login) : 'Nunca entrou'),
+      renderizar: (u) => (u.ultimo_login ? formatarDataHora(u.ultimo_login) : t('Nunca entrou')),
     },
   ];
 
   const erroLista = lista.error
     ? lista.error instanceof ErroApi
       ? lista.error.message
-      : 'Não foi possível carregar os usuários. Tente de novo.'
+      : t('Não foi possível carregar os usuários. Tente de novo.')
     : null;
   const paginacao = lista.data?.paginacao ?? PAGINACAO_VAZIA;
 
   const tituloDialogo: Record<Dialogo['tipo'], string> = {
-    novo: 'Novo usuário',
-    editar: 'Editar usuário',
-    situacao: 'Situação do usuário',
-    senha: 'Redefinir senha',
-    permissoes: 'Permissões individuais',
+    novo: t('Novo usuário'),
+    editar: t('Editar usuário'),
+    situacao: t('Situação do usuário'),
+    senha: t('Redefinir senha'),
+    permissoes: t('Permissões individuais'),
   };
 
   return (
     <div className="mx-auto flex max-w-[1400px] flex-col gap-4">
       <div>
-        <h1 className="text-title text-texto-primary">Usuários</h1>
+        <h1 className="text-title text-texto-primary">{t('Usuários')}</h1>
         <p className="text-body text-texto-secondary">
-          Quem acessa o sistema, com qual perfil, e as exceções de cada um. Mudanças valem na hora.
+          {t('Quem acessa o sistema, com qual perfil, e as exceções de cada um. Mudanças valem na hora.')}
         </p>
       </div>
 
@@ -286,16 +290,16 @@ export function Usuarios() {
         <div className="flex flex-wrap items-end gap-4">
           <div className="w-[320px] max-w-full">
             <Campo
-              rotulo="Buscar por nome, login, e-mail, matrícula ou setor"
+              rotulo={t('Buscar por nome, login, e-mail, matrícula ou setor')}
               value={busca}
-              placeholder="Digite para filtrar"
+              placeholder={t('Digite para filtrar')}
               onChange={(e) => definirBusca(e.target.value)}
             />
           </div>
           <div className="w-[200px]">
             <Selecao
-              rotulo="Perfil"
-              placeholder="Todos"
+              rotulo={t('Perfil')}
+              placeholder={t('Todos')}
               opcoes={opcoesPerfil}
               value={filtros.perfil}
               onChange={(e) => definirFiltros((f) => ({ ...f, perfil: e.target.value, pagina: 1 }))}
@@ -303,22 +307,22 @@ export function Usuarios() {
           </div>
           <div className="w-[160px]">
             <Selecao
-              rotulo="Situação"
-              placeholder="Todas"
-              opcoes={OPCOES_SITUACAO}
+              rotulo={t('Situação')}
+              placeholder={t('Todas')}
+              opcoes={opcoesSituacao()}
               value={filtros.situacao}
               onChange={(e) => definirFiltros((f) => ({ ...f, situacao: e.target.value as SituacaoUsuario | '', pagina: 1 }))}
             />
           </div>
         </div>
         <Botao icone="plus" disabled={!opcoes.data} onClick={() => definirDialogo({ tipo: 'novo' })}>
-          Novo usuário
+          {t('Novo usuário')}
         </Botao>
       </div>
 
       <div>
         <Tabela<Usuario>
-          rotulo="Usuários"
+          rotulo={t('Usuários')}
           colunas={colunas}
           itens={lista.data?.itens ?? []}
           chaveDe={(u) => u.id}
@@ -328,23 +332,23 @@ export function Usuarios() {
           carregando={lista.isPending}
           erro={erroLista}
           aoTentarDeNovo={() => void lista.refetch()}
-          vazio="Nenhum usuário com estes filtros."
+          vazio={t('Nenhum usuário com estes filtros.')}
           acoes={(u) =>
             u.id === eu ? (
-              <span className="text-label text-texto-secondary">Peça a outro administrador</span>
+              <span className="text-label text-texto-secondary">{t('Peça a outro administrador')}</span>
             ) : (
               <span className="flex flex-wrap items-center justify-end gap-1">
-                <Botao variante="fantasma" icone="pencil" aria-label={`Editar ${u.nome}`} onClick={() => definirDialogo({ tipo: 'editar', usuario: u })}>
-                  Editar
+                <Botao variante="fantasma" icone="pencil" aria-label={t('Editar {nome}', { nome: u.nome })} onClick={() => definirDialogo({ tipo: 'editar', usuario: u })}>
+                  {t('Editar')}
                 </Botao>
-                <Botao variante="fantasma" icone="lock" aria-label={`Situação de ${u.nome}`} onClick={() => definirDialogo({ tipo: 'situacao', usuario: u })}>
-                  Situação
+                <Botao variante="fantasma" icone="lock" aria-label={t('Situação de {nome}', { nome: u.nome })} onClick={() => definirDialogo({ tipo: 'situacao', usuario: u })}>
+                  {t('Situação')}
                 </Botao>
-                <Botao variante="fantasma" icone="key-round" aria-label={`Redefinir senha de ${u.nome}`} onClick={() => definirDialogo({ tipo: 'senha', usuario: u })}>
-                  Senha
+                <Botao variante="fantasma" icone="key-round" aria-label={t('Redefinir senha de {nome}', { nome: u.nome })} onClick={() => definirDialogo({ tipo: 'senha', usuario: u })}>
+                  {t('Senha')}
                 </Botao>
-                <Botao variante="fantasma" icone="shield-check" aria-label={`Permissões de ${u.nome}`} disabled={!opcoes.data} onClick={() => definirDialogo({ tipo: 'permissoes', usuario: u })}>
-                  Permissões
+                <Botao variante="fantasma" icone="shield-check" aria-label={t('Permissões de {nome}', { nome: u.nome })} disabled={!opcoes.data} onClick={() => definirDialogo({ tipo: 'permissoes', usuario: u })}>
+                  {t('Permissões')}
                 </Botao>
               </span>
             )
@@ -362,7 +366,7 @@ export function Usuarios() {
         aberto={dialogo !== null}
         aoFechar={fechar}
         titulo={dialogo ? tituloDialogo[dialogo.tipo] : ''}
-        descricao={dialogo && 'usuario' in dialogo ? `${dialogo.usuario.nome} · ${dialogo.usuario.username}` : 'Campos com * são obrigatórios.'}
+        descricao={dialogo && 'usuario' in dialogo ? `${dialogo.usuario.nome} · ${dialogo.usuario.username}` : t('Campos com * são obrigatórios.')}
       >
         {(dialogo?.tipo === 'novo' || dialogo?.tipo === 'editar') && (
           <FormularioUsuario

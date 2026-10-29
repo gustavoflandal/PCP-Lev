@@ -1,5 +1,6 @@
 import * as Dialog from '@radix-ui/react-dialog';
 import { useEffect, useRef, type ReactNode } from 'react';
+import { t } from '@/i18n';
 import { cn } from '@/lib/cn';
 import { CabecalhoImpressaoBase } from '@/componentes/layout/CabecalhoImpressao';
 import { imprimirTela } from '@/lib/impressao';
@@ -84,15 +85,15 @@ const IconeImprimir = icones.printer;
             <div className="flex shrink-0 items-center gap-1">
             <button
               type="button"
-              aria-label="Imprimir / PDF"
-              title="Imprimir / PDF"
+              aria-label={t('Imprimir / PDF')}
+              title={t('Imprimir / PDF')}
               onClick={imprimirTela}
               className="rounded-campo p-1 text-texto-secondary hover:bg-surface-sunken print:hidden"
             >
               <IconeImprimir size={16} aria-hidden="true" />
             </button>
             <Dialog.Close
-              aria-label="Fechar"
+              aria-label={t('Fechar')}
               className="rounded-campo p-1 text-texto-secondary hover:bg-surface-sunken"
             >
               <IconeFechar size={16} aria-hidden="true" />

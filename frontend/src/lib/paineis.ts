@@ -3,17 +3,19 @@
  * e dos valores (moeda, percentual, dias, horas). Funcoes puras -- os
  * componentes de grafico recebem a funcao certa por prop.
  */
+import { idiomaAtual, t, td } from '@/i18n';
 import { ROTULO_STATUS_PEDIDO_COMPRA, type StatusPedidoCompra } from '@/tipos/compras';
 import { ROTULO_ETAPA_OP, ROTULO_STATUS_PEDIDO_VENDA, type EtapaOP, type StatusPedidoVenda } from '@/tipos/producao';
 import { formatarMoeda } from './formato';
 
-const MESES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+const MESES_PT = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+const MESES_ES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 
 /** "2026-10" -> "out/26". Rotulo fora do formato volta como veio. */
 export function formatarMes(rotulo: string): string {
   const m = /^(\d{4})-(\d{2})$/.exec(rotulo);
   if (!m) return rotulo;
-  const mes = MESES[Number(m[2]) - 1];
+  const mes = (idiomaAtual() === 'es' ? MESES_ES : MESES_PT)[Number(m[2]) - 1];
   return mes ? `${mes}/${m[1].slice(2)}` : rotulo;
 }
 
@@ -25,22 +27,22 @@ export function formatarSemana(rotulo: string): string {
 
 /** Situacao do pedido de compra com o rotulo do sistema ("Aguardando Entrega" -> "Aguardando entrega"). */
 export function rotuloSituacaoPedidoCompra(rotulo: string): string {
-  return ROTULO_STATUS_PEDIDO_COMPRA[rotulo as StatusPedidoCompra] ?? rotulo;
+  return td(ROTULO_STATUS_PEDIDO_COMPRA[rotulo as StatusPedidoCompra] ?? rotulo);
 }
 
 /** Situacao do pedido de venda ("Em Producao" -> "Em produção"). */
 export function rotuloSituacaoPedidoVenda(rotulo: string): string {
-  return ROTULO_STATUS_PEDIDO_VENDA[rotulo as StatusPedidoVenda] ?? rotulo;
+  return td(ROTULO_STATUS_PEDIDO_VENDA[rotulo as StatusPedidoVenda] ?? rotulo);
 }
 
 /** Situacoes da nota de entrada ja chegam no rotulo de exibicao; so garante o texto. */
 export function rotuloSituacaoNota(rotulo: string): string {
-  return rotulo;
+  return td(rotulo);
 }
 
 /** Etapa da OP: "Aberta" (ainda nao liberada) ou a etapa com acento ("Separacao" -> "Separação"). */
 export function rotuloEtapa(rotulo: string): string {
-  return ROTULO_ETAPA_OP[rotulo as EtapaOP] ?? rotulo;
+  return td(ROTULO_ETAPA_OP[rotulo as EtapaOP] ?? rotulo);
 }
 
 const inteiroBR = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 });
@@ -64,9 +66,9 @@ export function formatarValor(valor: number | null | undefined, formato: Formato
     case 'percentual':
       return `${decimalBR.format(valor)}%`;
     case 'dias':
-      return valor === 1 ? '1 dia' : `${decimalBR.format(valor)} dias`;
+      return valor === 1 ? t('1 dia') : t('{n} dias', { n: decimalBR.format(valor) });
     case 'horas':
-      return `${decimalBR.format(valor)} h`;
+      return t('{n} h', { n: decimalBR.format(valor) });
     case 'numero':
     default:
       return Number.isInteger(valor) ? inteiroBR.format(valor) : decimalBR.format(valor);

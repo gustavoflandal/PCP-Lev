@@ -4,6 +4,7 @@ import { Botao } from '@/componentes/ui/Botao';
 import { Campo } from '@/componentes/ui/Campo';
 import { Selecao } from '@/componentes/ui/Selecao';
 import { icones } from '@/componentes/ui/icones';
+import { t } from '@/i18n';
 import { gerarFaixa, LIMITE_FAIXA, separarLista } from '@/lib/series';
 import type { SerieItem } from '@/tipos/notasEntrada';
 
@@ -59,8 +60,11 @@ export function EntradaSeries({ rotulo, series, esperado, aoMudar, lotes, desabi
       repetidas.length === 0
         ? null
         : repetidas.length === 1
-          ? `Série ${repetidas[0]} já informada — ignorada.`
-          : `${repetidas.length} séries repetidas ignoradas (${repetidas.slice(0, 3).join(', ')}${repetidas.length > 3 ? '…' : ''}).`,
+          ? t('Série {numero} já informada — ignorada.', { numero: repetidas[0] })
+          : t('{n} séries repetidas ignoradas ({lista}).', {
+              n: repetidas.length,
+              lista: `${repetidas.slice(0, 3).join(', ')}${repetidas.length > 3 ? '…' : ''}`,
+            }),
     );
     return novas.length;
   }
@@ -79,7 +83,7 @@ export function EntradaSeries({ rotulo, series, esperado, aoMudar, lotes, desabi
   function adicionarColada() {
     const lista = separarLista(colada);
     if (lista.length === 0) {
-      definirAviso('Cole ao menos uma série (uma por linha).');
+      definirAviso(t('Cole ao menos uma série (uma por linha).'));
       return;
     }
     adicionar(lista);
@@ -90,7 +94,7 @@ export function EntradaSeries({ rotulo, series, esperado, aoMudar, lotes, desabi
   function adicionarFaixa() {
     const lista = gerarFaixa(prefixo.trim(), inicio.trim(), fim.trim());
     if (!lista) {
-      definirAviso(`Faixa inválida: início e fim só com dígitos, fim maior ou igual ao início, até ${LIMITE_FAIXA} séries.`);
+      definirAviso(t('Faixa inválida: início e fim só com dígitos, fim maior ou igual ao início, até {limite} séries.', { limite: LIMITE_FAIXA }));
       return;
     }
     adicionar(lista);
@@ -112,13 +116,13 @@ export function EntradaSeries({ rotulo, series, esperado, aoMudar, lotes, desabi
   return (
     <div className="flex flex-col gap-3 rounded-cartao border border-borda-subtle bg-surface-sunken p-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-label text-texto-secondary">Números de série</p>
+        <p className="text-label text-texto-secondary">{t('Números de série')}</p>
         <Badge
           tom={completo ? 'done' : excesso ? 'pending' : 'warning'}
           icone={completo ? 'check-circle-2' : 'alert-triangle'}
         >
           <span aria-live="polite">
-            {informadas} de {esperado} séries informadas
+            {t('{n} de {total} séries informadas', { n: informadas, total: esperado })}
           </span>
         </Badge>
       </div>
@@ -129,8 +133,8 @@ export function EntradaSeries({ rotulo, series, esperado, aoMudar, lotes, desabi
             <div className="min-w-[240px] flex-1">
               <Campo
                 ref={campoRef}
-                rotulo={`Bipar ou digitar série — ${rotulo}`}
-                ajuda="Enter adiciona e limpa o campo para a próxima."
+                rotulo={t('Bipar ou digitar série — {rotulo}', { rotulo })}
+                ajuda={t('Enter adiciona e limpa o campo para a próxima.')}
                 className="font-mono"
                 autoComplete="off"
                 spellCheck={false}
@@ -143,7 +147,7 @@ export function EntradaSeries({ rotulo, series, esperado, aoMudar, lotes, desabi
             {temLote && (
               <div className="w-[200px]">
                 <Selecao
-                  rotulo="Lote das próximas séries"
+                  rotulo={t('Lote das próximas séries')}
                   opcoes={lotes.map((l) => ({ valor: l, rotulo: l }))}
                   value={loteDasNovas}
                   onChange={(e) => definirLoteAtual(e.target.value)}
@@ -153,14 +157,14 @@ export function EntradaSeries({ rotulo, series, esperado, aoMudar, lotes, desabi
           </div>
           <div className="flex flex-wrap gap-2">
             <Botao variante="secundaria" icone="clipboard-paste" onClick={() => definirPainel(painel === 'colar' ? null : 'colar')}>
-              Colar lista
+              {t('Colar lista')}
             </Botao>
             <Botao variante="secundaria" icone="list-ordered" onClick={() => definirPainel(painel === 'faixa' ? null : 'faixa')}>
-              Gerar faixa
+              {t('Gerar faixa')}
             </Botao>
             {informadas > 0 && (
               <Botao variante="fantasma" icone="trash-2" onClick={() => aoMudar([])}>
-                Limpar séries
+                {t('Limpar séries')}
               </Botao>
             )}
           </div>
@@ -168,7 +172,7 @@ export function EntradaSeries({ rotulo, series, esperado, aoMudar, lotes, desabi
           {painel === 'colar' && (
             <div className="flex flex-col gap-2">
               <label htmlFor={idColar} className="text-label text-texto-secondary">
-                Séries coladas (uma por linha)
+                {t('Séries coladas (uma por linha)')}
               </label>
               <textarea
                 id={idColar}
@@ -179,7 +183,7 @@ export function EntradaSeries({ rotulo, series, esperado, aoMudar, lotes, desabi
               />
               <div>
                 <Botao icone="plus" onClick={adicionarColada}>
-                  Adicionar lista
+                  {t('Adicionar lista')}
                 </Botao>
               </div>
             </div>
@@ -188,16 +192,16 @@ export function EntradaSeries({ rotulo, series, esperado, aoMudar, lotes, desabi
           {painel === 'faixa' && (
             <div className="flex flex-wrap items-end gap-2">
               <div className="w-[120px]">
-                <Campo rotulo="Prefixo" className="font-mono" value={prefixo} onChange={(e) => definirPrefixo(e.target.value)} />
+                <Campo rotulo={t('Prefixo')} className="font-mono" value={prefixo} onChange={(e) => definirPrefixo(e.target.value)} />
               </div>
               <div className="w-[120px]">
-                <Campo rotulo="Início" tipoDado="quantidade" value={inicio} onChange={(e) => definirInicio(e.target.value)} />
+                <Campo rotulo={t('Início')} tipoDado="quantidade" value={inicio} onChange={(e) => definirInicio(e.target.value)} />
               </div>
               <div className="w-[120px]">
-                <Campo rotulo="Fim" tipoDado="quantidade" value={fim} onChange={(e) => definirFim(e.target.value)} />
+                <Campo rotulo={t('Fim')} tipoDado="quantidade" value={fim} onChange={(e) => definirFim(e.target.value)} />
               </div>
               <Botao icone="plus" onClick={adicionarFaixa}>
-                Adicionar faixa
+                {t('Adicionar faixa')}
               </Botao>
             </div>
           )}
@@ -211,7 +215,7 @@ export function EntradaSeries({ rotulo, series, esperado, aoMudar, lotes, desabi
       )}
 
       {informadas > 0 && (
-        <ul aria-label={`Séries informadas — ${rotulo}`} className="flex max-h-[220px] flex-wrap gap-2 overflow-y-auto">
+        <ul aria-label={t('Séries informadas — {rotulo}', { rotulo })} className="flex max-h-[220px] flex-wrap gap-2 overflow-y-auto">
           {series.map((s) => (
             <li
               key={s.numero}
@@ -220,13 +224,13 @@ export function EntradaSeries({ rotulo, series, esperado, aoMudar, lotes, desabi
               <span className="font-mono text-body tabular text-texto-primary">{s.numero}</span>
               {temLote && (
                 <select
-                  aria-label={`Lote da série ${s.numero}`}
+                  aria-label={t('Lote da série {numero}', { numero: s.numero })}
                   disabled={desabilitado}
                   value={s.numero_lote ?? ''}
                   onChange={(e) => mudarLote(s.numero, e.target.value)}
                   className="h-[1.75rem] rounded-campo border border-borda-strong bg-surface-raised px-1 text-label"
                 >
-                  <option value="">sem lote</option>
+                  <option value="">{t('sem lote')}</option>
                   {lotes.map((l) => (
                     <option key={l} value={l}>
                       {l}
@@ -237,7 +241,7 @@ export function EntradaSeries({ rotulo, series, esperado, aoMudar, lotes, desabi
               {!desabilitado && (
                 <button
                   type="button"
-                  aria-label={`Remover série ${s.numero}`}
+                  aria-label={t('Remover série {numero}', { numero: s.numero })}
                   onClick={() => remover(s.numero)}
                   className="rounded-campo p-1 text-texto-secondary hover:bg-surface-sunken"
                 >

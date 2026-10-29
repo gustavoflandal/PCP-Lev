@@ -1,3 +1,4 @@
+import { t, td } from '@/i18n';
 import { Badge, type TomBadge } from '@/componentes/ui/Badge';
 import type { NomeIcone } from '@/componentes/ui/icones';
 import {
@@ -47,7 +48,7 @@ export function BadgeStatusPedidoVenda({ status }: { status: StatusPedidoVenda }
   const a = PEDIDO[status] ?? { tom: 'neutral', icone: 'circle' };
   return (
     <Badge tom={a.tom} icone={a.icone}>
-      {ROTULO_STATUS_PEDIDO_VENDA[status] ?? status}
+      {td(ROTULO_STATUS_PEDIDO_VENDA[status] ?? status)}
     </Badge>
   );
 }
@@ -56,7 +57,7 @@ export function BadgeStatusOP({ status }: { status: StatusOP }) {
   const a = OP[status] ?? { tom: 'neutral', icone: 'circle' };
   return (
     <Badge tom={a.tom} icone={a.icone}>
-      {ROTULO_STATUS_OP[status] ?? status}
+      {td(ROTULO_STATUS_OP[status] ?? status)}
     </Badge>
   );
 }
@@ -65,16 +66,16 @@ export function BadgeStatusSerie({ status }: { status: StatusSerie }) {
   const a = SERIE[status] ?? { tom: 'neutral', icone: 'circle' };
   return (
     <Badge tom={a.tom} icone={a.icone}>
-      {ROTULO_STATUS_SERIE[status] ?? status}
+      {td(ROTULO_STATUS_SERIE[status] ?? status)}
     </Badge>
   );
 }
 
 /** Atraso e sempre warning (urgencia), nunca vermelho. */
-export function SeloAtraso({ children = 'Atrasado' }: { children?: string }) {
+export function SeloAtraso({ children }: { children?: string }) {
   return (
     <Badge tom="warning" icone="clock">
-      {children}
+      {children ?? t('Atrasado')}
     </Badge>
   );
 }
@@ -82,6 +83,6 @@ export function SeloAtraso({ children = 'Atrasado' }: { children?: string }) {
 /** Nome da etapa com acento ("Separacao" -> "Separação"). */
 export function NomeEtapa({ etapa }: { etapa: EtapaOP | string }) {
   // O historico registra a conclusao da OP como uma "etapa" final.
-  if (etapa === 'Concluida') return <>Concluída</>;
-  return <>{ROTULO_ETAPA_OP[etapa as EtapaOP] ?? etapa}</>;
+  if (etapa === 'Concluida') return <>{t('Concluída')}</>;
+  return <>{td(ROTULO_ETAPA_OP[etapa as EtapaOP] ?? etapa)}</>;
 }

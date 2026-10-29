@@ -1,3 +1,4 @@
+import { marcar } from '@/i18n';
 /**
  * Contrato de arquivos e anexos (v1.2, R1) — espelho dos JSON tags de
  * backend/internal/domain/arquivo e das rotas de handlers/arquivos.go.
@@ -20,15 +21,15 @@ export type EntidadeAnexo =
   | 'cliente';
 
 export const ROTULO_ENTIDADE: Record<EntidadeAnexo, string> = {
-  produto_acabado: 'Produto',
-  parte_peca: 'Peça',
-  nota_entrada: 'Nota de entrada',
-  lote: 'Lote',
-  ordem_producao: 'Ordem de produção',
-  fornecedor: 'Fornecedor',
-  pedido_compra: 'Pedido de compra',
-  pedido_venda: 'Pedido de venda',
-  cliente: 'Cliente',
+  produto_acabado: marcar('Produto'),
+  parte_peca: marcar('Peça'),
+  nota_entrada: marcar('Nota de entrada'),
+  lote: marcar('Lote'),
+  ordem_producao: marcar('Ordem de produção'),
+  fornecedor: marcar('Fornecedor'),
+  pedido_compra: marcar('Pedido de compra'),
+  pedido_venda: marcar('Pedido de venda'),
+  cliente: marcar('Cliente'),
 };
 
 export type TipoAnexo = 'FOTO' | 'DOCUMENTO' | 'ANEXO';
@@ -111,14 +112,14 @@ export interface VencimentoDocumento {
 
 /** Categorias obrigatorias de documento tecnico de produto/peca (4.1.2). */
 export const CATEGORIAS_DOCUMENTO_PRODUTO = [
-  'Datasheet',
-  'Desenho Mecânico',
-  'Esquema Elétrico',
-  'Manual de Montagem',
-  'Certificado de Conformidade',
-  'Laudo de Ensaio',
-  'Instrução de Trabalho',
-  'Ficha de Segurança',
+  marcar('Datasheet'),
+  marcar('Desenho Mecânico'),
+  marcar('Esquema Elétrico'),
+  marcar('Manual de Montagem'),
+  marcar('Certificado de Conformidade'),
+  marcar('Laudo de Ensaio'),
+  marcar('Instrução de Trabalho'),
+  marcar('Ficha de Segurança'),
 ] as const;
 
 /**
@@ -132,11 +133,11 @@ export type EntidadeRegistro = Extract<
 
 /** Espelho de Categorias* em backend/internal/domain/arquivo/anexo.go (mesma grafia). */
 export const CATEGORIAS_ANEXO_REGISTRO: Record<EntidadeRegistro, readonly string[]> = {
-  ordem_producao: ['Laudo de Teste', 'Relatório de Inspeção', 'Foto da Produção', 'Desenho/Esquema', 'Outro'],
-  fornecedor: ['Contrato', 'Certificado de Qualidade', 'Documentos Cadastrais', 'Tabela de Preços', 'Outro'],
-  pedido_compra: ['Proposta/Cotação', 'Pedido Assinado', 'Comunicação', 'Outro'],
-  pedido_venda: ['Contrato/Edital', 'Pedido do Cliente', 'Termo de Aceite', 'Ordem de Serviço', 'Outro'],
-  cliente: ['Contrato', 'Documentos Cadastrais', 'Termo de Aceite', 'Outro'],
+  ordem_producao: [marcar('Laudo de Teste'), marcar('Relatório de Inspeção'), marcar('Foto da Produção'), marcar('Desenho/Esquema'), marcar('Outro')],
+  fornecedor: [marcar('Contrato'), marcar('Certificado de Qualidade'), marcar('Documentos Cadastrais'), marcar('Tabela de Preços'), marcar('Outro')],
+  pedido_compra: [marcar('Proposta/Cotação'), marcar('Pedido Assinado'), marcar('Comunicação'), marcar('Outro')],
+  pedido_venda: [marcar('Contrato/Edital'), marcar('Pedido do Cliente'), marcar('Termo de Aceite'), marcar('Ordem de Serviço'), marcar('Outro')],
+  cliente: [marcar('Contrato'), marcar('Documentos Cadastrais'), marcar('Termo de Aceite'), marcar('Outro')],
 };
 
 /** Fotos alem da principal (4.1.2). */

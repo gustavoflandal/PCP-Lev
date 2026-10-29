@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { t, td } from '@/i18n';
 import { BadgeStatusPedidoVenda, SeloAtraso } from '@/componentes/producao/Selos';
 import { Botao } from '@/componentes/ui/Botao';
 import { Campo } from '@/componentes/ui/Campo';
@@ -16,10 +17,11 @@ import {
   type StatusPedidoVenda,
 } from '@/tipos/producao';
 
-const OPCOES_STATUS = (Object.keys(ROTULO_STATUS_PEDIDO_VENDA) as StatusPedidoVenda[]).map((s) => ({
-  valor: s,
-  rotulo: ROTULO_STATUS_PEDIDO_VENDA[s],
-}));
+const opcoesStatus = () =>
+  (Object.keys(ROTULO_STATUS_PEDIDO_VENDA) as StatusPedidoVenda[]).map((s) => ({
+    valor: s,
+    rotulo: td(ROTULO_STATUS_PEDIDO_VENDA[s]),
+  }));
 
 export function PedidosVenda() {
   const navegar = useNavigate();
@@ -30,7 +32,7 @@ export function PedidosVenda() {
   const colunas: Coluna<PedidoVenda>[] = [
     {
       chave: 'numero_pedido',
-      rotulo: 'Número',
+      rotulo: t('Número'),
       ordenavel: true,
       renderizar: (p) => (
         <button
@@ -42,11 +44,11 @@ export function PedidosVenda() {
         </button>
       ),
     },
-    { chave: 'cliente', rotulo: 'Cliente', ordenavel: true, renderizar: (p) => p.cliente_nome },
-    { chave: 'data_pedido', rotulo: 'Data', ordenavel: true, renderizar: (p) => formatarData(p.data_pedido) },
+    { chave: 'cliente', rotulo: t('Cliente'), ordenavel: true, renderizar: (p) => p.cliente_nome },
+    { chave: 'data_pedido', rotulo: t('Data'), ordenavel: true, renderizar: (p) => formatarData(p.data_pedido) },
     {
       chave: 'data_entrega_prometida',
-      rotulo: 'Entrega prometida',
+      rotulo: t('Entrega prometida'),
       ordenavel: true,
       renderizar: (p) => (
         <span className="flex flex-wrap items-center gap-2">
@@ -57,20 +59,20 @@ export function PedidosVenda() {
     },
     {
       chave: 'valor_total',
-      rotulo: 'Valor total',
+      rotulo: t('Valor total'),
       ordenavel: true,
       alinhamento: 'direita',
       renderizar: (p) => formatarMoeda(p.valor_total),
     },
-    { chave: 'status', rotulo: 'Situação', ordenavel: true, renderizar: (p) => <BadgeStatusPedidoVenda status={p.status} /> },
+    { chave: 'status', rotulo: t('Situação'), ordenavel: true, renderizar: (p) => <BadgeStatusPedidoVenda status={p.status} /> },
   ];
 
   return (
     <div className="mx-auto flex max-w-[1400px] flex-col gap-4">
       <div>
-        <h1 className="text-title text-texto-primary">Pedidos de venda</h1>
+        <h1 className="text-title text-texto-primary">{t('Pedidos de venda')}</h1>
         <p className="text-body text-texto-secondary">
-          O que cada cliente comprou e quando foi prometido. Cada item vira uma ordem de produção.
+          {t('O que cada cliente comprou e quando foi prometido. Cada item vira uma ordem de produção.')}
         </p>
       </div>
 
@@ -78,17 +80,17 @@ export function PedidosVenda() {
         <div className="flex flex-wrap items-end gap-4">
           <div className="w-[320px] max-w-full">
             <Campo
-              rotulo="Buscar por número ou cliente"
+              rotulo={t('Buscar por número ou cliente')}
               value={lista.busca}
               onChange={(evento) => lista.definirBusca(evento.target.value)}
-              placeholder="Digite para filtrar"
+              placeholder={t('Digite para filtrar')}
             />
           </div>
           <div className="w-[200px]">
             <Selecao
-              rotulo="Situação"
-              opcoes={OPCOES_STATUS}
-              placeholder="Todos"
+              rotulo={t('Situação')}
+              opcoes={opcoesStatus()}
+              placeholder={t('Todos')}
               value={lista.status ?? ''}
               onChange={(evento) => lista.definirStatus(evento.target.value || null)}
             />
@@ -96,14 +98,14 @@ export function PedidosVenda() {
         </div>
         {podeIncluir && (
           <Botao icone="plus" onClick={() => navegar('/pedidos-venda/novo')}>
-            Novo pedido de venda
+            {t('Novo pedido de venda')}
           </Botao>
         )}
       </div>
 
       <div>
         <Tabela<PedidoVenda>
-          rotulo="Pedidos de venda"
+          rotulo={t('Pedidos de venda')}
           colunas={colunas}
           itens={lista.itens}
           chaveDe={(p) => p.id}
@@ -113,7 +115,7 @@ export function PedidosVenda() {
           carregando={lista.carregando}
           erro={lista.erro}
           aoTentarDeNovo={lista.recarregar}
-          vazio="Nenhum pedido de venda encontrado. Cadastre um pedido para gerar as ordens de produção."
+          vazio={t('Nenhum pedido de venda encontrado. Cadastre um pedido para gerar as ordens de produção.')}
         />
         <Paginacao
           pagina={lista.paginacao.pagina}

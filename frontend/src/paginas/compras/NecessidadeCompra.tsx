@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
+import { t } from '@/i18n';
 import { Botao } from '@/componentes/ui/Botao';
 import { Tabela, type Coluna } from '@/componentes/ui/Tabela';
 import { listarNecessidadeCompra } from '@/servicos/compras';
@@ -22,7 +23,7 @@ function agruparPorFornecedor(itens: ItemNecessidadeCompra[]): GrupoFornecedor[]
     } else {
       grupos.set(chave, {
         fornecedorId: chave,
-        fornecedorNome: item.fornecedor_padrao_nome ?? 'Sem fornecedor padrão',
+        fornecedorNome: item.fornecedor_padrao_nome ?? t('Sem fornecedor padrão'),
         itens: [item],
       });
     }
@@ -36,12 +37,12 @@ function agruparPorFornecedor(itens: ItemNecessidadeCompra[]): GrupoFornecedor[]
   });
 }
 
-const colunas: Coluna<ItemNecessidadeCompra>[] = [
-  { chave: 'codigo', rotulo: 'Código', renderizar: (i) => <span className="font-mono">{i.codigo}</span> },
-  { chave: 'descricao', rotulo: 'Descrição', renderizar: (i) => i.descricao },
-  { chave: 'saldo_atual', rotulo: 'Saldo atual', alinhamento: 'direita', renderizar: (i) => i.saldo_atual },
-  { chave: 'estoque_minimo', rotulo: 'Estoque mínimo', alinhamento: 'direita', renderizar: (i) => i.estoque_minimo },
-  { chave: 'necessidade', rotulo: 'Necessidade', alinhamento: 'direita', renderizar: (i) => i.necessidade },
+const colunasNecessidade = (): Coluna<ItemNecessidadeCompra>[] => [
+  { chave: 'codigo', rotulo: t('Código'), renderizar: (i) => <span className="font-mono">{i.codigo}</span> },
+  { chave: 'descricao', rotulo: t('Descrição'), renderizar: (i) => i.descricao },
+  { chave: 'saldo_atual', rotulo: t('Saldo atual'), alinhamento: 'direita', renderizar: (i) => i.saldo_atual },
+  { chave: 'estoque_minimo', rotulo: t('Estoque mínimo'), alinhamento: 'direita', renderizar: (i) => i.estoque_minimo },
+  { chave: 'necessidade', rotulo: t('Necessidade'), alinhamento: 'direita', renderizar: (i) => i.necessidade },
 ];
 
 export function NecessidadeCompra() {
@@ -63,20 +64,20 @@ export function NecessidadeCompra() {
   return (
     <div className="mx-auto flex max-w-[1100px] flex-col gap-4">
       <div>
-        <h1 className="text-title text-texto-primary">Necessidade de compra</h1>
+        <h1 className="text-title text-texto-primary">{t('Necessidade de compra')}</h1>
         <p className="text-body text-texto-secondary">
-          Peças ativas com saldo abaixo do estoque mínimo, agrupadas pelo fornecedor padrão.
+          {t('Peças ativas com saldo abaixo do estoque mínimo, agrupadas pelo fornecedor padrão.')}
         </p>
       </div>
 
-      {consulta.isPending && <p className="text-body text-texto-secondary">Carregando…</p>}
+      {consulta.isPending && <p className="text-body text-texto-secondary">{t('Carregando…')}</p>}
       {consulta.isError && (
-        <p className="text-body text-estado-pending">Não foi possível carregar a necessidade de compra.</p>
+        <p className="text-body text-estado-pending">{t('Não foi possível carregar a necessidade de compra.')}</p>
       )}
 
       {!consulta.isPending && !consulta.isError && grupos.length === 0 && (
         <p className="text-body text-texto-secondary">
-          Nenhuma peça está abaixo do estoque mínimo no momento.
+          {t('Nenhuma peça está abaixo do estoque mínimo no momento.')}
         </p>
       )}
 
@@ -86,24 +87,24 @@ export function NecessidadeCompra() {
             <h2 className="text-subtitle text-texto-primary">{grupo.fornecedorNome}</h2>
             {podeGerarCotacao && grupo.fornecedorId !== null && (
               <Botao icone="clipboard-list" onClick={() => gerarCotacao(grupo)}>
-                Gerar cotação
+                {t('Gerar cotação')}
               </Botao>
             )}
           </div>
           {grupo.fornecedorId === null && (
             <p className="text-body text-texto-secondary">
-              Cadastre um fornecedor padrão nessas peças antes de gerar uma cotação.
+              {t('Cadastre um fornecedor padrão nessas peças antes de gerar uma cotação.')}
             </p>
           )}
           <Tabela<ItemNecessidadeCompra>
-            rotulo={`Necessidade de compra — ${grupo.fornecedorNome}`}
-            colunas={colunas}
+            rotulo={t('Necessidade de compra — {nome}', { nome: grupo.fornecedorNome })}
+            colunas={colunasNecessidade()}
             itens={grupo.itens}
             chaveDe={(i) => i.parte_peca_id}
             ordenarPor="codigo"
             ordem="asc"
             aoOrdenar={() => {}}
-            vazio="Nenhuma peça neste grupo."
+            vazio={t('Nenhuma peça neste grupo.')}
           />
         </div>
       ))}

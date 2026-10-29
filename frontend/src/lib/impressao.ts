@@ -9,6 +9,7 @@
  * ganha viewBox e largura 100% (altura mantida, proporcao preservada) -- e
  * volta ao normal depois.
  */
+import { t } from '@/i18n';
 
 const ATRIBUTO_ORIGINAL = 'data-impressao-original';
 
@@ -56,7 +57,7 @@ export function restaurarGraficos(raiz: ParentNode = document): void {
 export function tituloDaTela(): string {
   const dialogo = document.querySelector('[role="dialog"] h2');
   const h1 = document.querySelector('main h1');
-  return (dialogo?.textContent || h1?.textContent || 'Sistema PCP').trim();
+  return (dialogo?.textContent || h1?.textContent || t('Sistema PCP')).trim();
 }
 
 /**

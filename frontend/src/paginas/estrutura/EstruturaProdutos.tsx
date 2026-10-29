@@ -5,6 +5,7 @@ import { Tabela, type Coluna } from '@/componentes/ui/Tabela';
 import { useListagem } from '@/hooks/useListagem';
 import { formatarData } from '@/lib/formato';
 import type { ProdutoAcabado } from '@/tipos/cadastros';
+import { t } from '@/i18n';
 
 export function EstruturaProdutos() {
   const navegar = useNavigate();
@@ -13,7 +14,7 @@ export function EstruturaProdutos() {
   const colunas: Coluna<ProdutoAcabado>[] = [
     {
       chave: 'codigo',
-      rotulo: 'Código',
+      rotulo: t('Código'),
       ordenavel: true,
       renderizar: (p) => (
         <button
@@ -25,37 +26,37 @@ export function EstruturaProdutos() {
         </button>
       ),
     },
-    { chave: 'descricao', rotulo: 'Descrição', ordenavel: true, renderizar: (p) => p.descricao },
+    { chave: 'descricao', rotulo: t('Descrição'), ordenavel: true, renderizar: (p) => p.descricao },
     {
       chave: 'estrutura',
-      rotulo: 'Estrutura',
+      rotulo: t('Estrutura'),
       renderizar: (p) =>
         p.estrutura_ativa
-          ? `v.${p.estrutura_ativa.versao} desde ${formatarData(p.estrutura_ativa.data_vigencia_inicio)}`
-          : 'Sem estrutura ativa',
+          ? t('v.{n} desde {data}', { n: p.estrutura_ativa.versao, data: formatarData(p.estrutura_ativa.data_vigencia_inicio) })
+          : t('Sem estrutura ativa'),
     },
   ];
 
   return (
     <div className="mx-auto flex max-w-[900px] flex-col gap-4">
       <div>
-        <h1 className="text-title text-texto-primary">Estrutura de produtos</h1>
+        <h1 className="text-title text-texto-primary">{t('Estrutura de produtos')}</h1>
         <p className="text-body text-texto-secondary">
-          Componentes necessários para montar cada produto acabado.
+          {t('Componentes necessários para montar cada produto acabado.')}
         </p>
       </div>
 
       <BarraDeFiltros
         busca={lista.busca}
         aoBuscar={lista.definirBusca}
-        rotuloBusca="Buscar por código ou descrição"
+        rotuloBusca={t('Buscar por código ou descrição')}
         filtroAtivo={lista.filtroAtivo}
         aoFiltrarSituacao={lista.definirFiltroAtivo}
       />
 
       <div>
         <Tabela<ProdutoAcabado>
-          rotulo="Estrutura de produtos"
+          rotulo={t('Estrutura de produtos')}
           colunas={colunas}
           itens={lista.itens}
           chaveDe={(p) => p.id}
@@ -65,7 +66,7 @@ export function EstruturaProdutos() {
           carregando={lista.carregando}
           erro={lista.erro}
           aoTentarDeNovo={lista.recarregar}
-          vazio="Nenhum produto acabado cadastrado ainda."
+          vazio={t('Nenhum produto acabado cadastrado ainda.')}
         />
         <Paginacao
           pagina={lista.paginacao.pagina}

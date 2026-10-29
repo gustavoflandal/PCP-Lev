@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { t } from '@/i18n';
 import { usePode, type Permissao } from '@/lib/permissoes';
 
 /**
@@ -16,7 +17,7 @@ export function ExigePermissao({ permissao, children }: { permissao: Permissao; 
           role="alert"
           className="rounded-campo border border-estado-pending bg-estado-pending-bg px-3 py-2 text-body text-estado-pending"
         >
-          Acesso restrito: seu perfil não tem permissão para esta tela.
+          {t('Acesso restrito: seu perfil não tem permissão para esta tela.')}
         </p>
       </div>
     );

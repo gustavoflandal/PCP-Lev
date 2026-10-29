@@ -5,6 +5,7 @@ import { Badge } from '@/componentes/ui/Badge';
 import { Botao } from '@/componentes/ui/Botao';
 import { CaixaMarcacao } from '@/componentes/ui/CaixaMarcacao';
 import { Campo } from '@/componentes/ui/Campo';
+import { t } from '@/i18n';
 import { formatarMoeda } from '@/lib/formato';
 import {
   arredondar2,
@@ -37,15 +38,15 @@ function ComparacaoPreco({ item }: { item: FormItem }) {
   const igual = Math.abs(desvio) < 0.005;
   return (
     <p className="text-label text-texto-secondary">
-      Preço do pedido: <span className="tabular">{formatarMoeda(precoPC)}</span> · na nota, por {item.peca_unidade || 'unidade'}:{' '}
+      {t('Preço do pedido:')} <span className="tabular">{formatarMoeda(precoPC)}</span> · {t('na nota, por {unidade}:', { unidade: item.peca_unidade || t('unidade') })}{' '}
       <span className="tabular">{formatarMoeda(precoNF)}</span>{' '}
       {igual ? (
         <Badge tom="done" icone="check-circle-2">
-          Igual ao pedido
+          {t('Igual ao pedido')}
         </Badge>
       ) : (
         <Badge tom="warning" icone="alert-triangle">
-          {`Desvio de ${desvio > 0 ? '+' : ''}${formatoQtd.format(arredondar2(desvio))}%`}
+          {t('Desvio de {valor}%', { valor: `${desvio > 0 ? '+' : ''}${formatoQtd.format(arredondar2(desvio))}` })}
         </Badge>
       )}
     </p>
@@ -54,7 +55,7 @@ function ComparacaoPreco({ item }: { item: FormItem }) {
 
 /** Uma linha da nota: quantidades, valores e, conforme as flags da peca, lotes, series e certificado. */
 export function ItemDaNota({ item, ordem, aoMudar, aoRemover, somenteLeitura }: ItemDaNotaProps) {
-  const rotulo = `item ${ordem} (${item.peca_codigo})`;
+  const rotulo = t('item {ordem} ({codigo})', { ordem, codigo: item.peca_codigo });
   const esperada = quantidadeEsperada(item);
   const recebida = paraNumero(item.quantidade_recebida);
   const diferenca = recebida - esperada;
@@ -90,94 +91,99 @@ export function ItemDaNota({ item, ordem, aoMudar, aoRemover, somenteLeitura }: 
 
   return (
     <article
-      aria-label={`Item ${ordem} — ${item.peca_codigo}`}
+      aria-label={t('Item {ordem} — {codigo}', { ordem, codigo: item.peca_codigo })}
       className="flex flex-col gap-3 rounded-cartao border border-borda-subtle bg-surface-raised p-4"
     >
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex items-start gap-3">
-          <Miniatura url={item.foto_url} alt={`Foto da peça ${item.peca_codigo}`} tamanho="media" critico={item.controle.item_critico} />
+          <Miniatura url={item.foto_url} alt={t('Foto da peça {codigo}', { codigo: item.peca_codigo })} tamanho="media" critico={item.controle.item_critico} />
           <div className="flex flex-col gap-1">
-            <p className="text-label text-texto-secondary">Item {ordem}</p>
+            <p className="text-label text-texto-secondary">{t('Item {n}', { n: ordem })}</p>
             <p className="text-subtitle text-texto-primary">
               <span className="font-mono">{item.peca_codigo}</span> {item.peca_descricao && `— ${item.peca_descricao}`}
             </p>
             <div className="flex flex-wrap gap-2">
               {item.bonificacao ? (
                 <Badge tom="neutral" icone="package">
-                  Bonificação (sem pedido)
+                  {t('Bonificação (sem pedido)')}
                 </Badge>
               ) : item.numero_pc ? (
                 <Badge tom="neutral" icone="shopping-cart">
-                  {`Pedido ${item.numero_pc}${
-                    item.pc_quantidade_solicitada !== undefined
-                      ? ` · recebido ${item.pc_quantidade_recebida ?? 0} de ${item.pc_quantidade_solicitada}`
-                      : ''
-                  }`}
+                  {item.pc_quantidade_solicitada !== undefined
+                    ? t('Pedido {numero} · recebido {recebido} de {solicitado}', {
+                        numero: item.numero_pc,
+                        recebido: item.pc_quantidade_recebida ?? 0,
+                        solicitado: item.pc_quantidade_solicitada,
+                      })
+                    : t('Pedido {numero}', { numero: item.numero_pc })}
                 </Badge>
               ) : null}
               {comLote && (
                 <Badge tom="blocked" icone="layers">
-                  {comValidade ? 'Lote e validade' : 'Lote'}
+                  {comValidade ? t('Lote e validade') : t('Lote')}
                 </Badge>
               )}
               {comSerie && (
                 <Badge tom="blocked" icone="scan-line">
-                  Número de série
+                  {t('Número de série')}
                 </Badge>
               )}
               {comCertificado && (
                 <Badge tom="blocked" icone="file-text">
-                  Exige certificado
+                  {t('Exige certificado')}
                 </Badge>
               )}
             </div>
           </div>
         </div>
         {!somenteLeitura && (
-          <Botao variante="fantasma" icone="trash-2" aria-label={`Remover ${rotulo}`} onClick={aoRemover}>
-            Remover
+          <Botao variante="fantasma" icone="trash-2" aria-label={t('Remover {rotulo}', { rotulo })} onClick={aoRemover}>
+            {t('Remover')}
           </Botao>
         )}
       </header>
 
       <div className="grid gap-3 md:grid-cols-4">
         <Campo
-          rotulo="Código no fornecedor"
+          rotulo={t('Código no fornecedor')}
           tipoDado="codigo"
           value={item.codigo_fornecedor}
           onChange={(e) => mudar({ codigo_fornecedor: e.target.value })}
         />
-        <Campo rotulo="Unidade na nota" value={item.unidade_nf} onChange={(e) => mudar({ unidade_nf: e.target.value })} />
+        <Campo rotulo={t('Unidade na nota')} value={item.unidade_nf} onChange={(e) => mudar({ unidade_nf: e.target.value })} />
         <Campo
-          rotulo={`Quantidade na nota — ${rotulo}`}
+          rotulo={t('Quantidade na nota — {rotulo}', { rotulo })}
           tipoDado="quantidade"
           value={item.quantidade_nf}
           onChange={(e) => mudarValor('quantidade_nf', e.target.value)}
         />
         <Campo
-          rotulo="Fator de conversão"
+          rotulo={t('Fator de conversão')}
           tipoDado="quantidade"
-          ajuda={`1 ${item.unidade_nf || 'un. da nota'} = ${formatoQtd.format(paraNumero(item.fator_conversao) || 1)} ${item.peca_unidade || 'un.'}`}
+          ajuda={`1 ${item.unidade_nf || t('un. da nota')} = ${formatoQtd.format(paraNumero(item.fator_conversao) || 1)} ${item.peca_unidade || t('un.')}`}
           value={item.fator_conversao}
           onChange={(e) => mudar({ fator_conversao: e.target.value })}
         />
         <Campo
-          rotulo={`Quantidade recebida (contada) — ${rotulo}`}
+          rotulo={t('Quantidade recebida (contada) — {rotulo}', { rotulo })}
           tipoDado="quantidade"
-          ajuda={`Em ${item.peca_unidade || 'unidades'} de consumo. A nota declara ${formatoQtd.format(esperada)}.`}
+          ajuda={t('Em {unidade} de consumo. A nota declara {valor}.', {
+            unidade: item.peca_unidade || t('unidades'),
+            valor: formatoQtd.format(esperada),
+          })}
           value={item.quantidade_recebida}
           onChange={(e) => mudar({ quantidade_recebida: e.target.value })}
         />
         {(
           <>
             <Campo
-              rotulo="Valor unitário (R$)"
+              rotulo={t('Valor unitário (R$)')}
               tipoDado="quantidade"
               value={item.valor_unitario}
               onChange={(e) => mudarValor('valor_unitario', e.target.value)}
             />
             <Campo
-              rotulo="Valor total do item (R$)"
+              rotulo={t('Valor total do item (R$)')}
               tipoDado="quantidade"
               value={item.valor_total}
               onChange={(e) => mudar({ valor_total: e.target.value })}
@@ -187,11 +193,11 @@ export function ItemDaNota({ item, ordem, aoMudar, aoRemover, somenteLeitura }: 
         <div className="flex items-end">
           {item.quantidade_recebida.trim() === '' ? null : Math.abs(diferenca) < 1e-6 ? (
             <Badge tom="done" icone="check-circle-2">
-              Contado igual à nota
+              {t('Contado igual à nota')}
             </Badge>
           ) : (
             <Badge tom="warning" icone="alert-triangle">
-              {`Diferença: ${diferenca > 0 ? '+' : ''}${formatoQtd.format(diferenca)} (pendente com o fornecedor)`}
+              {t('Diferença: {valor} (pendente com o fornecedor)', { valor: `${diferenca > 0 ? '+' : ''}${formatoQtd.format(diferenca)}` })}
             </Badge>
           )}
         </div>
@@ -201,34 +207,34 @@ export function ItemDaNota({ item, ordem, aoMudar, aoRemover, somenteLeitura }: 
 
       {item.bonificacao && (
         <Campo
-          rotulo={`Justificativa da bonificação — ${rotulo}`}
+          rotulo={t('Justificativa da bonificação — {rotulo}', { rotulo })}
           obrigatorio
-          ajuda="Ao menos 10 caracteres. Informe os valores como estão na nota: a bonificação entra com custo zero e não mexe no saldo do pedido."
+          ajuda={t('Ao menos 10 caracteres. Informe os valores como estão na nota: a bonificação entra com custo zero e não mexe no saldo do pedido.')}
           value={item.justificativa_bonificacao}
           onChange={(e) => mudar({ justificativa_bonificacao: e.target.value })}
         />
       )}
       {!somenteLeitura && !item.bonificacao && item.item_pedido_compra_id === null && (
         <CaixaMarcacao
-          rotulo="Item sem pedido de compra: marcar como bonificação"
+          rotulo={t('Item sem pedido de compra: marcar como bonificação')}
           checked={item.bonificacao}
           onChange={(e) => mudar({ bonificacao: e.target.checked })}
         />
       )}
 
       {comLote && (
-        <section aria-label={`Lotes — ${rotulo}`} className="flex flex-col gap-2 rounded-cartao border border-borda-subtle bg-surface-sunken p-3">
+        <section aria-label={t('Lotes — {rotulo}', { rotulo })} className="flex flex-col gap-2 rounded-cartao border border-borda-subtle bg-surface-sunken p-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-label text-texto-secondary">Lotes do item</p>
+            <p className="text-label text-texto-secondary">{t('Lotes do item')}</p>
             <Badge tom={soma === recebida && recebida > 0 ? 'done' : 'pending'} icone={soma === recebida && recebida > 0 ? 'check-circle-2' : 'alert-triangle'}>
-              <span aria-live="polite">{`Soma dos lotes: ${soma} de ${formatoQtd.format(recebida)}`}</span>
+              <span aria-live="polite">{t('Soma dos lotes: {soma} de {total}', { soma, total: formatoQtd.format(recebida) })}</span>
             </Badge>
           </div>
-          {item.lotes.length === 0 && <p className="text-body text-texto-secondary">Informe ao menos um lote: a soma precisa fechar com a quantidade recebida.</p>}
+          {item.lotes.length === 0 && <p className="text-body text-texto-secondary">{t('Informe ao menos um lote: a soma precisa fechar com a quantidade recebida.')}</p>}
           {item.lotes.map((l, i) => (
             <div key={l.chave} className="grid items-end gap-2 rounded-campo border border-borda-subtle bg-surface-raised p-2 md:grid-cols-5">
               <Campo
-                rotulo={`Lote ${i + 1} — número`}
+                rotulo={t('Lote {n} — número', { n: i + 1 })}
                 tipoDado="codigo"
                 value={l.numero_lote}
                 onChange={(e) => {
@@ -241,20 +247,20 @@ export function ItemDaNota({ item, ordem, aoMudar, aoRemover, somenteLeitura }: 
                 }}
               />
               <Campo
-                rotulo={`Lote ${i + 1} — quantidade`}
+                rotulo={t('Lote {n} — quantidade', { n: i + 1 })}
                 tipoDado="quantidade"
                 value={l.quantidade}
                 onChange={(e) => mudarLote(l.chave, { quantidade: e.target.value })}
               />
               <Campo
-                rotulo={`Lote ${i + 1} — fabricação`}
+                rotulo={t('Lote {n} — fabricação', { n: i + 1 })}
                 type="date"
                 value={l.data_fabricacao}
                 onChange={(e) => mudarLote(l.chave, { data_fabricacao: e.target.value })}
               />
               {comValidade ? (
                 <Campo
-                  rotulo={`Lote ${i + 1} — validade`}
+                  rotulo={t('Lote {n} — validade', { n: i + 1 })}
                   type="date"
                   obrigatorio
                   value={l.validade}
@@ -264,14 +270,14 @@ export function ItemDaNota({ item, ordem, aoMudar, aoRemover, somenteLeitura }: 
                 <span />
               )}
               {!somenteLeitura && (
-                <Botao variante="fantasma" icone="trash-2" aria-label={`Remover lote ${i + 1} — ${rotulo}`} onClick={() => removerLote(l.chave)}>
-                  Remover lote
+                <Botao variante="fantasma" icone="trash-2" aria-label={t('Remover lote {n} — {rotulo}', { n: i + 1, rotulo })} onClick={() => removerLote(l.chave)}>
+                  {t('Remover lote')}
                 </Botao>
               )}
               {comCertificado && (
                 <div className="md:col-span-5">
                   <CampoCertificado
-                    rotulo={`lote ${l.numero_lote || i + 1} — ${rotulo}`}
+                    rotulo={t('lote {lote} — {rotulo}', { lote: l.numero_lote || i + 1, rotulo })}
                     arquivoId={l.certificado_arquivo_id}
                     aoMudar={(id) => mudarLote(l.chave, { certificado_arquivo_id: id })}
                     desabilitado={somenteLeitura}
@@ -283,7 +289,7 @@ export function ItemDaNota({ item, ordem, aoMudar, aoRemover, somenteLeitura }: 
           {!somenteLeitura && (
             <div>
               <Botao variante="secundaria" icone="plus" onClick={() => mudar({ lotes: [...item.lotes, loteVazio()] })}>
-                Adicionar lote
+                {t('Adicionar lote')}
               </Botao>
             </div>
           )}

@@ -7,26 +7,27 @@ import { Botao } from '@/componentes/ui/Botao';
 import { Campo } from '@/componentes/ui/Campo';
 import { Selecao } from '@/componentes/ui/Selecao';
 import { useToasts } from '@/componentes/ui/Toast';
+import { marcar, t, td } from '@/i18n';
 import { useParametrosNegocio } from '@/hooks/useParametrosNegocio';
 import { separarErro } from '@/lib/errosDeFormulario';
 import { atualizarParametrosNegocio, chaveParametrosNegocio } from '@/servicos/negocio';
 import type { ConfiguracaoNegocio, DadosNegocio, MetodoCusteio } from '@/tipos/negocio';
 import { PERMISSOES, usePode } from '@/lib/permissoes';
 
-const OPCOES_CUSTEIO: { valor: MetodoCusteio; rotulo: string }[] = [
-  { valor: 'CMP', rotulo: 'Custo Médio Ponderado' },
-  { valor: 'PEPS', rotulo: 'PEPS (primeiro que entra, primeiro que sai)' },
-  { valor: 'UPC', rotulo: 'Último Preço de Compra' },
+const opcoesCusteio = (): { valor: MetodoCusteio; rotulo: string }[] => [
+  { valor: 'CMP', rotulo: t('Custo Médio Ponderado') },
+  { valor: 'PEPS', rotulo: t('PEPS (primeiro que entra, primeiro que sai)') },
+  { valor: 'UPC', rotulo: t('Último Preço de Compra') },
 ];
 
-const OPCOES_DIVERGENCIA = [
-  { valor: 'BLOQUEAR', rotulo: 'Bloquear a efetivação da nota' },
-  { valor: 'APROVAR', rotulo: 'Exigir aprovação (permissão "Aprovar divergência de preço")' },
+const opcoesDivergencia = () => [
+  { valor: 'BLOQUEAR', rotulo: t('Bloquear a efetivação da nota') },
+  { valor: 'APROVAR', rotulo: t('Exigir aprovação (permissão "Aprovar divergência de preço")') },
 ];
 
-const OPCOES_ALCADA = [
-  { valor: 'sem-limite', rotulo: 'Sem limite — o Gestor emite qualquer valor' },
-  { valor: 'limitado', rotulo: 'Limitar ao valor abaixo — acima dele, só o Administrador' },
+const opcoesAlcada = () => [
+  { valor: 'sem-limite', rotulo: t('Sem limite — o Gestor emite qualquer valor') },
+  { valor: 'limitado', rotulo: t('Limitar ao valor abaixo — acima dele, só o Administrador') },
 ];
 
 const CLASSE_AVISO =
@@ -44,32 +45,32 @@ const esquema = z
   .object({
     metodo_custeio: z.enum(['CMP', 'PEPS', 'UPC']),
     tolerancia_excesso_recebimento_pct: z.coerce
-      .number({ invalid_type_error: 'Informe a tolerância (0 a 100)' })
-      .min(0, 'A tolerância vai de 0% a 100%')
-      .max(100, 'A tolerância vai de 0% a 100%')
-      .refine(duasCasas, 'Use no máximo duas casas decimais'),
+      .number({ invalid_type_error: marcar('Informe a tolerância (0 a 100)') })
+      .min(0, marcar('A tolerância vai de 0% a 100%'))
+      .max(100, marcar('A tolerância vai de 0% a 100%'))
+      .refine(duasCasas, marcar('Use no máximo duas casas decimais')),
     tolerancia_preco_pct: z.coerce
-      .number({ invalid_type_error: 'Informe a tolerância (0 a 100)' })
-      .min(0, 'A tolerância vai de 0% a 100%')
-      .max(100, 'A tolerância vai de 0% a 100%')
-      .refine(duasCasas, 'Use no máximo duas casas decimais'),
+      .number({ invalid_type_error: marcar('Informe a tolerância (0 a 100)') })
+      .min(0, marcar('A tolerância vai de 0% a 100%'))
+      .max(100, marcar('A tolerância vai de 0% a 100%'))
+      .refine(duasCasas, marcar('Use no máximo duas casas decimais')),
     divergencia_preco_acao: z.enum(['BLOQUEAR', 'APROVAR']),
     lead_time_padrao_dias: z.coerce
-      .number({ invalid_type_error: 'Informe o lead time em dias' })
-      .int('Use um número inteiro de dias')
-      .min(1, 'Entre 1 e 365 dias')
-      .max(365, 'Entre 1 e 365 dias'),
+      .number({ invalid_type_error: marcar('Informe o lead time em dias') })
+      .int(marcar('Use um número inteiro de dias'))
+      .min(1, marcar('Entre 1 e 365 dias'))
+      .max(365, marcar('Entre 1 e 365 dias')),
     alcada: z.enum(['sem-limite', 'limitado']),
     limite_emissao_gestor: z.string(),
     cotacoes_minimas: z.coerce
-      .number({ invalid_type_error: 'Informe de 0 a 10' })
-      .int('Use um número inteiro')
-      .min(0, 'De 0 a 10 cotações')
-      .max(10, 'De 0 a 10 cotações'),
+      .number({ invalid_type_error: marcar('Informe de 0 a 10') })
+      .int(marcar('Use um número inteiro'))
+      .min(0, marcar('De 0 a 10 cotações'))
+      .max(10, marcar('De 0 a 10 cotações')),
     valor_exige_cotacoes: z.coerce
-      .number({ invalid_type_error: 'Informe o valor' })
-      .min(0, 'O valor não pode ser negativo')
-      .refine(duasCasas, 'Use no máximo duas casas decimais'),
+      .number({ invalid_type_error: marcar('Informe o valor') })
+      .min(0, marcar('O valor não pode ser negativo'))
+      .refine(duasCasas, marcar('Use no máximo duas casas decimais')),
   })
   .superRefine((valores, ctx) => {
     if (valores.alcada !== 'limitado') return;
@@ -78,7 +79,7 @@ const esquema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['limite_emissao_gestor'],
-        message: 'Informe o valor máximo (com até duas casas decimais)',
+        message: marcar('Informe o valor máximo (com até duas casas decimais)'),
       });
     }
   });
@@ -142,10 +143,10 @@ function FormularioNegocio({ atual }: { atual: ConfiguracaoNegocio }) {
     mutationFn: atualizarParametrosNegocio,
     onSuccess: (atualizada) => {
       queryClient.setQueryData(chaveParametrosNegocio, atualizada);
-      mostrarToast('Parâmetros de negócio salvos');
+      mostrarToast(t('Parâmetros de negócio salvos'));
     },
     onError: (erro) => {
-      mostrarToast(separarErro(erro).geral ?? 'Não foi possível salvar os parâmetros de negócio.', 'pending');
+      mostrarToast(separarErro(erro).geral ?? t('Não foi possível salvar os parâmetros de negócio.'), 'pending');
     },
   });
 
@@ -153,100 +154,100 @@ function FormularioNegocio({ atual }: { atual: ConfiguracaoNegocio }) {
 
   return (
     <form
-      aria-label="Parâmetros de negócio"
+      aria-label={t('Parâmetros de negócio')}
       noValidate
       className="flex flex-col gap-4"
       onSubmit={handleSubmit((valores) => mutacao.mutate(paraCorpo(valores)))}
     >
-      <Secao titulo="Estoque" descricao="Como o estoque é valorizado e controlado.">
+      <Secao titulo={t('Estoque')} descricao={t('Como o estoque é valorizado e controlado.')}>
         <Selecao
-          rotulo="Método de custeio"
-          opcoes={OPCOES_CUSTEIO}
-          ajuda="Usado no custo real das ordens de produção, quando o módulo de Produção entrar."
+          rotulo={t('Método de custeio')}
+          opcoes={opcoesCusteio()}
+          ajuda={t('Usado no custo real das ordens de produção, quando o módulo de Produção entrar.')}
           {...register('metodo_custeio')}
         />
         <div>
-          <p className="text-label text-texto-secondary">Saldo negativo</p>
-          <p className="text-body text-texto-primary">Bloqueado — o estoque nunca fica abaixo de zero.</p>
+          <p className="text-label text-texto-secondary">{t('Saldo negativo')}</p>
+          <p className="text-body text-texto-primary">{t('Bloqueado — o estoque nunca fica abaixo de zero.')}</p>
         </div>
       </Secao>
 
-      <Secao titulo="Recebimento" descricao="Regras ao conferir e efetivar a nota fiscal de entrada.">
+      <Secao titulo={t('Recebimento')} descricao={t('Regras ao conferir e efetivar a nota fiscal de entrada.')}>
         <Campo
-          rotulo="Tolerância de excesso na quantidade recebida (%)"
+          rotulo={t('Tolerância de excesso na quantidade recebida (%)')}
           type="number"
           step="0.01"
           min={0}
           max={100}
-          ajuda="Ex.: com 5%, um item pedido com 100 unidades aceita receber até 105. Com 0%, nada além do pedido."
-          erro={errors.tolerancia_excesso_recebimento_pct?.message}
+          ajuda={t('Ex.: com 5%, um item pedido com 100 unidades aceita receber até 105. Com 0%, nada além do pedido.')}
+          erro={td(errors.tolerancia_excesso_recebimento_pct?.message) || undefined}
           {...register('tolerancia_excesso_recebimento_pct')}
         />
         <Campo
-          rotulo="Tolerância de divergência de preço (%)"
+          rotulo={t('Tolerância de divergência de preço (%)')}
           type="number"
           step="0.01"
           min={0}
           max={100}
-          ajuda="Diferença aceita entre o preço unitário da nota (por unidade de consumo) e o do pedido. Ex.: 2% aceita até R$ 51,00 num item pedido a R$ 50,00."
-          erro={errors.tolerancia_preco_pct?.message}
+          ajuda={t('Diferença aceita entre o preço unitário da nota (por unidade de consumo) e o do pedido. Ex.: 2% aceita até R$ 51,00 num item pedido a R$ 50,00.')}
+          erro={td(errors.tolerancia_preco_pct?.message) || undefined}
           {...register('tolerancia_preco_pct')}
         />
         <Selecao
-          rotulo="Acima da tolerância"
-          opcoes={OPCOES_DIVERGENCIA}
-          ajuda="Bloquear impede efetivar a nota até corrigir; exigir aprovação deixa efetivar só quem tem a permissão — e registra quem aprovou."
+          rotulo={t('Acima da tolerância')}
+          opcoes={opcoesDivergencia()}
+          ajuda={t('Bloquear impede efetivar a nota até corrigir; exigir aprovação deixa efetivar só quem tem a permissão — e registra quem aprovou.')}
           {...register('divergencia_preco_acao')}
         />
       </Secao>
 
-      <Secao titulo="Compras" descricao="Padrões e aprovações de compra.">
+      <Secao titulo={t('Compras')} descricao={t('Padrões e aprovações de compra.')}>
         <Campo
-          rotulo="Lead time padrão (dias)"
+          rotulo={t('Lead time padrão (dias)')}
           type="number"
           min={1}
           max={365}
-          ajuda="Valor inicial do lead time ao cadastrar um fornecedor ou uma parte/peça nova."
-          erro={errors.lead_time_padrao_dias?.message}
+          ajuda={t('Valor inicial do lead time ao cadastrar um fornecedor ou uma parte/peça nova.')}
+          erro={td(errors.lead_time_padrao_dias?.message) || undefined}
           {...register('lead_time_padrao_dias')}
         />
-        <Selecao rotulo="Alçada do Gestor para emitir pedido de compra" opcoes={OPCOES_ALCADA} {...register('alcada')} />
+        <Selecao rotulo={t('Alçada do Gestor para emitir pedido de compra')} opcoes={opcoesAlcada()} {...register('alcada')} />
         {/* Oculto (nao desabilitado) sem limite: no react-hook-form, um input
             com disabled nativo e enviado como undefined. */}
         {limitado && (
           <Campo
-            rotulo="Valor máximo que o Gestor emite (R$)"
+            rotulo={t('Valor máximo que o Gestor emite (R$)')}
             type="number"
             step="0.01"
             min={0}
-            ajuda="Pedidos acima deste valor total só podem ser emitidos por um Administrador."
-            erro={errors.limite_emissao_gestor?.message}
+            ajuda={t('Pedidos acima deste valor total só podem ser emitidos por um Administrador.')}
+            erro={td(errors.limite_emissao_gestor?.message) || undefined}
             {...register('limite_emissao_gestor')}
           />
         )}
         <Campo
-          rotulo="Mínimo de cotações por peça"
+          rotulo={t('Mínimo de cotações por peça')}
           type="number"
           min={0}
           max={10}
-          ajuda="Fornecedores diferentes com cotação respondida nos últimos 90 dias. 0 desliga a regra."
-          erro={errors.cotacoes_minimas?.message}
+          ajuda={t('Fornecedores diferentes com cotação respondida nos últimos 90 dias. 0 desliga a regra.')}
+          erro={td(errors.cotacoes_minimas?.message) || undefined}
           {...register('cotacoes_minimas')}
         />
         <Campo
-          rotulo="Exigir as cotações a partir do valor total de (R$)"
+          rotulo={t('Exigir as cotações a partir do valor total de (R$)')}
           type="number"
           step="0.01"
           min={0}
-          ajuda="Pedidos com valor total a partir deste exigem o mínimo de cotações acima. 0 = todos os pedidos."
-          erro={errors.valor_exige_cotacoes?.message}
+          ajuda={t('Pedidos com valor total a partir deste exigem o mínimo de cotações acima. 0 = todos os pedidos.')}
+          erro={td(errors.valor_exige_cotacoes?.message) || undefined}
           {...register('valor_exige_cotacoes')}
         />
       </Secao>
 
       <div>
-        <Botao type="submit" ocupado={mutacao.isPending} rotuloOcupado="Salvando…">
-          Salvar
+        <Botao type="submit" ocupado={mutacao.isPending} rotuloOcupado={t('Salvando…')}>
+          {t('Salvar')}
         </Botao>
       </div>
     </form>
@@ -261,20 +262,20 @@ export function ParametrosNegocio() {
   if (!autorizado) {
     conteudo = (
       <p role="alert" className={CLASSE_AVISO}>
-        Acesso restrito: seu perfil não tem permissão para esta tela.
+        {t('Acesso restrito: seu perfil não tem permissão para esta tela.')}
       </p>
     );
   } else if (consulta.isPending || (!consulta.isError && !consulta.isFetchedAfterMount)) {
     // Com dado em cache (de um formulario de cadastro aberto antes), so
     // mostra o formulario depois da busca nova: ele nasce do valor carregado
     // e nao se atualiza depois.
-    conteudo = <p className="text-body text-texto-secondary">Carregando parâmetros de negócio…</p>;
+    conteudo = <p className="text-body text-texto-secondary">{t('Carregando parâmetros de negócio…')}</p>;
   } else if (consulta.isError) {
     // O PUT grava a configuracao inteira -- mostrar o formulario com valores
     // inventados depois de uma falha deixaria "Salvar" sobrescrever a real.
     conteudo = (
       <p role="alert" className={CLASSE_AVISO}>
-        Não foi possível carregar os parâmetros de negócio. Recarregue a página para tentar de novo.
+        {t('Não foi possível carregar os parâmetros de negócio. Recarregue a página para tentar de novo.')}
       </p>
     );
   } else {
@@ -284,9 +285,9 @@ export function ParametrosNegocio() {
   return (
     <div className="mx-auto flex max-w-[720px] flex-col gap-4">
       <div>
-        <h1 className="text-title text-texto-primary">Parâmetros de negócio</h1>
+        <h1 className="text-title text-texto-primary">{t('Parâmetros de negócio')}</h1>
         <p className="text-body text-texto-secondary">
-          Regras de estoque, recebimento e compras — valem para todos os usuários.
+          {t('Regras de estoque, recebimento e compras — valem para todos os usuários.')}
         </p>
       </div>
       {conteudo}

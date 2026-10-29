@@ -5,6 +5,7 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
   LabelList,
   Legend,
   Line,
@@ -16,6 +17,7 @@ import {
 } from 'recharts';
 import { Botao } from '@/componentes/ui/Botao';
 import { icones } from '@/componentes/ui/icones';
+import { t, td } from '@/i18n';
 import { cn } from '@/lib/cn';
 import { formatarValor, formatarValorEixo, type FormatoValor } from '@/lib/paineis';
 import type { Ponto } from '@/tipos/paineis';
@@ -27,10 +29,31 @@ export interface SerieGrafico {
 }
 
 /**
- * Cores das series -- so tokens (funcionam no tema escuro e no alto
- * contraste). A marca e a serie comum; estado nunca entra aqui sem rotulo.
+ * Paleta categorica -- so tokens (--grafico-N, com variante no tema escuro).
+ * Sao cores de categoria: estado (verde/vermelho = ok/problema) nunca entra
+ * aqui sem rotulo.
  */
-const CORES_SERIES = ['var(--brand)', 'var(--text-secondary)', 'var(--focus-ring)'];
+const CORES_SERIES = Array.from({ length: 8 }, (_, i) => `var(--grafico-${i + 1})`);
+
+/**
+ * Cor de cada barra. Com uma serie so, cada categoria (mes, fornecedor,
+ * situacao) ganha uma cor da paleta; com varias, a cor identifica a serie
+ * (e a legenda a explica), entao todas as barras dela levam a mesma.
+ */
+const corDaBarra = (serie: number, categoria: number, series: number) =>
+  CORES_SERIES[(series > 1 ? serie : categoria) % CORES_SERIES.length];
+
+/**
+ * Linha e area de uma serie so nao tem categorias para colorir: cada grafico
+ * pega uma cor da paleta pelo titulo (estavel entre renderizacoes), em vez
+ * de todos ficarem na mesma.
+ */
+function corDaLinha(serie: number, series: number, titulo: string): string {
+  if (series > 1) return CORES_SERIES[serie % CORES_SERIES.length];
+  let hash = 0;
+  for (const c of titulo) hash = (hash * 31 + c.charCodeAt(0)) >>> 0;
+  return CORES_SERIES[hash % CORES_SERIES.length];
+}
 
 const COR_TEXTO_EIXO = 'var(--text-secondary)';
 const COR_GRADE = 'var(--border-subtle)';
@@ -84,7 +107,7 @@ function montarLinhas(series: SerieGrafico[], formatarRotulo: (r: string) => str
   return [...linhas.values()];
 }
 
-const identidade = (r: string) => r;
+const identidade = (r: string) => td(r);
 
 /** Nome longo (fornecedor, produto) cortado no eixo; a tabela mostra inteiro. */
 function encurtar(texto: string, limite = 22): string {
@@ -152,7 +175,10 @@ function Grafico({
           {dica}
           {legendaEl}
           {series.map((s, i) => (
-            <Bar key={s.nome} dataKey={valorDa(i)} name={s.nome} fill={CORES_SERIES[i % CORES_SERIES.length]} isAnimationActive={false}>
+            <Bar key={s.nome} dataKey={valorDa(i)} name={td(s.nome)} fill={corDaBarra(i, 0, series.length)} isAnimationActive={false}>
+              {linhas.map((linha, j) => (
+                <Cell key={linha.rotulo} fill={corDaBarra(i, j, series.length)} />
+              ))}
               <LabelList dataKey={valorDa(i)} position="right" fill="var(--text-primary)" fontSize="0.75rem" formatter={(v) => formatarCompleto(v)} />
             </Bar>
           ))}
@@ -176,7 +202,10 @@ function Grafico({
           {dica}
           {legendaEl}
           {series.map((s, i) => (
-            <Bar key={s.nome} dataKey={valorDa(i)} name={s.nome} fill={CORES_SERIES[i % CORES_SERIES.length]} isAnimationActive={false}>
+            <Bar key={s.nome} dataKey={valorDa(i)} name={td(s.nome)} fill={corDaBarra(i, 0, series.length)} isAnimationActive={false}>
+              {linhas.map((linha, j) => (
+                <Cell key={linha.rotulo} fill={corDaBarra(i, j, series.length)} />
+              ))}
               {comRotulosNasBarras && (
                 <LabelList dataKey={valorDa(i)} position="top" fill="var(--text-primary)" fontSize="0.75rem" formatter={(v) => formatarCompleto(v)} />
               )}
@@ -194,13 +223,13 @@ function Grafico({
           {dica}
           {legendaEl}
           {series.map((s, i) => {
-            const cor = CORES_SERIES[i % CORES_SERIES.length];
+            const cor = corDaLinha(i, series.length, titulo);
             return (
               <Area
                 key={s.nome}
                 type="monotone"
                 dataKey={valorDa(i)}
-                name={s.nome}
+                name={td(s.nome)}
                 stroke={cor}
                 strokeWidth={2}
                 fill={cor}
@@ -224,8 +253,8 @@ function Grafico({
             key={s.nome}
             type="monotone"
             dataKey={valorDa(i)}
-            name={s.nome}
-            stroke={CORES_SERIES[i % CORES_SERIES.length]}
+            name={td(s.nome)}
+            stroke={corDaLinha(i, series.length, titulo)}
             strokeWidth={2}
             dot={{ r: 3 }}
             connectNulls
@@ -256,7 +285,7 @@ function Grafico({
             aria-controls={idTabela}
             onClick={() => setVerDados((v) => !v)}
           >
-            {verDados ? 'Ocultar dados' : 'Ver dados'}
+            {verDados ? t('Ocultar dados') : t('Ver dados')}
           </Botao>
         )}
       </div>
@@ -269,7 +298,7 @@ function Grafico({
           </p>
           {aoTentarDeNovo && (
             <Botao variante="secundaria" icone="refresh-cw" onClick={aoTentarDeNovo}>
-              Tentar de novo
+              {t('Tentar de novo')}
             </Botao>
           )}
         </div>
@@ -308,7 +337,7 @@ function Grafico({
                       scope="col"
                       className="border-b border-borda-subtle px-3 py-2 text-right text-label text-texto-secondary"
                     >
-                      {s.nome}
+                      {td(s.nome)}
                     </th>
                   ))}
                 </tr>

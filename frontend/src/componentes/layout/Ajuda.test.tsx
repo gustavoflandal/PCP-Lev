@@ -1,7 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
+import { PREFERENCIAS_PADRAO, usePreferencias } from '@/store/preferencias';
 import { Ajuda } from './Ajuda';
 
 function renderizar(rota = '/') {
@@ -13,6 +14,8 @@ function renderizar(rota = '/') {
 }
 
 describe('Ajuda', () => {
+  afterEach(() => usePreferencias.getState().aplicar(PREFERENCIAS_PADRAO));
+
   it('mostra um botao de ajuda com rotulo textual', () => {
     renderizar();
 
@@ -210,5 +213,16 @@ describe('Ajuda', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Ajuda' }));
 
     expect(screen.getByRole('dialog', { name: /Lotes/ })).toBeInTheDocument();
+  });
+
+  it('em espanhol traduz o botao, o titulo e os itens da ajuda', async () => {
+    usePreferencias.getState().aplicar({ ...PREFERENCIAS_PADRAO, idioma: 'es' });
+    renderizar('/estrutura-produtos');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Ayuda' }));
+
+    expect(screen.getByRole('dialog', { name: 'Ayuda · Estructura de productos' })).toBeInTheDocument();
+    expect(screen.getByText(/"Nueva versión" abre una pantalla/)).toBeInTheDocument();
+    expect(screen.queryByText(/Nova versão/)).not.toBeInTheDocument();
   });
 });

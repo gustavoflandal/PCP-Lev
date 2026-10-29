@@ -10,6 +10,7 @@ import { Tabela, type Coluna } from '@/componentes/ui/Tabela';
 import { useToasts } from '@/componentes/ui/Toast';
 import type { NomeIcone } from '@/componentes/ui/icones';
 import { useListagemEstoque } from '@/hooks/useListagemEstoque';
+import { t } from '@/i18n';
 import { baixarArquivo } from '@/lib/arquivos';
 import { separarErro } from '@/lib/errosDeFormulario';
 import type { SaldoEstoque, StatusEstoque } from '@/tipos/estoque';
@@ -17,10 +18,10 @@ import { PERMISSOES, usePode } from '@/lib/permissoes';
 import { KardexDaPeca, OrigemDoSaldo } from './ConsultasDoSaldo';
 import { ModalAjuste } from './ModalAjuste';
 
-const OPCOES_STATUS = [
-  { valor: 'OK', rotulo: 'OK' },
-  { valor: 'CRITICO', rotulo: 'Crítico' },
-  { valor: 'BLOQUEADO', rotulo: 'Bloqueado' },
+const opcoesStatus = () => [
+  { valor: 'OK', rotulo: t('OK') },
+  { valor: 'CRITICO', rotulo: t('Crítico') },
+  { valor: 'BLOQUEADO', rotulo: t('Bloqueado') },
 ];
 
 const TOM_STATUS: Record<StatusEstoque, { tom: TomBadge; icone: NomeIcone }> = {
@@ -39,56 +40,56 @@ export function Estoque() {
 
   const mutacaoExportar = useMutation({
     mutationFn: () => baixarArquivo('/estoque/relatorio.csv', 'estoque.csv'),
-    onError: (erro) => mostrarToast(separarErro(erro).geral ?? 'Não foi possível exportar o relatório de estoque.'),
+    onError: (erro) => mostrarToast(separarErro(erro).geral ?? t('Não foi possível exportar o relatório de estoque.')),
   });
 
   const todasColunas: Coluna<SaldoEstoque>[] = [
-    { chave: 'foto', rotulo: 'Foto', renderizar: (i) => <Miniatura url={i.foto_url} alt={`Foto da peça ${i.codigo}`} /> },
-    { chave: 'codigo', rotulo: 'Código', ordenavel: true, renderizar: (i) => <span className="font-mono">{i.codigo}</span> },
-    { chave: 'descricao', rotulo: 'Descrição', renderizar: (i) => i.descricao },
-    { chave: 'quantidade_atual', rotulo: 'Saldo atual', ordenavel: true, alinhamento: 'direita', renderizar: (i) => i.quantidade_atual },
+    { chave: 'foto', rotulo: t('Foto'), renderizar: (i) => <Miniatura url={i.foto_url} alt={t('Foto da peça {codigo}', { codigo: i.codigo })} /> },
+    { chave: 'codigo', rotulo: t('Código'), ordenavel: true, renderizar: (i) => <span className="font-mono">{i.codigo}</span> },
+    { chave: 'descricao', rotulo: t('Descrição'), renderizar: (i) => i.descricao },
+    { chave: 'quantidade_atual', rotulo: t('Saldo atual'), ordenavel: true, alinhamento: 'direita', renderizar: (i) => i.quantidade_atual },
     // "Reservado" (quantidade_reservada) foi retirado da tabela: reserva por
     // OP so chega no Sprint 6 (backend/internal/domain/estoque/estoque.go),
     // entao a coluna era sempre 0 em todo saldo cadastrado nesta sprint --
     // ocupava espaco sem ajudar a decisao de quem opera. "Disponível" fica,
     // porque e o numero que ja importa hoje (o que pode ser prometido/usado)
     // e continua correto quando a reserva passar a existir.
-    { chave: 'disponivel', rotulo: 'Disponível', alinhamento: 'direita', renderizar: (i) => i.disponivel },
+    { chave: 'disponivel', rotulo: t('Disponível'), alinhamento: 'direita', renderizar: (i) => i.disponivel },
     {
       chave: 'status',
-      rotulo: 'Situação',
+      rotulo: t('Situação'),
       ordenavel: true,
       renderizar: (i) => (
         <Badge tom={TOM_STATUS[i.status].tom} icone={TOM_STATUS[i.status].icone}>
-          {i.status === 'CRITICO' ? 'Crítico' : i.status === 'BLOQUEADO' ? 'Bloqueado' : 'OK'}
+          {i.status === 'CRITICO' ? t('Crítico') : i.status === 'BLOQUEADO' ? t('Bloqueado') : t('OK')}
         </Badge>
       ),
     },
     {
       chave: 'acao',
-      rotulo: 'Ações',
+      rotulo: t('Ações'),
       renderizar: (i) => (
         <span className="flex flex-wrap items-center gap-1">
           <Botao
             variante="fantasma"
             icone="history"
-            aria-label={`Kardex de ${i.codigo}`}
+            aria-label={t('Kardex de {codigo}', { codigo: i.codigo })}
             onClick={() => definirConsulta({ tipo: 'kardex', item: i })}
           >
-            Kardex
+            {t('Kardex')}
           </Botao>
           <Botao
             variante="fantasma"
             icone="layers"
-            aria-label={`Origem do saldo de ${i.codigo}`}
+            aria-label={t('Origem do saldo de {codigo}', { codigo: i.codigo })}
             onClick={() => definirConsulta({ tipo: 'origem', item: i })}
           >
-            Origem do saldo
+            {t('Origem do saldo')}
           </Botao>
           {/* Sem estoque.ajustar, o botao de ajuste nem aparece. */}
           {podeAjustar && (
-            <Botao variante="fantasma" icone="pencil" aria-label={`Ajustar ${i.codigo}`} onClick={() => definirItemEmAjuste(i)}>
-              Ajustar
+            <Botao variante="fantasma" icone="pencil" aria-label={t('Ajustar {codigo}', { codigo: i.codigo })} onClick={() => definirItemEmAjuste(i)}>
+              {t('Ajustar')}
             </Botao>
           )}
         </span>
@@ -100,15 +101,15 @@ export function Estoque() {
   return (
     <div className="mx-auto flex max-w-[1400px] flex-col gap-4">
       <div>
-        <h1 className="text-title text-texto-primary">Estoque</h1>
+        <h1 className="text-title text-texto-primary">{t('Estoque')}</h1>
         <p className="text-body text-texto-secondary">
-          Saldo de partes e peças em armazém.{' '}
+          {t('Saldo de partes e peças em armazém.')}{' '}
           <Link to="/movimentacoes" className="text-brand hover:underline">
-            Ver histórico de movimentações
+            {t('Ver histórico de movimentações')}
           </Link>
           {' · '}
           <Link to="/lotes" className="text-brand hover:underline">
-            Ver lotes e validades
+            {t('Ver lotes e validades')}
           </Link>
         </p>
       </div>
@@ -116,9 +117,9 @@ export function Estoque() {
       <div className="flex items-end justify-between gap-4">
         <div className="w-[200px]">
           <Selecao
-            rotulo="Situação"
-            opcoes={OPCOES_STATUS}
-            placeholder="Todos"
+            rotulo={t('Situação')}
+            opcoes={opcoesStatus()}
+            placeholder={t('Todos')}
             value={lista.status ?? ''}
             onChange={(evento) => lista.definirStatus(evento.target.value || null)}
           />
@@ -128,17 +129,17 @@ export function Estoque() {
             variante="secundaria"
             icone="save"
             ocupado={mutacaoExportar.isPending}
-            rotuloOcupado="Exportando…"
+            rotuloOcupado={t('Exportando…')}
             onClick={() => mutacaoExportar.mutate()}
           >
-            Exportar CSV
+            {t('Exportar CSV')}
           </Botao>
         )}
       </div>
 
       <div>
         <Tabela<SaldoEstoque>
-          rotulo="Estoque"
+          rotulo={t('Estoque')}
           colunas={colunas}
           itens={lista.itens}
           chaveDe={(i) => i.id}
@@ -148,7 +149,7 @@ export function Estoque() {
           carregando={lista.carregando}
           erro={lista.erro}
           aoTentarDeNovo={lista.recarregar}
-          vazio="Nenhum item de estoque cadastrado ainda."
+          vazio={t('Nenhum item de estoque cadastrado ainda.')}
         />
         <Paginacao
           pagina={lista.paginacao.pagina}

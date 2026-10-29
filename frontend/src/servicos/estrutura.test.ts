@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { instalarServidorFalso, type ServidorFalso } from '@/testes/utilitarios';
-import { criarEstrutura, listarEstruturasPorProduto, obterEstrutura, versionarEstrutura } from './estrutura';
+import { ativarEstrutura, criarEstrutura, listarEstruturasPorProduto, obterEstrutura, versionarEstrutura } from './estrutura';
 
 describe('servicos/estrutura', () => {
   let servidor: ServidorFalso;
@@ -23,6 +23,13 @@ describe('servicos/estrutura', () => {
     const nova = await versionarEstrutura(1, corpo);
     expect(servidor.requisicoes[0].corpo).toEqual(corpo);
     expect(nova.versao).toBe(2);
+  });
+
+  it('ativarEstrutura envia POST para /boms/:id/ativar', async () => {
+    servidor.responder([{ metodo: 'post', url: '/boms/3/ativar', status: 200, corpo: { dados: { id: 3, versao: 1, ativo: true } } }]);
+    const ativada = await ativarEstrutura(3);
+    expect(servidor.requisicoes[0].url).toBe('/boms/3/ativar');
+    expect(ativada.ativo).toBe(true);
   });
 
   it('obterEstrutura busca por id', async () => {

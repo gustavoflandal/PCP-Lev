@@ -24,17 +24,10 @@ var (
 	ErrItemDuplicado           = errors.New("a mesma peca nao pode aparecer duas vezes na estrutura")
 	ErrDataVigenciaObrigatoria = errors.New("informe a data de inicio da vigencia")
 	ErrDataVigenciaFimInvalida = errors.New("a data de fim da vigencia deve ser posterior ao inicio")
-	// ErrVigenciaAnteriorAAtual e devolvido por Versionar quando a nova data
-	// de inicio de vigencia nao e posterior a vigencia da estrutura sendo
-	// substituida -- evita gravar um intervalo de datas invertido no historico.
-	ErrVigenciaAnteriorAAtual = errors.New("a nova vigencia deve comecar depois da vigencia atual")
 	// ErrJaPossuiEstruturaAtiva mapeia a violacao do indice unico parcial
 	// uk_estrutura_ativa_por_pa -- o produto ja tem uma versao ativa, use
 	// Versionar em vez de Criar.
 	ErrJaPossuiEstruturaAtiva = errors.New("este produto ja possui uma estrutura ativa, use versionar")
-	// ErrStatusInvalidoParaAcao cobre tentar versionar uma estrutura que nao
-	// e mais a ativa (ja foi superada por uma versao posterior).
-	ErrStatusInvalidoParaAcao = errors.New("esta estrutura nao esta ativa e nao pode ser versionada")
 	ErrNaoEncontrado          = errors.New("estrutura de produto nao encontrada")
 )
 

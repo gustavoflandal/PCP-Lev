@@ -1,6 +1,7 @@
 import { CartaoIndicador } from '@/componentes/paineis/CartaoIndicador';
 import { GraficoBarras, GraficoBarrasHorizontais, GraficoLinha } from '@/componentes/paineis/Grafico';
 import { GradeGraficos, GradeIndicadores, PaginaPainel } from '@/componentes/paineis/PaginaPainel';
+import { t } from '@/i18n';
 import { formatarMes, rotuloSituacaoNota } from '@/lib/paineis';
 import { PERMISSOES, usePode } from '@/lib/permissoes';
 import { obterPainelEstoque } from '@/servicos/paineis';
@@ -18,8 +19,8 @@ export function PainelEstoque() {
 
   return (
     <PaginaPainel<DadosEstoque>
-      titulo="Painel de recebimento e estoque"
-      descricao="Entradas por nota fiscal, itens críticos e validade dos lotes."
+      titulo={t('Painel de recebimento e estoque')}
+      descricao={t('Entradas por nota fiscal, itens críticos e validade dos lotes.')}
       setor="estoque"
       buscar={obterPainelEstoque}
     >
@@ -31,36 +32,36 @@ export function PainelEstoque() {
             <GradeIndicadores>
               {mostraCustos && (
                 <CartaoIndicador
-                  rotulo="Valor em estoque"
+                  rotulo={t('Valor em estoque')}
                   valor={dados?.valor_em_estoque}
                   formato="moeda"
-                  complemento="Pelo custo médio ponderado"
+                  complemento={t('Pelo custo médio ponderado')}
                   carregando={carregando}
                 />
               )}
               <CartaoIndicador
-                rotulo="Itens críticos"
+                rotulo={t('Itens críticos')}
                 valor={dados?.itens_criticos}
                 tom="warning"
                 para={podeVerEstoque ? '/estoque' : undefined}
                 carregando={carregando}
               />
               <CartaoIndicador
-                rotulo="Notas aguardando efetivação"
+                rotulo={t('Notas aguardando efetivação')}
                 valor={dados?.notas_pendentes}
-                complemento="Rascunho ou conferida"
+                complemento={t('Rascunho ou conferida')}
                 para={podeVerNotas ? '/notas-entrada' : undefined}
                 carregando={carregando}
               />
               <CartaoIndicador
-                rotulo="Lotes vencidos"
+                rotulo={t('Lotes vencidos')}
                 valor={dados?.lotes_vencidos}
                 tom="pending"
                 para={podeVerEstoque ? '/lotes' : undefined}
                 carregando={carregando}
               />
               <CartaoIndicador
-                rotulo="Lotes vencendo em 30 dias"
+                rotulo={t('Lotes vencendo em 30 dias')}
                 valor={dados?.lotes_a_vencer_30}
                 tom="warning"
                 para={podeVerEstoque ? '/lotes' : undefined}
@@ -71,36 +72,36 @@ export function PainelEstoque() {
             <GradeGraficos>
               <GraficoLinha
                 area
-                titulo="Entradas por mês"
-                series={[{ nome: 'Valor efetivado', pontos: dados?.entradas_por_mes ?? [] }]}
+                titulo={t('Entradas por mês')}
+                series={[{ nome: t('Valor efetivado'), pontos: dados?.entradas_por_mes ?? [] }]}
                 formato="moeda"
                 formatarRotulo={formatarMes}
-                rotuloCategoria="Mês"
-                vazio="Nenhuma nota fiscal efetivada no período."
+                rotuloCategoria={t('Mês')}
+                vazio={t('Nenhuma nota fiscal efetivada no período.')}
                 carregando={carregando}
               />
               <GraficoBarras
-                titulo="Notas por situação"
-                series={[{ nome: 'Notas', pontos: dados?.notas_por_situacao ?? [] }]}
+                titulo={t('Notas por situação')}
+                series={[{ nome: t('Notas'), pontos: dados?.notas_por_situacao ?? [] }]}
                 formatarRotulo={rotuloSituacaoNota}
-                rotuloCategoria="Situação"
-                vazio="Nenhuma nota fiscal de entrada lançada no período."
+                rotuloCategoria={t('Situação')}
+                vazio={t('Nenhuma nota fiscal de entrada lançada no período.')}
                 carregando={carregando}
               />
               <GraficoBarras
-                titulo="Lotes por faixa de vencimento"
-                series={[{ nome: 'Lotes', pontos: dados?.lotes_por_vencimento ?? [] }]}
-                rotuloCategoria="Vencimento"
-                vazio="Nenhum lote com validade em estoque."
+                titulo={t('Lotes por faixa de vencimento')}
+                series={[{ nome: t('Lotes'), pontos: dados?.lotes_por_vencimento ?? [] }]}
+                rotuloCategoria={t('Vencimento')}
+                vazio={t('Nenhum lote com validade em estoque.')}
                 carregando={carregando}
               />
               {mostraCustos && (
                 <GraficoBarrasHorizontais
-                  titulo="Itens com maior valor em estoque"
-                  series={[{ nome: 'Valor em estoque', pontos: dados?.top_valor_em_estoque ?? [] }]}
+                  titulo={t('Itens com maior valor em estoque')}
+                  series={[{ nome: t('Valor em estoque'), pontos: dados?.top_valor_em_estoque ?? [] }]}
                   formato="moeda"
-                  rotuloCategoria="Item"
-                  vazio="Nenhum item com saldo em estoque."
+                  rotuloCategoria={t('Item')}
+                  vazio={t('Nenhum item com saldo em estoque.')}
                   carregando={carregando}
                 />
               )}

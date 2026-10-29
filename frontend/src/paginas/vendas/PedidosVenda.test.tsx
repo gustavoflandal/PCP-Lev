@@ -1,7 +1,8 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { PREFERENCIAS_PADRAO, usePreferencias } from '@/store/preferencias';
 import { useToasts } from '@/componentes/ui/Toast';
 import { entrarComoPerfil, instalarServidorFalso, renderizarComProvedores, type ServidorFalso } from '@/testes/utilitarios';
 import { DetalhePedidoVenda } from './DetalhePedidoVenda';
@@ -81,6 +82,24 @@ describe('Pedidos de venda', () => {
     expect(screen.getByRole('button', { name: 'Novo pedido de venda' })).toBeInTheDocument();
 
     expect(servidor.requisicoes[0].params).toMatchObject({ ordenar_por: 'data_entrega_prometida' });
+  });
+
+  describe('em espanhol', () => {
+    afterEach(() => usePreferencias.getState().aplicar(PREFERENCIAS_PADRAO));
+
+    it('traduz titulo, colunas, situacao e botao', async () => {
+      usePreferencias.getState().aplicar({ ...PREFERENCIAS_PADRAO, idioma: 'es' });
+      servidor.responder([{ metodo: 'get', url: '/pedidos-venda', status: 200, corpo: pagina([pedidoAtrasado]) }]);
+
+      renderizarComProvedores(<PedidosVenda />);
+
+      const tabela = await screen.findByRole('table', { name: 'Pedidos de venta' });
+      await within(tabela).findByText('PV-001');
+      expect(within(tabela).getByText('Entrega prometida')).toBeInTheDocument();
+      expect(within(tabela).getByText('En producción')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Nuevo pedido de venta' })).toBeInTheDocument();
+      expect(screen.getByLabelText('Estado')).toBeInTheDocument();
+    });
   });
 
   it('filtra por situacao', async () => {

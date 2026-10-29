@@ -1,25 +1,29 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { Botao } from '@/componentes/ui/Botao';
 import { Campo } from '@/componentes/ui/Campo';
 import { icones } from '@/componentes/ui/icones';
+import { t } from '@/i18n';
 import { separarErro } from '@/lib/errosDeFormulario';
 import { trocarSenha } from '@/servicos/autenticacaoServico';
 import { useAutenticacao } from '@/store/autenticacao';
 
-const esquema = z
-  .object({
-    senha_atual: z.string().min(1, 'Informe a senha atual'),
-    nova_senha: z.string().min(10, 'A nova senha deve ter ao menos 10 caracteres'),
-    confirmacao: z.string(),
-  })
-  .refine((d) => d.nova_senha === d.confirmacao, { path: ['confirmacao'], message: 'Repita exatamente a nova senha' })
-  .refine((d) => d.nova_senha !== d.senha_atual, { path: ['nova_senha'], message: 'Escolha uma senha diferente da atual' });
+// Funcao (nao constante): as mensagens saem no idioma vigente na renderizacao.
+const criarEsquema = () =>
+  z
+    .object({
+      senha_atual: z.string().min(1, t('Informe a senha atual')),
+      nova_senha: z.string().min(10, t('A nova senha deve ter ao menos 10 caracteres')),
+      confirmacao: z.string(),
+    })
+    .refine((d) => d.nova_senha === d.confirmacao, { path: ['confirmacao'], message: t('Repita exatamente a nova senha') })
+    .refine((d) => d.nova_senha !== d.senha_atual, { path: ['nova_senha'], message: t('Escolha uma senha diferente da atual') });
 
-type Formulario = z.infer<typeof esquema>;
+type Formulario = z.infer<ReturnType<typeof criarEsquema>>;
 
 /**
  * Troca da propria senha. Fora do Shell de proposito: com a troca
@@ -36,6 +40,7 @@ export function TrocarSenha() {
   const navegar = useNavigate();
   const obrigatoria = usuario?.deve_trocar_senha ?? false;
 
+  const esquema = useMemo(criarEsquema, []);
   const {
     register,
     handleSubmit,
@@ -58,29 +63,29 @@ export function TrocarSenha() {
     },
   });
 
-  const erro = troca.error ? (separarErro(troca.error).geral ?? 'Não foi possível trocar a senha.') : null;
+  const erro = troca.error ? (separarErro(troca.error).geral ?? t('Não foi possível trocar a senha.')) : null;
   const AlertaIcone = icones['alert-triangle'];
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-surface-base p-6">
       <div className="w-full max-w-[420px]">
         <header className="mb-6">
-          <h1 className="text-title text-texto-primary">{obrigatoria ? 'Crie a sua senha' : 'Alterar senha'}</h1>
+          <h1 className="text-title text-texto-primary">{obrigatoria ? t('Crie a sua senha') : t('Alterar senha')}</h1>
           <p className="text-body text-texto-secondary">
             {obrigatoria
-              ? `Olá, ${usuario?.nome ?? ''}. A senha que você recebeu é temporária: escolha uma senha só sua para continuar.`
-              : 'Informe a senha atual e escolha a nova.'}
+              ? t('Olá, {nome}. A senha que você recebeu é temporária: escolha uma senha só sua para continuar.', { nome: usuario?.nome ?? '' })
+              : t('Informe a senha atual e escolha a nova.')}
           </p>
         </header>
 
         <form
           noValidate
-          aria-label="Trocar senha"
+          aria-label={t('Trocar senha')}
           onSubmit={handleSubmit((dados) => troca.mutate(dados))}
           className="flex flex-col gap-4 rounded-cartao border border-borda-subtle bg-surface-raised p-6"
         >
           <Campo
-            rotulo={obrigatoria ? 'Senha temporária' : 'Senha atual'}
+            rotulo={obrigatoria ? t('Senha temporária') : t('Senha atual')}
             type="password"
             autoComplete="current-password"
             autoFocus
@@ -88,15 +93,15 @@ export function TrocarSenha() {
             {...register('senha_atual')}
           />
           <Campo
-            rotulo="Nova senha"
+            rotulo={t('Nova senha')}
             type="password"
             autoComplete="new-password"
-            ajuda="Ao menos 10 caracteres, sem o seu login e fora das senhas óbvias (1234567890, senha12345…)."
+            ajuda={t('Ao menos 10 caracteres, sem o seu login e fora das senhas óbvias (1234567890, senha12345…).')}
             erro={errors.nova_senha?.message}
             {...register('nova_senha')}
           />
           <Campo
-            rotulo="Repita a nova senha"
+            rotulo={t('Repita a nova senha')}
             type="password"
             autoComplete="new-password"
             erro={errors.confirmacao?.message}
@@ -116,15 +121,15 @@ export function TrocarSenha() {
           <div className="flex justify-end gap-2">
             {obrigatoria ? (
               <Botao type="button" variante="secundaria" icone="log-out" onClick={() => sair()}>
-                Sair
+                {t('Sair')}
               </Botao>
             ) : (
               <Botao type="button" variante="secundaria" onClick={() => navegar(-1)}>
-                Cancelar
+                {t('Cancelar')}
               </Botao>
             )}
-            <Botao type="submit" icone="save" ocupado={troca.isPending} rotuloOcupado="Salvando…">
-              Salvar nova senha
+            <Botao type="submit" icone="save" ocupado={troca.isPending} rotuloOcupado={t('Salvando…')}>
+              {t('Salvar nova senha')}
             </Botao>
           </div>
         </form>

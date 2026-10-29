@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { PREFERENCIAS_PADRAO, usePreferencias, type Densidade, type Preferencias, type TamanhoFonte, type Tema } from './preferencias';
+import { PREFERENCIAS_PADRAO, usePreferencias, type Densidade, type Idioma, type Preferencias, type TamanhoFonte, type Tema } from './preferencias';
 
 /** Codigo do perfil (perfis sao editaveis -- ver lib/permissoes.ts). */
 export type Perfil = string;
@@ -19,6 +19,8 @@ export interface UsuarioSessao {
   alto_contraste: boolean;
   densidade: Densidade;
   tamanho_fonte: TamanhoFonte;
+  /** Ausente em backend antigo: cai no portugues. */
+  idioma?: Idioma;
 }
 
 /** Contrato de POST /auth/login (doc 3). */
@@ -110,6 +112,7 @@ function preferenciasDoUsuario(usuario: UsuarioSessao): Preferencias {
     alto_contraste: usuario.alto_contraste,
     densidade: usuario.densidade,
     tamanho_fonte: usuario.tamanho_fonte,
+    idioma: usuario.idioma === 'es' ? 'es' : 'pt-BR',
   };
 }
 

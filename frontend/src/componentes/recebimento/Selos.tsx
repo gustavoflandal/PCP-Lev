@@ -1,5 +1,6 @@
 import { Badge, type TomBadge } from '@/componentes/ui/Badge';
 import type { NomeIcone } from '@/componentes/ui/icones';
+import { marcar, t, td } from '@/i18n';
 import { DIAS_ALERTA_VALIDADE, diasAteVencer } from '@/lib/validade';
 import type { StatusNota } from '@/tipos/notasEntrada';
 
@@ -9,18 +10,18 @@ import type { StatusNota } from '@/tipos/notasEntrada';
  * cancelada e estornada sao historico, neutras.
  */
 const TOM_STATUS: Record<StatusNota, { tom: TomBadge; icone: NomeIcone; rotulo: string }> = {
-  Rascunho: { tom: 'neutral', icone: 'circle', rotulo: 'Rascunho' },
-  Conferida: { tom: 'blocked', icone: 'shield-check', rotulo: 'Conferida · aguardando efetivação' },
-  Efetivada: { tom: 'done', icone: 'check-circle-2', rotulo: 'Efetivada' },
-  Cancelada: { tom: 'neutral', icone: 'ban', rotulo: 'Cancelada' },
-  Estornada: { tom: 'neutral', icone: 'undo-2', rotulo: 'Estornada' },
+  Rascunho: { tom: 'neutral', icone: 'circle', rotulo: marcar('Rascunho') },
+  Conferida: { tom: 'blocked', icone: 'shield-check', rotulo: marcar('Conferida · aguardando efetivação') },
+  Efetivada: { tom: 'done', icone: 'check-circle-2', rotulo: marcar('Efetivada') },
+  Cancelada: { tom: 'neutral', icone: 'ban', rotulo: marcar('Cancelada') },
+  Estornada: { tom: 'neutral', icone: 'undo-2', rotulo: marcar('Estornada') },
 };
 
 export function SeloStatusNota({ status }: { status: StatusNota }) {
-  const t = TOM_STATUS[status] ?? TOM_STATUS.Rascunho;
+  const selo = TOM_STATUS[status] ?? TOM_STATUS.Rascunho;
   return (
-    <Badge tom={t.tom} icone={t.icone}>
-      {t.rotulo}
+    <Badge tom={selo.tom} icone={selo.icone}>
+      {td(selo.rotulo)}
     </Badge>
   );
 }
@@ -33,7 +34,7 @@ export function SeloValidadeLote({ validade, vencido }: { validade?: string | nu
   if (!validade) {
     return (
       <Badge tom="neutral" icone="circle">
-        Sem validade
+        {t('Sem validade')}
       </Badge>
     );
   }
@@ -41,20 +42,20 @@ export function SeloValidadeLote({ validade, vencido }: { validade?: string | nu
   if (vencido || dias < 0) {
     return (
       <Badge tom="pending" icone="alert-triangle">
-        Vencido
+        {t('Vencido')}
       </Badge>
     );
   }
   if (dias <= DIAS_ALERTA_VALIDADE) {
     return (
       <Badge tom="warning" icone="calendar-clock">
-        {dias === 0 ? 'Vence hoje' : dias === 1 ? 'Vence em 1 dia' : `Vence em ${dias} dias`}
+        {dias === 0 ? t('Vence hoje') : dias === 1 ? t('Vence em 1 dia') : t('Vence em {n} dias', { n: dias })}
       </Badge>
     );
   }
   return (
     <Badge tom="done" icone="check-circle-2">
-      Válido
+      {t('Válido')}
     </Badge>
   );
 }

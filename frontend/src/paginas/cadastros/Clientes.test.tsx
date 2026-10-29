@@ -1,8 +1,9 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { useToasts } from '@/componentes/ui/Toast';
 import { useAutenticacao } from '@/store/autenticacao';
+import { PREFERENCIAS_PADRAO, usePreferencias } from '@/store/preferencias';
 import {
   entrarComoPerfil,
   instalarServidorFalso,
@@ -270,3 +271,44 @@ function anexoDe(entidade: string, entidadeId: number, categoria: string, titulo
     url: '/api/v1/arquivos/uuid-5/conteudo?exp=1&sig=x',
   };
 }
+
+describe('Clientes (espanhol)', () => {
+  beforeEach(() => {
+    sessionStorage.clear();
+    useToasts.setState({ itens: [] });
+    useAutenticacao.getState().sair();
+    entrarComoPerfil('GESTOR');
+    usePreferencias.getState().aplicar({ ...PREFERENCIAS_PADRAO, idioma: 'es' });
+  });
+  afterEach(() => {
+    usePreferencias.getState().aplicar({ ...PREFERENCIAS_PADRAO, idioma: 'pt-BR' });
+  });
+
+  it('traduz titulo, cabecalhos, tipo e acoes; preserva os dados do banco', async () => {
+    const servidor = instalarServidorFalso();
+    servidor.responder([{ metodo: 'get', url: '/clientes', status: 200, corpo: paginaCom([cliente]) }]);
+
+    renderizarComProvedores(<Clientes />);
+
+    expect(await screen.findByText('Departamento de Estradas de Rodagem')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Clientes' })).toBeInTheDocument();
+    expect(screen.getByText('Razón social')).toBeInTheDocument();
+    expect(within(screen.getByRole('table')).getByText('Organismo público')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Nuevo cliente' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Editar Departamento de Estradas de Rodagem' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Inactivar Departamento de Estradas de Rodagem' })).toBeInTheDocument();
+    expect(screen.queryByText('Razão social')).not.toBeInTheDocument();
+  });
+
+  it('as mensagens de validacao do formulario saem em espanhol', async () => {
+    const servidor = instalarServidorFalso();
+    servidor.responder([{ metodo: 'get', url: '/clientes', status: 200, corpo: paginaCom([]) }]);
+    renderizarComProvedores(<Clientes />);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Nuevo cliente' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Guardar' }));
+
+    expect(await screen.findByText('Seleccione el tipo de cliente')).toBeInTheDocument();
+    expect(screen.getByText('Ingrese el CNPJ')).toBeInTheDocument();
+  });
+});

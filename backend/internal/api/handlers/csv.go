@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/gustavoflandal/pcp-lev/backend/internal/platform/i18n"
 	"github.com/labstack/echo/v4"
 )
 
@@ -39,7 +40,7 @@ func responderCSV(c echo.Context, nomeArquivo string, cabecalho []string, linhas
 	escritor := csv.NewWriter(c.Response())
 	escritor.Comma = ';'
 	escritor.UseCRLF = true
-	if err := escritor.Write(cabecalho); err != nil {
+	if err := escritor.Write(cabecalhoTraduzido(c, cabecalho)); err != nil {
 		slog.Error("erro ao escrever relatorio CSV", "arquivo", nomeArquivo, "erro", err)
 		return nil
 	}
@@ -49,4 +50,13 @@ func responderCSV(c echo.Context, nomeArquivo string, cabecalho []string, linhas
 		slog.Error("erro ao escrever relatorio CSV", "arquivo", nomeArquivo, "erro", err)
 	}
 	return nil
+}
+
+// cabecalhoTraduzido traduz os nomes das colunas para o idioma da requisicao.
+func cabecalhoTraduzido(c echo.Context, cabecalho []string) []string {
+	traduzido := make([]string, len(cabecalho))
+	for i, coluna := range cabecalho {
+		traduzido[i] = i18n.T(c, coluna)
+	}
+	return traduzido
 }

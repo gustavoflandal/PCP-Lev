@@ -1,4 +1,5 @@
 import type { Ordem } from './cadastros';
+import { marcar } from '@/i18n';
 
 /** Recursos de compras. Tambem serve de chave de cache no TanStack Query. */
 export type RecursoCompras = 'cotacoes' | 'pedidos-compra';
@@ -23,13 +24,13 @@ export type StatusPedidoCompra =
 
 /** Rotulo de exibicao do status do pedido de compra (acento, sentence case). */
 export const ROTULO_STATUS_PEDIDO_COMPRA: Record<StatusPedidoCompra, string> = {
-  Rascunho: 'Rascunho',
-  Emitido: 'Emitido',
-  Aceito: 'Aceito',
-  'Aguardando Entrega': 'Aguardando entrega',
-  'Recebido Parcial': 'Recebido parcial',
-  Concluido: 'Concluído',
-  Cancelado: 'Cancelado',
+  Rascunho: marcar('Rascunho'),
+  Emitido: marcar('Emitido'),
+  Aceito: marcar('Aceito'),
+  'Aguardando Entrega': marcar('Aguardando entrega'),
+  'Recebido Parcial': marcar('Recebido parcial'),
+  Concluido: marcar('Concluído'),
+  Cancelado: marcar('Cancelado'),
 };
 
 /**

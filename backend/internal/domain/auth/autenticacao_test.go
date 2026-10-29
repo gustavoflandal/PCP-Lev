@@ -191,6 +191,31 @@ func TestAtualizarPreferenciasGravaEDevolveOUsuarioAtualizado(t *testing.T) {
 	assert.Empty(t, atualizado.SenhaHash, "o hash nunca sai do dominio")
 }
 
+func TestAtualizarPreferenciasGravaOIdiomaEMantemQuandoVazio(t *testing.T) {
+	ctx := context.Background()
+	pool := testsupport.BancoMigrado(t)
+	repo := repository.NovoUsuarioRepositorio(pool)
+	servico := auth.NovoServicoAutenticacao(repo, auth.NovoServicoToken(segredoTeste, time.Hour))
+	admin, err := repo.BuscarPorUsername(ctx, "admin")
+	require.NoError(t, err)
+	assert.Equal(t, "pt-BR", admin.Idioma, "o padrao e portugues")
+	base := usuario.Preferencias{Tema: usuario.TemaClaro, Densidade: usuario.DensidadeCompacta, TamanhoFonte: usuario.FontePadrao}
+
+	base.Idioma = "es"
+	atualizado, err := servico.AtualizarPreferencias(ctx, admin.ID, base)
+	require.NoError(t, err)
+	assert.Equal(t, "es", atualizado.Idioma)
+
+	base.Idioma = ""
+	atualizado, err = servico.AtualizarPreferencias(ctx, admin.ID, base)
+	require.NoError(t, err)
+	assert.Equal(t, "es", atualizado.Idioma, "cliente antigo, sem idioma, nao o zera")
+
+	base.Idioma = "fr"
+	_, err = servico.AtualizarPreferencias(ctx, admin.ID, base)
+	require.ErrorIs(t, err, usuario.ErrPreferenciaInvalida)
+}
+
 func TestAtualizarPreferenciasRejeitaValorForaDoConjunto(t *testing.T) {
 	ctx := context.Background()
 	servico := servicoComBanco(t)
