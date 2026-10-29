@@ -1,11 +1,12 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import type { ReactNode } from 'react';
+import { Children, type ReactNode } from 'react';
 import { Botao } from '@/componentes/ui/Botao';
 import { icones } from '@/componentes/ui/icones';
 import { useControlesPainel } from '@/hooks/useControlesPainel';
 import { useTelaModoTV } from '@/hooks/useTelaModoTV';
 import { t } from '@/i18n';
 import { cn } from '@/lib/cn';
+import { useModoTV } from '@/store/modoTV';
 import { ErroApi } from '@/servicos/api';
 import { BarraControles } from './BarraControles';
 
@@ -53,7 +54,14 @@ export function PaginaPainel<T>({ titulo, descricao, setor, buscar, children }: 
   const semDados = consulta.data === undefined;
 
   return (
-    <div className={cn('mx-auto flex flex-col gap-4', controles.tv ? 'max-w-none' : 'max-w-[1400px]')}>
+    <div
+      className={cn(
+        'mx-auto flex flex-col gap-4',
+        // Modo TV: ocupa a altura da tela (o conteudo reparte o espaco entre os
+        // graficos); fora dele, a pagina cresce com o conteudo.
+        controles.tv ? 'h-full min-h-0 max-w-none gap-3' : 'max-w-[1400px]',
+      )}
+    >
       <div>
         <h1 className="text-title text-texto-primary">{titulo}</h1>
         {!controles.tv && <p className="text-body text-texto-secondary">{descricao}</p>}
@@ -104,7 +112,16 @@ export function GradeIndicadores({ children }: { children: ReactNode }) {
   return <div className="grid grid-cols-[repeat(auto-fit,minmax(13rem,1fr))] gap-4">{children}</div>;
 }
 
-/** Grade dos graficos: dois por linha a partir de telas medias. */
+/**
+ * Grade dos graficos: dois por linha a partir de telas medias. No modo TV,
+ * as colunas se ajustam a quantidade de graficos e as linhas dividem a altura
+ * que sobra na tela, para que todos aparecam sem rolagem.
+ */
 export function GradeGraficos({ children }: { children: ReactNode }) {
-  return <div className="grid gap-4 lg:grid-cols-2">{children}</div>;
+  const modoTV = useModoTV((estado) => estado.ativo);
+  const quantidade = Children.toArray(children).length;
+  if (!modoTV) return <div className="grid gap-4 lg:grid-cols-2">{children}</div>;
+
+  const colunas = quantidade === 3 || quantidade >= 5 ? 'grid-cols-3' : 'grid-cols-2';
+  return <div className={cn('grid min-h-0 flex-1 auto-rows-[minmax(9rem,1fr)] gap-3', colunas)}>{children}</div>;
 }

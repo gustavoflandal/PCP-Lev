@@ -150,5 +150,8 @@
    de data-fonte de proposito: na TV, prevalece sobre a preferencia do
    usuario. Escala tudo que usa `rem`, inclusive a altura dos graficos. */
 :root[data-modo-tv='true'] {
-  font-size: 137.5%;
+  /* Proporcional a altura da tela: 137,5% em 1080p (leitura a distancia) e
+     100% em 768p ou menos -- fixo em 137,5%, o painel nao caberia nas telas
+     menores e os graficos ficariam achatados. */
+  font-size: clamp(100%, calc(100% + (100vh - 768px) * 0.12), 137.5%);
 }

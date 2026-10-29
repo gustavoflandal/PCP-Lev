@@ -1226,7 +1226,10 @@ En la parte superior de cada panel:
   (predeterminado: 1 minuto). "Actualizado a las …" muestra la última
   lectura.
 - **Modo TV**: pantalla completa, sin menú, con letra más grande, para dejar el
-  panel en un televisor de la planta. Mientras esté activado y la pantalla
+  panel en un televisor de la planta. Los indicadores y **todos los gráficos se
+  ajustan al tamaño de la pantalla**, sin desplazamiento: los gráficos se
+  reparten la altura disponible y el tamaño de la letra acompaña la altura del
+  monitor (mayor en Full HD, normal en pantallas menores). Mientras esté activado y la pantalla
   visible, la sesión no se cierra por inactividad. **Esc** o **Salir del modo
   TV** vuelven a lo normal.
 

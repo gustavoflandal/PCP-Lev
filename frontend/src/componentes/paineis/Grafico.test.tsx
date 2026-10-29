@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { PREFERENCIAS_PADRAO, usePreferencias } from '@/store/preferencias';
 import { formatarMes } from '@/lib/paineis';
+import { useModoTV } from '@/store/modoTV';
 import { GraficoBarras, GraficoBarrasHorizontais, GraficoLinha } from './Grafico';
 
 const meses = [
@@ -223,5 +224,34 @@ describe('Grafico em espanhol', () => {
     expect(screen.getByRole('rowheader', { name: 'Hasta 30 días' })).toBeInTheDocument();
     expect(formatarMes('2026-10')).toBe('oct/26');
     expect(formatarMes('2026-01')).toBe('ene/26');
+  });
+});
+
+describe('Grafico no modo TV', () => {
+  afterEach(() => useModoTV.setState({ ativo: false }));
+
+  const grafico = (
+    <GraficoBarras
+      titulo="OPs por etapa"
+      series={[{ nome: 'OPs', pontos: [{ rotulo: 'Montagem', valor: 3 }] }]}
+      rotuloCategoria="Etapa"
+      vazio="Nada."
+    />
+  );
+
+  it('ocupa a celula da grade e nao oferece "Ver dados"', () => {
+    useModoTV.setState({ ativo: true });
+    const { container } = render(grafico);
+
+    expect(screen.getByRole('region', { name: 'OPs por etapa' })).toHaveClass('h-full', 'min-h-0');
+    expect(container.querySelector('[data-grafico-desenho]')).toHaveClass('flex-1');
+    expect(screen.queryByRole('button', { name: 'Ver dados' })).not.toBeInTheDocument();
+  });
+
+  it('fora do modo TV mantem a altura fixa e o "Ver dados"', () => {
+    const { container } = render(grafico);
+
+    expect(screen.getByRole('button', { name: 'Ver dados' })).toBeInTheDocument();
+    expect((container.querySelector('[data-grafico-desenho]') as HTMLElement).style.height).toBe('16rem');
   });
 });

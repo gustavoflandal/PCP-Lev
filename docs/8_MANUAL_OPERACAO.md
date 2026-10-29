@@ -1165,7 +1165,10 @@ No alto de cada painel:
 - **Atualização automática**: desligada, 30 s, 1, 2, 5 ou 10 minutos
   (padrão: 1 minuto). "Atualizado às …" mostra a última leitura.
 - **Modo TV**: tela cheia, sem menu, com letra maior — para deixar o painel
-  numa TV do chão de fábrica. Enquanto ele estiver ligado e a tela visível, a
+  numa TV do chão de fábrica. Os indicadores e **todos os gráficos se ajustam
+  ao tamanho da tela**, sem rolagem: os gráficos dividem a altura que sobra, e
+  o tamanho da letra acompanha a altura do monitor (maior em Full HD, normal
+  em telas menores). Enquanto ele estiver ligado e a tela visível, a
   sessão não cai por inatividade. **Esc** ou **Sair do modo TV** voltam ao
   normal.
 
