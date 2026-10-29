@@ -117,7 +117,7 @@ export function NavegacaoLateral() {
   return (
     <nav
       aria-label={t('Módulos do sistema')}
-      className="w-[220px] shrink-0 border-r border-borda-subtle bg-surface-raised p-3 print:hidden"
+      className="w-[220px] shrink-0 overflow-y-auto overscroll-contain border-r border-borda-subtle bg-surface-raised p-3 print:hidden"
     >
       <ul className="flex flex-col gap-1">
         <li>
