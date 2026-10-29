@@ -45,3 +45,10 @@ Os dicionários dos 8 grupos foram escritos por agentes em paralelo; depois, uni
 ## Como rodar
 
 `./publicar.ps1` reconstrói as imagens e aplica a migration 025 na subida. A escolha do idioma é por usuário, em *Preferências*.
+
+## Pendências pós-merge
+
+- **Republicar o Docker.** Os containers de desenvolvimento foram publicados com alterações ainda não commitadas e mostram `+local` na versão do login. Depois do merge, rode `./publicar.ps1` de novo para a tela mostrar o commit real. A migration `025` é aplicada sozinha na subida.
+- **Suíte completa de `api/handlers`.** Leva mais de 20 minutos (cada teste migra um schema novo) e não foi rodada inteira nesta entrega. Rode-a com um banco de testes **sem** a massa demo da migration 023, que hoje faz falharem os testes de Clientes, Centros, Produtos e 4 de Produção/Nota de entrada (`TestNotaEntradaRascunhoConferenciaEfetivacaoEEstorno`, `TestNotaEntradaDivergenciaDePrecoBloqueiaOuExigeAprovacao`, `TestProducaoFluxoCompleto`, `TestProducaoCancelarOPDevolveReservaEPedidoVoltaAAberto`). Dois deles foram confirmados como efeito da massa demo; os outros dois não foram inspecionados.
+- **Fuso nos testes do frontend.** `lib/formato.test.ts` (2 testes de `formatarDataHora`) assume ambiente em UTC e falha em máquinas com outro fuso.
+- **Banco `pcp_db_test` no container de desenvolvimento.** Foi criado dentro de `pcp_postgres` só para rodar os testes do backend. Para removê-lo: `docker exec pcp_postgres psql -U pcp_user -d postgres -c "DROP DATABASE pcp_db_test"`. Para usá-lo nos testes: `PCP_TEST_DSN="postgres://pcp_user:senha_segura@localhost:5432/pcp_db_test?sslmode=disable" go test ./...` (dentro de `backend/`).
