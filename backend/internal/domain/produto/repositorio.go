@@ -16,4 +16,14 @@ type Repositorio interface {
 	// PossuiVendas informa se ha itens de pedido de venda referenciando o
 	// produto — condicao que bloqueia a exclusao (RF1.1).
 	PossuiVendas(ctx context.Context, id int64) (bool, error)
+
+	// CriarOuReativarEspelho cria (ou reativa, se ja existia inativo) o registro
+	// espelho em partes_pecas para um produto com pode_ser_componente=true.
+	CriarOuReativarEspelho(ctx context.Context, p *ProdutoAcabado, autor string) error
+	// SincronizarEspelho atualiza codigo, descricao e unidade_medida do espelho.
+	SincronizarEspelho(ctx context.Context, p *ProdutoAcabado, autor string) error
+	// DesativarEspelho desativa (soft delete) a parte/peca espelho do produto.
+	DesativarEspelho(ctx context.Context, produtoID int64, autor string) error
+	// EspelhoEmUsoBOM informa se o espelho esta referenciado em alguma BOM ativa.
+	EspelhoEmUsoBOM(ctx context.Context, produtoID int64) (bool, error)
 }

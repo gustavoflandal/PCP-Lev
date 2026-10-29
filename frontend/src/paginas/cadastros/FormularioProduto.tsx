@@ -25,6 +25,7 @@ const esquema = z.object({
   controla_validade: z.boolean().default(false),
   item_critico: z.boolean().default(false),
   exige_certificado: z.boolean().default(false),
+  pode_ser_componente: z.boolean().default(false),
 });
 
 type Formulario = z.input<typeof esquema>;
@@ -43,6 +44,8 @@ export interface CorpoProduto {
   controla_validade: boolean;
   item_critico: boolean;
   exige_certificado: boolean;
+  /** Produto pode compor a BOM de outro produto acabado; o sistema mantém um espelho em partes/peças. */
+  pode_ser_componente: boolean;
 }
 
 export interface FormularioProdutoProps {
@@ -90,6 +93,7 @@ export function FormularioProduto({
       controla_validade: inicial?.controla_validade ?? false,
       item_critico: inicial?.item_critico ?? false,
       exige_certificado: inicial?.exige_certificado ?? false,
+      pode_ser_componente: inicial?.pode_ser_componente ?? false,
     },
   });
 
@@ -115,6 +119,7 @@ export function FormularioProduto({
           controla_validade: (valores.controla_lote ?? false) && (valores.controla_validade ?? false),
           item_critico: valores.item_critico ?? false,
           exige_certificado: valores.exige_certificado ?? false,
+          pode_ser_componente: valores.pode_ser_componente ?? false,
         }),
       )}
       noValidate
@@ -202,6 +207,11 @@ export function FormularioProduto({
             rotulo="Exige certificado no recebimento"
             ajuda="A entrada só é concluída com o certificado anexado."
             {...register('exige_certificado')}
+          />
+          <CaixaMarcacao
+            rotulo="Pode ser componente de outro produto"
+            ajuda="O produto aparecerá na lista de partes/peças e poderá compor a estrutura de outro produto acabado."
+            {...register('pode_ser_componente')}
           />
         </div>
       </fieldset>

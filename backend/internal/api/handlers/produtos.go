@@ -19,6 +19,8 @@ var errosProduto = mapaDeErros{
 	{produto.ErrNaoEncontrado, http.StatusNotFound, httpx.CodigoNaoEncontrado},
 	{produto.ErrCodigoDuplicado, http.StatusConflict, httpx.CodigoConflito},
 	{produto.ErrPossuiVendas, http.StatusConflict, httpx.CodigoConflito},
+	{produto.ErrUsadoNaBOM, http.StatusConflict, httpx.CodigoConflito},
+	{produto.ErrCodigoEspelhoDuplicado, http.StatusConflict, httpx.CodigoConflito},
 	{produto.ErrCodigoObrigatorio, http.StatusBadRequest, httpx.CodigoErroValidacao},
 	{produto.ErrDescricaoCurta, http.StatusBadRequest, httpx.CodigoErroValidacao},
 	{produto.ErrUnidadeObrigatoria, http.StatusBadRequest, httpx.CodigoErroValidacao},
@@ -59,26 +61,28 @@ func (h *ProdutoHandler) Registrar(grupo *echo.Group, autenticacao echo.Middlewa
 
 // produtoRequest e o corpo de POST e PUT.
 type produtoRequest struct {
-	Codigo           string            `json:"codigo" validate:"required,max=50"`
-	Descricao        string            `json:"descricao" validate:"required,min=5,max=255"`
-	UnidadeMedida    string            `json:"unidade_medida" validate:"required,max=20"`
-	PrecoVenda       dinheiro.Dinheiro `json:"preco_venda" validate:"required,gt=0"`
-	LeadTimeProducao int               `json:"lead_time_producao" validate:"required,min=1"`
-	ExigeMetrologia  bool              `json:"exige_metrologia"`
+	Codigo            string            `json:"codigo" validate:"required,max=50"`
+	Descricao         string            `json:"descricao" validate:"required,min=5,max=255"`
+	UnidadeMedida     string            `json:"unidade_medida" validate:"required,max=20"`
+	PrecoVenda        dinheiro.Dinheiro `json:"preco_venda" validate:"required,gt=0"`
+	LeadTimeProducao  int               `json:"lead_time_producao" validate:"required,min=1"`
+	ExigeMetrologia   bool              `json:"exige_metrologia"`
+	PodeSerComponente bool              `json:"pode_ser_componente"`
 	controle.Flags
 	Ativo *bool `json:"ativo"`
 }
 
 func (r produtoRequest) paraDados() produto.Dados {
 	return produto.Dados{
-		Codigo:           r.Codigo,
-		Descricao:        r.Descricao,
-		UnidadeMedida:    r.UnidadeMedida,
-		PrecoVenda:       r.PrecoVenda,
-		LeadTimeProducao: r.LeadTimeProducao,
-		ExigeMetrologia:  r.ExigeMetrologia,
-		Controle:         r.Flags,
-		Ativo:            r.Ativo,
+		Codigo:            r.Codigo,
+		Descricao:         r.Descricao,
+		UnidadeMedida:     r.UnidadeMedida,
+		PrecoVenda:        r.PrecoVenda,
+		LeadTimeProducao:  r.LeadTimeProducao,
+		ExigeMetrologia:   r.ExigeMetrologia,
+		PodeSerComponente: r.PodeSerComponente,
+		Controle:          r.Flags,
+		Ativo:             r.Ativo,
 	}
 }
 
