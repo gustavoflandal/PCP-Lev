@@ -25,6 +25,7 @@ export default defineConfig({
     strictPort: true,
   },
   test: {
+    globalSetup: ['./src/testes/fuso.ts'],
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./src/testes/setup.ts'],

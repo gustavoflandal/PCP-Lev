@@ -45,3 +45,21 @@ Os dicionários dos 8 grupos foram escritos por agentes em paralelo; depois, uni
 ## Como rodar
 
 `./publicar.ps1` reconstrói as imagens e aplica a migration 025 na subida. A escolha do idioma é por usuário, em *Preferências*.
+
+## Pendências pós-merge
+
+- **Republicar o Docker.** Os containers de desenvolvimento foram publicados com alterações ainda não commitadas e mostram `+local` na versão do login. Depois do merge, rode `./publicar.ps1` de novo para a tela mostrar o commit real. A migration `025` é aplicada sozinha na subida.
+- **Banco `pcp_db_test` no container de desenvolvimento.** Foi criado dentro de `pcp_postgres` só para rodar os testes do backend. Para removê-lo: `docker exec pcp_postgres psql -U pcp_user -d postgres -c "DROP DATABASE pcp_db_test"`. Para usá-lo nos testes: `PCP_TEST_DSN="postgres://pcp_user:senha_segura@localhost:5432/pcp_db_test?sslmode=disable" go test ./...` (dentro de `backend/`). A suíte completa leva cerca de 10 minutos.
+
+### Resolvido na branch `fix/testes-massa-demo-e-fuso`
+
+Os apontamentos que antes constavam aqui como pendência foram corrigidos:
+
+| Apontamento | Causa | Correção |
+|---|---|---|
+| 2 testes de `lib/formato.test.ts` | Assumiam fuso UTC e falhavam em outras máquinas | `vitest` passou a fixar `TZ=UTC` (globalSetup `src/testes/fuso.ts`) |
+| Falhas de Clientes, Centros, Produtos e 3 de Produção/Nota de entrada | A migration 023 (massa demo) populava o banco de teste | `testsupport.BancoMigrado` registra a 023 como já aplicada; os testes partem só dos dados iniciais. Em produção a migration continua sendo aplicada normalmente |
+| `TestNotaEntradaRascunhoConferenciaEfetivacaoEEstorno` | A tradução reescreveu a mensagem "2 de 3 series informadas" para "series informadas: 2 de 3" e o teste ainda esperava o texto antigo | Teste atualizado para a mensagem atual |
+| `TestConexaoRecusadaDevolveErroLegivel` (SMTP) | A conexão recusada era detectada pelo texto em inglês "connection refused"; no Windows o erro vem localizado | Detecção por código do sistema (`ECONNREFUSED` / `WSAECONNREFUSED` 10061), mantendo o texto como reserva |
+
+Resultado: frontend com 729 testes passando (106 arquivos) e suíte completa do backend sem falhas (a rodada de verificação reprovava 2 testes, ambos corrigidos acima).

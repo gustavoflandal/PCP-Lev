@@ -127,7 +127,7 @@ func TestNotaEntradaRascunhoConferenciaEfetivacaoEEstorno(t *testing.T) {
 	assert.Equal(t, "Rascunho", nota["status"])
 	erro := c.chamar(t, http.MethodPost, "/api/v1/notas-entrada/"+id+"/conferir", ``, usuario.Perfil("ALMOXARIFE"), http.StatusConflict)["erro"].(map[string]any)
 	assert.Equal(t, handlers.CodigoPendencias, erro["codigo"])
-	assert.Contains(t, fmt.Sprint(erro["detalhes"]), "2 de 3 series")
+	assert.Contains(t, fmt.Sprint(erro["detalhes"]), "series informadas: 2 de 3")
 
 	// Serie fora da mascara tambem e pendencia; corrigida, a nota confere.
 	c.chamar(t, http.MethodPut, "/api/v1/notas-entrada/"+id, c.corpo(t, 101, `{"numero":"SN-0001"},{"numero":"SN-0002"},{"numero":"X-9"}`),
