@@ -3,7 +3,9 @@ import { useEffect, useRef, type ReactNode } from 'react';
 import { t } from '@/i18n';
 import { cn } from '@/lib/cn';
 import { CabecalhoImpressaoBase } from '@/componentes/layout/CabecalhoImpressao';
+import { exportarTabelasCsv } from '@/lib/exportarCsv';
 import { imprimirTela } from '@/lib/impressao';
+import { useToasts } from './Toast';
 import { icones } from './icones';
 
 export interface ModalProps {
@@ -27,6 +29,8 @@ export interface ModalProps {
 export function Modal({ aberto, aoFechar, titulo, descricao, children, rodape, largura = 'padrao' }: ModalProps) {
   const IconeFechar = icones.x;
 const IconeImprimir = icones.printer;
+  const IconeCsv = icones['file-spreadsheet'];
+  const mostrarToast = useToasts((estado) => estado.mostrar);
   const corpoRef = useRef<HTMLDivElement>(null);
   const gatilhoRef = useRef<HTMLElement | null>(null);
 
@@ -83,6 +87,19 @@ const IconeImprimir = icones.printer;
             </div>
 
             <div className="flex shrink-0 items-center gap-1">
+            <button
+              type="button"
+              aria-label={t('Exportar tabelas em CSV')}
+              title={t('Exportar tabelas em CSV')}
+              onClick={() => {
+                if (!exportarTabelasCsv(corpoRef.current ?? document)) {
+                  mostrarToast(t('Não há tabela com dados nesta tela para exportar.'), 'pending');
+                }
+              }}
+              className="rounded-campo p-1 text-texto-secondary hover:bg-surface-sunken print:hidden"
+            >
+              <IconeCsv size={16} aria-hidden="true" />
+            </button>
             <button
               type="button"
               aria-label={t('Imprimir / PDF')}

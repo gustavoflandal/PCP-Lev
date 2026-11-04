@@ -249,6 +249,15 @@ type Repositorio interface {
 	VencimentosDocumentos(ctx context.Context, dias int, entidades []string) ([]VencimentoDocumento, error)
 	// FotosPrincipais devolve o arquivo da foto principal de cada entidade.
 	FotosPrincipais(ctx context.Context, entidade string, ids []int64) (map[int64]string, error)
+	// ContagemMidia conta fotos e documentos (so a versao vigente de cada um)
+	// de cada entidade; entidades sem anexos ficam fora do mapa.
+	ContagemMidia(ctx context.Context, entidade string, ids []int64) (map[int64]ContagemMidia, error)
+}
+
+// ContagemMidia resume quanta midia uma entidade tem.
+type ContagemMidia struct {
+	Fotos      int
+	Documentos int
 }
 
 // Servico reune os casos de uso.
@@ -407,6 +416,11 @@ func (s *Servico) VencimentosDocumentos(ctx context.Context, dias int, entidades
 		return []VencimentoDocumento{}, nil
 	}
 	return s.repo.VencimentosDocumentos(ctx, dias, entidades)
+}
+
+// ContagemMidia devolve quantas fotos e documentos cada entidade possui.
+func (s *Servico) ContagemMidia(ctx context.Context, entidade string, ids []int64) (map[int64]ContagemMidia, error) {
+	return s.repo.ContagemMidia(ctx, entidade, ids)
 }
 
 // MiniaturasPrincipais devolve a URL assinada da miniatura da foto principal

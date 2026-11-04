@@ -72,6 +72,9 @@ export interface ProdutoAcabado extends RegistroCadastro, Partial<FlagsControle>
   estrutura_ativa?: EstruturaResumo;
   /** Miniatura assinada da foto principal (5 min); ausente sem foto. */
   foto_url?: string;
+  /** Quantas fotos e documentos (vigentes) o produto tem; so a lista traz. */
+  qtd_fotos?: number;
+  qtd_documentos?: number;
 }
 
 export interface PartePeca extends RegistroCadastro, Partial<FlagsControle> {
@@ -89,6 +92,9 @@ export interface PartePeca extends RegistroCadastro, Partial<FlagsControle> {
   mascara_serie?: string;
   /** Miniatura assinada da foto principal (5 min); ausente sem foto. */
   foto_url?: string;
+  /** Quantas fotos e documentos (vigentes) a peca tem; so a lista traz. */
+  qtd_fotos?: number;
+  qtd_documentos?: number;
 }
 
 export interface Fornecedor extends RegistroCadastro {

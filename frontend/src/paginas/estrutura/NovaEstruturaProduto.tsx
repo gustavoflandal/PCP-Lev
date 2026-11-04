@@ -42,10 +42,11 @@ const esquema = z.object({
 
 type Formulario = {
   data_vigencia_inicio: string;
-  itens: { parte_peca_id: string; quantidade: string }[];
+  /** `novo`: linha recem-adicionada, ainda com seletor e campo editaveis. */
+  itens: { parte_peca_id: string; quantidade: string; novo?: boolean }[];
 };
 
-const ITEM_VAZIO = { parte_peca_id: '', quantidade: '1' };
+const ITEM_VAZIO = { parte_peca_id: '', quantidade: '1', novo: true };
 
 /** Hoje no formato AAAA-MM-DD, no calendario local (nao em UTC). */
 function hoje(): string {
@@ -72,12 +73,12 @@ export function NovaEstruturaProduto() {
     return <p className="text-body text-estado-pending">{t('Não foi possível carregar o histórico da estrutura.')}</p>;
   }
 
-  // A nova versao nasce como copia da versao de origem (a que a tela de
-  // detalhe estava mostrando; sem indicacao, a mais recente) e o usuario
+  // A nova versao nasce como copia da versao de origem (por padrao a vigente;
+  // sem vigente, a mais recente) e o usuario
   // acrescenta ou retira itens. O que ficar na tela e a nova versao.
   const historico = historicoQuery.data ?? [];
   const maisRecente = historico.reduce<Estrutura | undefined>((a, e) => (!a || e.versao > a.versao ? e : a), undefined);
-  const origem = historico.find((e) => e.id === idBase) ?? maisRecente;
+  const origem = historico.find((e) => e.id === idBase) ?? historico.find((e) => e.ativo) ?? maisRecente;
 
   return <FormularioEstrutura produtoId={id} origem={origem} />;
 }
@@ -89,7 +90,7 @@ function FormularioEstrutura({ produtoId, origem }: { produtoId: number; origem?
   const { opcoes: opcoesPeca } = usePartesPecasAtivas();
 
   const itensIniciais = origem?.itens?.length
-    ? origem.itens.map((i) => ({ parte_peca_id: String(i.parte_peca_id), quantidade: String(i.quantidade) }))
+    ? origem.itens.map((i) => ({ parte_peca_id: String(i.parte_peca_id), quantidade: String(i.quantidade), novo: false }))
     : [ITEM_VAZIO];
 
   const {
@@ -102,6 +103,8 @@ function FormularioEstrutura({ produtoId, origem }: { produtoId: number; origem?
     defaultValues: { data_vigencia_inicio: hoje(), itens: itensIniciais },
   });
   const { fields, append, remove } = useFieldArray({ control, name: 'itens' });
+  const rotuloPeca = new Map(opcoesPeca.map((o) => [o.valor, o.rotulo]));
+  const itensRaiz = errors.itens?.root?.message ?? errors.itens?.message;
 
   const mutacao = useMutation({
     mutationFn: (valores: Formulario) => {
@@ -160,30 +163,76 @@ function FormularioEstrutura({ produtoId, origem }: { produtoId: number; origem?
         <div className="flex flex-col gap-3">
           <h2 className="text-subtitle text-texto-primary">{t('Itens')}</h2>
 
-          {fields.map((campo, indice) => (
-            <div key={campo.id} className="grid gap-3 rounded-campo border border-borda-subtle p-3 md:grid-cols-[2fr_1fr_auto]">
-              <Selecao
-                rotulo={t('Parte/peça')}
-                obrigatorio
-                opcoes={opcoesPeca}
-                placeholder={t('Selecione')}
-                erro={td(errors.itens?.[indice]?.parte_peca_id?.message) || undefined}
-                {...register(`itens.${indice}.parte_peca_id` as const)}
-              />
-              <Campo
-                rotulo={t('Quantidade')}
-                obrigatorio
-                tipoDado="quantidade"
-                erro={td(errors.itens?.[indice]?.quantidade?.message) || undefined}
-                {...register(`itens.${indice}.quantidade` as const)}
-              />
-              {fields.length > 1 && (
-                <Botao variante="fantasma" icone="trash-2" className="self-end" onClick={() => remove(indice)}>
-                  {t('Remover item')}
-                </Botao>
-              )}
+          {fields.length > 0 && (
+            <div className="overflow-x-auto border border-borda-subtle bg-surface-raised">
+              <table className="w-full border-collapse" aria-label={t('Itens')}>
+                <thead>
+                  <tr className="bg-surface-sunken">
+                    <th scope="col" className="border-b border-borda-subtle px-3 py-2 text-left text-label text-texto-secondary">
+                      {t('Parte/peça')}
+                    </th>
+                    <th scope="col" className="w-32 border-b border-borda-subtle px-3 py-2 text-right text-label text-texto-secondary">
+                      {t('Quantidade')}
+                    </th>
+                    <th scope="col" className="w-16 border-b border-borda-subtle px-3 py-2">
+                      <span className="sr-only">{t('Ações')}</span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {fields.map((campo, indice) => {
+                    const erroPeca = td(errors.itens?.[indice]?.parte_peca_id?.message) || undefined;
+                    const erroQuantidade = td(errors.itens?.[indice]?.quantidade?.message) || undefined;
+                    return (
+                      <tr key={campo.id} className="min-h-linha">
+                        <td className="border-b border-borda-subtle px-3 py-2 text-body text-texto-primary">
+                          {campo.novo ? (
+                            <Selecao
+                              rotulo={t('Parte/peça')}
+                              obrigatorio
+                              opcoes={opcoesPeca}
+                              placeholder={t('Selecione')}
+                              erro={erroPeca}
+                              {...register(`itens.${indice}.parte_peca_id` as const)}
+                            />
+                          ) : (
+                            <span>{rotuloPeca.get(campo.parte_peca_id) ?? `#${campo.parte_peca_id}`}</span>
+                          )}
+                        </td>
+                        <td className="border-b border-borda-subtle px-3 py-2 text-right text-body tabular text-texto-primary">
+                          {campo.novo ? (
+                            <Campo
+                              rotulo={t('Quantidade')}
+                              obrigatorio
+                              tipoDado="quantidade"
+                              erro={erroQuantidade}
+                              {...register(`itens.${indice}.quantidade` as const)}
+                            />
+                          ) : (
+                            <span>{campo.quantidade}</span>
+                          )}
+                        </td>
+                        <td className="border-b border-borda-subtle px-3 py-2 text-right">
+                          <Botao
+                            variante="fantasma"
+                            icone="trash-2"
+                            aria-label={t('Remover item')}
+                            title={t('Remover item')}
+                            onClick={() => remove(indice)}
+                          />
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
-          ))}
+          )}
+          {itensRaiz && (
+            <p role="alert" className="text-body text-estado-pending">
+              {td(itensRaiz)}
+            </p>
+          )}
 
           <Botao variante="secundaria" icone="plus" onClick={() => append(ITEM_VAZIO)} className="self-start">
             {t('Adicionar item')}

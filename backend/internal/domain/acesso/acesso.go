@@ -100,6 +100,12 @@ const (
 	ConfigAuditoriaExportar = "configuracoes.auditoria_exportar"
 	ConfigPerfis            = "configuracoes.perfis"
 	ConfigUsuarios          = "configuracoes.usuarios"
+
+	// ImportacaoExecutar: baixar o gabarito e importar cadastros por planilha.
+	ImportacaoExecutar = "importacao.executar"
+
+	// IntegracaoGerenciar: chaves de API e documentacao das APIs do ERP.
+	IntegracaoGerenciar = "integracao.gerenciar"
 )
 
 // Catalogo e a lista completa, na ordem de exibicao da matriz.
@@ -122,6 +128,8 @@ var Catalogo = []string{
 	PaineisCompras, PaineisEstoque, PaineisProducao, PaineisVendas, PaineisQualidade,
 	ConfigEmpresa, ConfigRegional, ConfigNegocio, ConfigIntegracoes, ConfigBanco,
 	ConfigAuditoria, ConfigAuditoriaExportar, ConfigPerfis, ConfigUsuarios,
+	ImportacaoExecutar,
+	IntegracaoGerenciar,
 }
 
 // PerfilAdmin tem todas as permissoes por regra, inclusive as que entrarem

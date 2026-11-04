@@ -284,21 +284,71 @@ describe('ProdutosAcabados', () => {
     expect(envio?.corpo).not.toHaveProperty('mascara_serie');
   });
 
-  it('mostra a miniatura do produto na lista', async () => {
+  it('mostra check quando ha foto/documento e icone de inexistente quando nao ha', async () => {
     servidor.responder([
       {
         metodo: 'get',
         url: '/produtos-acabados',
         status: 200,
-        corpo: paginaCom([{ ...produto, foto_url: '/api/v1/arquivos/p1/conteudo?exp=1&sig=a&mini=1' }]),
+        corpo: paginaCom([{ ...produto, qtd_fotos: 2, qtd_documentos: 0 }]),
       },
     ]);
 
     renderizarComProvedores(<ProdutosAcabados />);
 
-    expect(await screen.findByRole('img', { name: `Foto do produto ${produto.codigo}` })).toHaveAttribute(
-      'src',
-      '/api/v1/arquivos/p1/conteudo?exp=1&sig=a&mini=1',
-    );
+    expect(await screen.findByRole('button', { name: `Ver fotos de ${produto.codigo}` })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Sem documento cadastrado' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Ver documentos/ })).not.toBeInTheDocument();
+  });
+
+  it('clicar no check de fotos abre o mosaico com as fotos do produto', async () => {
+    servidor.responder([
+      { metodo: 'get', url: '/produtos-acabados', status: 200, corpo: paginaCom([{ ...produto, qtd_fotos: 1, qtd_documentos: 0 }]) },
+      {
+        metodo: 'get',
+        url: '/anexos',
+        status: 200,
+        corpo: {
+          sucesso: true,
+          dados: [
+            { id: 1, tipo: 'FOTO', titulo: 'Frente', url: '/f1', miniatura_url: '/m1', arquivo: { nome_original: 'a.jpg' } },
+          ],
+        },
+      },
+    ]);
+
+    renderizarComProvedores(<ProdutosAcabados />);
+    await userEvent.click(await screen.findByRole('button', { name: `Ver fotos de ${produto.codigo}` }));
+
+    expect(await screen.findByRole('img', { name: /Foto do produto .* — Frente/ })).toHaveAttribute('src', '/m1');
+  });
+
+  it('a inclusao de fotos e documentos fica na edicao do produto, nao na tabela', async () => {
+    servidor.responder([
+      { metodo: 'get', url: '/produtos-acabados', status: 200, corpo: paginaCom([produto]) },
+      { metodo: 'get', url: '/anexos', status: 200, corpo: { sucesso: true, dados: [] } },
+    ]);
+
+    renderizarComProvedores(<ProdutosAcabados />);
+    await screen.findByText(produto.codigo);
+    expect(screen.queryByRole('button', { name: /Mídia e documentos/ })).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: `Editar ${produto.codigo}` }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Incluir fotos' }));
+
+    expect(await screen.findByRole('dialog', { name: `Fotos — ${produto.codigo}` })).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: `Fotos — ${produto.codigo}` })).not.toHaveTextContent('Documentos técnicos');
+  });
+
+  it('mostra a versao vigente da BOM na linha e abre a estrutura ao clicar', async () => {
+    servidor.responder([
+      {
+        metodo: 'get', url: '/produtos-acabados', status: 200,
+        corpo: paginaCom([{ ...produto, estrutura_ativa: { versao: 3, data_vigencia_inicio: '2026-10-01' } }]),
+      },
+    ]);
+
+    renderizarComProvedores(<ProdutosAcabados />);
+    expect(await screen.findByRole('button', { name: /Abrir a estrutura \(BOM\).*versão 3/ })).toHaveTextContent('BOM v.3');
   });
 });

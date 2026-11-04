@@ -23,7 +23,7 @@ export function DetalheEstruturaProduto() {
   const clienteQuery = useQueryClient();
   const mostrarToast = useToasts((estado) => estado.mostrar);
   const { porId: pecaPorId } = usePartesPecasAtivas();
-  // Versao escolhida na lista; sem escolha, o painel mostra a mais recente.
+  // Versao escolhida na lista; sem escolha, o painel mostra a vigente.
   const [escolhidaId, setEscolhidaId] = useState<number | null>(null);
 
   const produtoQuery = useQuery({
@@ -55,7 +55,8 @@ export function DetalheEstruturaProduto() {
   // Da mais recente para a mais antiga, sem depender da ordem da API.
   const versoes = [...(historicoQuery.data ?? [])].sort((a, b) => b.versao - a.versao);
   const maisRecente = versoes[0];
-  const exibida = versoes.find((e) => e.id === escolhidaId) ?? maisRecente;
+  const vigente = versoes.find((e) => e.ativo) ?? maisRecente;
+  const exibida = versoes.find((e) => e.id === escolhidaId) ?? vigente;
   const { geral: erroAtivacao } = separarErro(ativacao.error);
 
   const colunasItens: Coluna<ItemEstrutura>[] = [
@@ -104,14 +105,14 @@ export function DetalheEstruturaProduto() {
         </div>
         {podeIncluir && (
           <Botao
-            icone={exibida ? 'refresh-cw' : 'plus'}
+            icone={vigente ? 'refresh-cw' : 'plus'}
             onClick={() =>
               navegar(
-                exibida ? `/estrutura-produtos/${id}/nova?base=${exibida.id}` : `/estrutura-produtos/${id}/nova`,
+                vigente ? `/estrutura-produtos/${id}/nova?base=${vigente.id}` : `/estrutura-produtos/${id}/nova`,
               )
             }
           >
-            {exibida ? t('Nova versão') : t('Criar estrutura')}
+            {vigente ? t('Nova versão') : t('Criar estrutura')}
           </Botao>
         )}
       </div>
@@ -162,7 +163,7 @@ export function DetalheEstruturaProduto() {
           <h2 className="text-subtitle text-texto-primary">{t('Versões')}</h2>
           <p className="text-body text-texto-secondary">
             {t(
-              'O painel acima mostra a versão mais recente. A versão vigente é a que vale nos produtos acabados e pode ser qualquer uma delas.',
+              'O painel acima mostra a versão vigente, a que vale nos produtos acabados. Clique em uma versão para ver os itens dela.',
             )}
           </p>
           <Tabela<Estrutura>
@@ -174,6 +175,8 @@ export function DetalheEstruturaProduto() {
             ordem="desc"
             aoOrdenar={() => {}}
             vazio={t('Nenhuma versão cadastrada.')}
+            aoClicarLinha={(e) => setEscolhidaId(e.id)}
+            linhaSelecionada={(e) => e.id === exibida?.id}
             acoes={(e) => (
               <div className="flex justify-end gap-1">
                 <Botao

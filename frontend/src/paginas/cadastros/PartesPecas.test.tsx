@@ -248,15 +248,15 @@ describe('PartesPecas', () => {
     await waitFor(() => expect(useToasts.getState().itens[0]?.mensagem).toBe('Peça inativada'));
   });
 
-  it('mostra a miniatura da foto principal e o selo de item critico sem foto', async () => {
+  it('mostra check quando ha foto/documento e icone de inexistente quando nao ha', async () => {
     servidor.responder([
       {
         metodo: 'get',
         url: '/partes-pecas',
         status: 200,
         corpo: paginaCom([
-          { ...peca, foto_url: '/api/v1/arquivos/u1/conteudo?exp=1&sig=a&mini=1' },
-          { ...peca, id: 2, codigo: 'CON-002', item_critico: true },
+          { ...peca, qtd_fotos: 2, qtd_documentos: 0 },
+          { ...peca, id: 2, codigo: 'CON-002', qtd_fotos: 0, qtd_documentos: 1 },
         ]),
       },
       { metodo: 'get', url: '/fornecedores', status: 200, corpo: paginaCom([]) },
@@ -264,11 +264,10 @@ describe('PartesPecas', () => {
 
     renderizarComProvedores(<PartesPecas />);
 
-    const miniatura = await screen.findByRole('img', { name: 'Foto da peça CON-001' });
-    expect(miniatura).toHaveAttribute('src', '/api/v1/arquivos/u1/conteudo?exp=1&sig=a&mini=1');
-    expect(miniatura).toHaveAttribute('loading', 'lazy');
-    expect(screen.queryByRole('img', { name: 'Foto da peça CON-002' })).not.toBeInTheDocument();
-    expect(screen.getAllByText('Sem foto')).toHaveLength(1);
+    expect(await screen.findByRole('button', { name: 'Ver fotos de CON-001' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Ver documentos de CON-002' })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Sem documento cadastrado' })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Sem foto cadastrada' })).toBeInTheDocument();
   });
 
   it('controla validade so fica habilitado com lote, e desmarca junto', async () => {
@@ -334,8 +333,30 @@ describe('PartesPecas', () => {
     });
   });
 
-  it('"Mídia e documentos" abre o painel do registro, so leitura para quem nao edita', async () => {
+  it('o check de fotos abre o mosaico, tambem para quem so consulta; nao ha botao de midia na tabela', async () => {
     entrarComo('OPERADOR');
+    servidor.responder([
+      { metodo: 'get', url: '/partes-pecas', status: 200, corpo: paginaCom([{ ...peca, qtd_fotos: 1 }]) },
+      { metodo: 'get', url: '/fornecedores', status: 200, corpo: paginaCom([]) },
+      {
+        metodo: 'get',
+        url: '/anexos',
+        status: 200,
+        corpo: { sucesso: true, dados: [{ id: 1, tipo: 'FOTO', titulo: 'Frente', url: '/f1', miniatura_url: '/m1', arquivo: { nome_original: 'a.jpg' } }] },
+      },
+    ]);
+
+    renderizarComProvedores(<PartesPecas />);
+    expect(await screen.findByRole('button', { name: 'Ver fotos de CON-001' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Mídia e documentos/ })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Ver fotos de CON-001' }));
+
+    expect(await screen.findByRole('img', { name: /Foto da peça CON-001 — Frente/ })).toHaveAttribute('src', '/m1');
+    const consulta = servidor.requisicoes.find((r) => r.url === '/anexos');
+    expect(consulta?.params).toEqual({ entidade: 'parte_peca', entidade_id: 1 });
+  });
+
+  it('a inclusao de fotos fica na edicao da peca', async () => {
     servidor.responder([
       { metodo: 'get', url: '/partes-pecas', status: 200, corpo: paginaCom([peca]) },
       { metodo: 'get', url: '/fornecedores', status: 200, corpo: paginaCom([]) },
@@ -343,11 +364,9 @@ describe('PartesPecas', () => {
     ]);
 
     renderizarComProvedores(<PartesPecas />);
-    await userEvent.click(await screen.findByRole('button', { name: 'Mídia e documentos de CON-001' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Editar CON-001' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Incluir fotos' }));
 
-    const painel = screen.getByRole('dialog', { name: 'Mídia e documentos — CON-001' });
-    expect(await within(painel).findByText(/Somente consulta/)).toBeInTheDocument();
-    const consulta = servidor.requisicoes.find((r) => r.url === '/anexos');
-    expect(consulta?.params).toEqual({ entidade: 'parte_peca', entidade_id: 1 });
+    expect(await screen.findByRole('dialog', { name: 'Fotos — CON-001' })).toBeInTheDocument();
   });
 });

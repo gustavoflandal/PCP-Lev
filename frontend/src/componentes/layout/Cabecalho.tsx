@@ -2,7 +2,9 @@ import { useNavigate } from 'react-router-dom';
 import { t, td } from '@/i18n';
 import { Botao } from '@/componentes/ui/Botao';
 import { icones } from '@/componentes/ui/icones';
+import { useToasts } from '@/componentes/ui/Toast';
 import { useLogoEmpresa } from '@/hooks/useLogoEmpresa';
+import { exportarTabelasCsv } from '@/lib/exportarCsv';
 import { imprimirTela } from '@/lib/impressao';
 import { useAutenticacao } from '@/store/autenticacao';
 import { Ajuda } from './Ajuda';
@@ -12,6 +14,13 @@ export function Cabecalho() {
   const sair = useAutenticacao((estado) => estado.sair);
   const navegar = useNavigate();
   const IconeFabrica = icones.factory;
+  const mostrarToast = useToasts((estado) => estado.mostrar);
+
+  function exportarCsv() {
+    if (!exportarTabelasCsv()) {
+      mostrarToast(t('Não há tabela com dados nesta tela para exportar.'), 'pending');
+    }
+  }
 
   const { temLogo, url: urlLogo, nomeExibido } = useLogoEmpresa();
 
@@ -36,6 +45,9 @@ export function Cabecalho() {
         {/* Toda tela interna: imprime ou salva em PDF o que esta na tela. */}
         <Botao variante="secundaria" icone="printer" onClick={imprimirTela}>
           {t('Imprimir / PDF')}
+        </Botao>
+        <Botao variante="secundaria" icone="file-spreadsheet" onClick={exportarCsv}>
+          {t('CSV')}
         </Botao>
         <Botao variante="secundaria" icone="settings" onClick={() => navegar('/preferencias')}>
           {t('Preferências')}

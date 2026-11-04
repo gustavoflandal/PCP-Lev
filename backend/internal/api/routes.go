@@ -32,6 +32,7 @@ import (
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/rastreio"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/regional"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/domain/usuario"
+	"github.com/gustavoflandal/pcp-lev/backend/internal/importacao"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/infra/repository"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/infra/smtp"
 	"github.com/gustavoflandal/pcp-lev/backend/internal/platform/cripto"
@@ -104,7 +105,8 @@ func NovoRoteador(dep Dependencias) *echo.Echo {
 		Skipper: func(c echo.Context) bool {
 			caminho := c.Request().URL.Path
 			return c.Request().Method == http.MethodPost &&
-				(caminho == "/api/v1/arquivos" || caminho == "/api/v1/notas-entrada/importar-xml")
+				(caminho == "/api/v1/arquivos" || caminho == "/api/v1/notas-entrada/importar-xml" ||
+					caminho == handlers.CaminhoImportacao)
 		},
 	}))
 	e.Use(echomw.CORSWithConfig(echomw.CORSConfig{
@@ -159,6 +161,8 @@ func NovoRoteador(dep Dependencias) *echo.Echo {
 	handlers.NovoRastreioHandler(rastreio.NovoServico(repository.NovoRastreioRepositorio(dep.Pool))).Registrar(v1, autenticacao)
 	// Paineis (dashboards) por setor, cada um com a sua permissao.
 	handlers.NovoPainelHandler(painel.NovoServico(repository.NovoPainelRepositorio(dep.Pool))).Registrar(v1, autenticacao)
+	// APIs de integracao com o ERP: gestao das chaves (JWT) e API publica de consulta (X-API-Key).
+	registrarIntegracao(e, v1, dep, autenticacao, estoqueServico, arquivoServico)
 
 	return e
 }
@@ -199,6 +203,14 @@ func registrarCadastros(v1 *echo.Group, dep Dependencias, autenticacao echo.Midd
 	handlers.NovoEstruturaHandler(
 		estrutura.NovoServico(repository.NovoEstruturaRepositorio(dep.Pool)),
 	).Registrar(v1, autenticacao)
+
+	// Importacao por planilha: reaproveita os mesmos servicos dos cadastros.
+	handlers.NovoImportacaoHandler(dep.Pool, &importacao.Importador{
+		Clientes:     cliente.NovoServico(repository.NovoClienteRepositorio(dep.Pool)),
+		Fornecedores: fornecedor.NovoServico(repository.NovoFornecedorRepositorio(dep.Pool)),
+		Produtos:     produto.NovoServico(repository.NovoProdutoRepositorio(dep.Pool)),
+		Pecas:        peca.NovoServico(repository.NovoPecaRepositorio(dep.Pool)),
+	}).Registrar(v1, autenticacao)
 }
 
 // registrarEstoque publica o modulo de estoque (RF6) e devolve o servico

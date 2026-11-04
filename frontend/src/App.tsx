@@ -20,7 +20,10 @@ import { NovoPedidoCompra } from '@/paginas/compras/NovoPedidoCompra';
 import { PedidosCompra } from '@/paginas/compras/PedidosCompra';
 import { Auditoria } from '@/paginas/configuracoes/Auditoria';
 import { BancoDeDados } from '@/paginas/configuracoes/BancoDeDados';
+import { Gabarito } from '@/paginas/importacao/Gabarito';
+import { Importar } from '@/paginas/importacao/Importar';
 import { DadosEmpresaPagina } from '@/paginas/configuracoes/DadosEmpresa';
+import { ApisIntegracao } from '@/paginas/integracao/ApisIntegracao';
 import { Integracoes } from '@/paginas/configuracoes/Integracoes';
 import { ParametrosNegocio } from '@/paginas/configuracoes/ParametrosNegocio';
 import { ParametrosRegionais } from '@/paginas/configuracoes/ParametrosRegionais';
@@ -131,7 +134,10 @@ export function App() {
             <Route path="/configuracoes/negocio" element={<ParametrosNegocio />} />
             <Route path="/configuracoes/integracoes" element={<Integracoes />} />
             <Route path="/configuracoes/banco" element={<BancoDeDados />} />
+            <Route path="/importar/gabarito" element={<ExigePermissao permissao={PERMISSOES.importacaoExecutar}><Gabarito /></ExigePermissao>} />
+            <Route path="/importar" element={<ExigePermissao permissao={PERMISSOES.importacaoExecutar}><Importar /></ExigePermissao>} />
             <Route path="/configuracoes/perfis" element={<PerfisPermissoes />} />
+            <Route path="/integracao/apis" element={<ExigePermissao permissao={PERMISSOES.integracaoGerenciar}><ApisIntegracao /></ExigePermissao>} />
             <Route path="/configuracoes/usuarios" element={<ExigePermissao permissao={PERMISSOES.configUsuarios}><Usuarios /></ExigePermissao>} />
           </Route>
         </Route>

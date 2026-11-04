@@ -58,6 +58,8 @@ export interface FormularioProdutoProps {
   errosPorCampo: Record<string, string>;
   aoEnviar: (corpo: CorpoProduto) => void;
   aoCancelar: () => void;
+  /** Abre a tela de fotos ou de documentos do produto (so existe ao editar). */
+  aoGerenciarMidia?: (secao: 'fotos' | 'documentos') => void;
 }
 
 const opcoesSituacao = () => [
@@ -72,6 +74,7 @@ export function FormularioProduto({
   errosPorCampo,
   aoEnviar,
   aoCancelar,
+  aoGerenciarMidia,
 }: FormularioProdutoProps) {
   const {
     register,
@@ -124,7 +127,7 @@ export function FormularioProduto({
         }),
       )}
       noValidate
-      className="flex flex-col gap-4"
+      className="flex flex-col gap-3"
     >
       {erroGeral && (
         <p
@@ -135,7 +138,7 @@ export function FormularioProduto({
         </p>
       )}
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-3 md:grid-cols-4">
         <Campo
           rotulo={t('Código')}
           obrigatorio
@@ -144,11 +147,6 @@ export function FormularioProduto({
           {...register('codigo')}
         />
         <Campo rotulo={t('Unidade')} obrigatorio erro={erroDe('unidade_medida')} {...register('unidade_medida')} />
-      </div>
-
-      <Campo rotulo={t('Descrição')} obrigatorio erro={erroDe('descricao')} {...register('descricao')} />
-
-      <div className="grid gap-4 md:grid-cols-2">
         <Campo
           rotulo={t('Preço de venda')}
           obrigatorio
@@ -166,17 +164,19 @@ export function FormularioProduto({
         />
       </div>
 
-      <label className="flex min-h-linha items-center gap-2 text-body text-texto-primary">
-        <input type="checkbox" className="h-4 w-4 accent-brand" {...register('exige_metrologia')} />
-        {t('Exige metrologia (Inmetro)')}
-        <span className="text-label text-texto-secondary">
-          {t('— cada unidade precisa de aprovação de modelo, lacre e validade antes de sair de Testes')}
-        </span>
-      </label>
+      <div className={inicial ? 'grid gap-3 md:grid-cols-[3fr_1fr]' : 'grid gap-3'}>
+        <Campo rotulo={t('Descrição')} obrigatorio erro={erroDe('descricao')} {...register('descricao')} />
+        {inicial && (
+          // So faz sentido escolher a situacao ao editar: e a unica forma de
+          // reativar um produto. Ao criar, o registro sempre nasce ativo, e
+          // mostrar o campo aqui so adicionaria uma decisao sem sentido.
+          <Selecao rotulo={t('Situação')} opcoes={opcoesSituacao()} {...register('ativo')} />
+        )}
+      </div>
 
-      <fieldset className="flex flex-col gap-3 rounded-cartao border border-borda-subtle p-4">
+      <fieldset className="flex flex-col gap-2 rounded-cartao border border-borda-subtle p-3">
         <legend className="px-1 text-label text-texto-secondary">{t('Controle do item')}</legend>
-        <div className="grid gap-3 md:grid-cols-2">
+        <div className="grid gap-x-4 gap-y-2 md:grid-cols-3">
           <CaixaMarcacao
             rotulo={t('Controla número de série')}
             ajuda={t('Cada unidade produzida é identificada pela série.')}
@@ -215,24 +215,36 @@ export function FormularioProduto({
             {...register('pode_ser_componente')}
           />
         </div>
+        <label className="flex items-center gap-2 text-body text-texto-primary">
+          <input type="checkbox" className="h-4 w-4 accent-brand" {...register('exige_metrologia')} />
+          {t('Exige metrologia (Inmetro)')}
+          <span className="text-label text-texto-secondary">
+            {t('— cada unidade precisa de aprovação de modelo, lacre e validade antes de sair de Testes')}
+          </span>
+        </label>
       </fieldset>
 
-      {inicial && (
-        // So faz sentido escolher a situacao ao editar: e a unica forma de
-        // reativar um produto. Ao criar, o registro sempre nasce ativo, e
-        // mostrar o campo aqui so adicionaria uma decisao sem sentido.
-        <div className="w-[200px]">
-          <Selecao rotulo={t('Situação')} opcoes={opcoesSituacao()} {...register('ativo')} />
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        {inicial && aoGerenciarMidia ? (
+          <div className="flex flex-wrap gap-2">
+            <Botao variante="secundaria" icone="image" onClick={() => aoGerenciarMidia('fotos')}>
+              {t('Incluir fotos')}
+            </Botao>
+            <Botao variante="secundaria" icone="file-text" onClick={() => aoGerenciarMidia('documentos')}>
+              {t('Incluir documentos')}
+            </Botao>
+          </div>
+        ) : (
+          <p className="text-label text-texto-secondary">{t('Salve o produto para incluir fotos e documentos.')}</p>
+        )}
+        <div className="flex items-center gap-2">
+          <Botao variante="secundaria" onClick={aoCancelar} disabled={ocupado}>
+            {t('Cancelar')}
+          </Botao>
+          <Botao type="submit" icone="save" ocupado={ocupado} rotuloOcupado={t('Salvando…')}>
+            {t('Salvar')}
+          </Botao>
         </div>
-      )}
-
-      <div className="flex items-center justify-end gap-2">
-        <Botao variante="secundaria" onClick={aoCancelar} disabled={ocupado}>
-          {t('Cancelar')}
-        </Botao>
-        <Botao type="submit" icone="save" ocupado={ocupado} rotuloOcupado={t('Salvando…')}>
-          {t('Salvar')}
-        </Botao>
       </div>
     </form>
   );

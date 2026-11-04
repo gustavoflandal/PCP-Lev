@@ -2,6 +2,20 @@
 const traducoes: Record<string, string> = {
   Ajuda: 'Ayuda',
 
+  // Importacao
+  'Ajuda · Gabarito de importação': 'Ayuda · Plantilla de importación',
+  'Baixe a planilha Excel vazia e preencha as abas a partir da linha 2. A aba Instruções explica cada coluna.':
+    'Descargue la planilla Excel vacía y complete las hojas desde la fila 2. La hoja Instrucciones explica cada columna.',
+  'Colunas em vermelho (com *) são obrigatórias. Use as listas suspensas para Tipo, UF e Sim/Não.':
+    'Las columnas en rojo (con *) son obligatorias. Use las listas desplegables para Tipo, UF y Sí/No.',
+  'Ajuda · Importar': 'Ayuda · Importar',
+  'Envie a planilha preenchida (.xlsx). O sistema confere tudo antes de gravar.':
+    'Envíe la planilla completada (.xlsx). El sistema verifica todo antes de guardar.',
+  'Se houver qualquer problema, nada é importado: a tabela mostra a aba, a linha e a coluna de cada erro para você corrigir.':
+    'Si hay cualquier problema, no se importa nada: la tabla muestra la hoja, la fila y la columna de cada error para que usted corrija.',
+  'Registro que já existe (mesmo CNPJ ou código) é ignorado e não é alterado.':
+    'El registro que ya existe (mismo CNPJ o código) se ignora y no se modifica.',
+
   // Entrar
   'Ajuda · Entrar': 'Ayuda · Ingresar',
   'Use o usuário e a senha fornecidos pelo administrador do sistema.':
@@ -150,10 +164,10 @@ const traducoes: Record<string, string> = {
   'Ajuda · Estrutura de produtos': 'Ayuda · Estructura de productos',
   'Cada produto acabado pode ter uma estrutura (BOM): a lista de partes/peças e a quantidade de cada uma para montar 1 unidade.':
     'Cada producto terminado puede tener una estructura (BOM): la lista de partes/piezas y la cantidad de cada una para montar 1 unidad.',
-  'Uma estrutura nunca é editada nem apagada. "Nova versão" abre uma tela com os itens da versão exibida: adicione ou retire itens e, ao salvar, a nova versão terá exatamente os itens da tela e passará a ser a vigente.':
-    'Una estructura nunca se edita ni se borra. "Nueva versión" abre una pantalla con los ítems de la versión mostrada: agregue o quite ítems y, al guardar, la nueva versión tendrá exactamente los ítems de la pantalla y pasará a ser la vigente.',
-  'O painel do produto mostra sempre a versão mais recente. Na lista "Versões" você vê todas, consulta os itens de cada uma e pode definir qualquer versão como vigente.':
-    'El panel del producto siempre muestra la versión más reciente. En la lista "Versiones" usted ve todas, consulta los ítems de cada una y puede definir cualquier versión como vigente.',
+  'Uma estrutura nunca é editada nem apagada. "Nova versão" abre uma tela com os itens da versão vigente: adicione ou retire itens e, ao salvar, a nova versão terá exatamente os itens da tela e passará a ser a vigente.':
+    'Una estructura nunca se edita ni se borra. "Nueva versión" abre una pantalla con los ítems de la versión vigente: agregue o quite ítems y, al guardar, la nueva versión tendrá exactamente los ítems de la pantalla y pasará a ser la vigente.',
+  'O painel do produto mostra sempre a versão vigente. Na lista "Versões" você vê todas, consulta os itens de cada uma e pode definir qualquer versão como vigente.':
+    'El panel del producto siempre muestra la versión vigente. En la lista "Versiones" usted ve todas, consulta los ítems de cada una y puede definir cualquier versión como vigente.',
   'Só existe uma versão vigente por produto de cada vez, e é ela que vale em Produtos acabados e nas ordens de produção.':
     'Solo existe una versión vigente por producto a la vez, y es la que rige en Productos terminados y en las órdenes de producción.',
 

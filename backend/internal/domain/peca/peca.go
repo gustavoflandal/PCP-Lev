@@ -53,12 +53,16 @@ type PartePeca struct {
 	ValidadeMinimaDias int    `json:"validade_minima_dias"`
 	MascaraSerie       string `json:"mascara_serie"`
 	// FotoURL: miniatura assinada da foto principal (preenchida pelo handler).
-	FotoURL   string    `json:"foto_url,omitempty"`
-	Ativo     bool      `json:"ativo"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-	CreatedBy *string   `json:"created_by,omitempty"`
-	UpdatedBy *string   `json:"updated_by,omitempty"`
+	FotoURL string `json:"foto_url,omitempty"`
+	// QtdFotos/QtdDocumentos: quanta midia a peca tem (preenchidos pelo
+	// handler na listagem); a tela mostra so "tem" ou "nao tem".
+	QtdFotos      int       `json:"qtd_fotos"`
+	QtdDocumentos int       `json:"qtd_documentos"`
+	Ativo         bool      `json:"ativo"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"`
+	CreatedBy     *string   `json:"created_by,omitempty"`
+	UpdatedBy     *string   `json:"updated_by,omitempty"`
 }
 
 // SituacaoDoSaldo classifica o saldo informado.
