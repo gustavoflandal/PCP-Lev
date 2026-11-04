@@ -109,10 +109,12 @@ describe('NovaEstruturaProduto', () => {
     await screen.findByText('Nova versão da estrutura');
 
     // Replicou os 2 itens da mais recente (v2); retira o primeiro e acrescenta o LED.
-    expect(screen.getAllByLabelText(/Parte\/peça/)).toHaveLength(2);
+    // Itens existentes aparecem como linhas de tabela (sem seletor), cada uma com lixeira.
+    expect(screen.getAllByRole('button', { name: 'Remover item' })).toHaveLength(2);
+    expect(screen.queryByLabelText(/Parte\/peça/)).not.toBeInTheDocument();
     await userEvent.click(screen.getAllByRole('button', { name: 'Remover item' })[0]);
     await userEvent.click(screen.getByRole('button', { name: 'Adicionar item' }));
-    await userEvent.selectOptions(screen.getAllByLabelText(/Parte\/peça/)[1], 'LED-R — LED');
+    await userEvent.selectOptions(screen.getByLabelText(/Parte\/peça/), 'LED-R — LED');
     await userEvent.click(screen.getByRole('button', { name: 'Salvar' }));
 
     await waitFor(() => {
@@ -124,6 +126,26 @@ describe('NovaEstruturaProduto', () => {
         { parte_peca_id: 3, quantidade: 1 },
       ]);
     });
+  });
+
+  it('sem ?base= parte da versao vigente, mesmo que exista uma mais recente', async () => {
+    servidor.responder([
+      {
+        metodo: 'get', url: '/produtos-acabados/1/boms', status: 200,
+        corpo: {
+          sucesso: true,
+          dados: [
+            { id: 20, versao: 2, data_vigencia_inicio: '2026-10-01', ativo: false, itens: [{ id: 3, parte_peca_id: 1, quantidade: 4 }, { id: 4, parte_peca_id: 1, quantidade: 2 }] },
+            { id: 10, versao: 1, data_vigencia_inicio: '2026-09-01', ativo: true, itens: [{ id: 1, parte_peca_id: 1, quantidade: 4 }] },
+          ],
+        },
+      },
+      { metodo: 'get', url: '/partes-pecas', status: 200, corpo: PECAS },
+    ]);
+    renderizar();
+
+    expect(await screen.findByText(/Parte da versão 1/)).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'Remover item' })).toHaveLength(1);
   });
 
   it('com ?base= parte da versao indicada, nao da mais recente', async () => {
@@ -143,7 +165,7 @@ describe('NovaEstruturaProduto', () => {
     renderizar('/estrutura-produtos/1/nova?base=10');
 
     expect(await screen.findByText(/Parte da versão 1/)).toBeInTheDocument();
-    expect(screen.getAllByLabelText(/Parte\/peça/)).toHaveLength(1);
+    expect(screen.getAllByRole('button', { name: 'Remover item' })).toHaveLength(1);
   });
 
   it('erro 409 mostra alerta', async () => {
@@ -179,6 +201,7 @@ describe('NovaEstruturaProduto', () => {
     await userEvent.selectOptions(screen.getAllByLabelText(/Parte\/peça/)[0], 'RES-10K — Resistor');
     await userEvent.click(screen.getByRole('button', { name: 'Adicionar item' }));
     await userEvent.selectOptions(screen.getAllByLabelText(/Parte\/peça/)[1], 'RES-10K — Resistor');
+    // (a primeira linha continua em edicao: foi criada vazia nesta sessao)
     await userEvent.click(screen.getByRole('button', { name: 'Salvar' }));
 
     expect(await screen.findByText('Esta peça já foi adicionada')).toBeInTheDocument();

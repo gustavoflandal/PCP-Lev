@@ -418,3 +418,28 @@ func (r *ArquivoRepositorio) FotosPrincipais(ctx context.Context, entidade strin
 	}
 	return fotos, linhas.Err()
 }
+
+// ContagemMidia conta fotos e documentos (versao vigente) por entidade.
+func (r *ArquivoRepositorio) ContagemMidia(ctx context.Context, entidade string, ids []int64) (map[int64]arquivo.ContagemMidia, error) {
+	contagem := map[int64]arquivo.ContagemMidia{}
+	if len(ids) == 0 {
+		return contagem, nil
+	}
+	linhas, err := db.DoContexto(ctx, r.pool).Query(ctx, `SELECT entidade_id,
+			count(*) FILTER (WHERE tipo = 'FOTO'),
+			count(*) FILTER (WHERE tipo = 'DOCUMENTO' AND vigente)
+		FROM anexos WHERE entidade = $1 AND entidade_id = ANY($2) GROUP BY entidade_id`, entidade, ids)
+	if err != nil {
+		return nil, fmt.Errorf("contagem de midia: %w", err)
+	}
+	defer linhas.Close()
+	for linhas.Next() {
+		var id int64
+		var c arquivo.ContagemMidia
+		if err := linhas.Scan(&id, &c.Fotos, &c.Documentos); err != nil {
+			return nil, err
+		}
+		contagem[id] = c
+	}
+	return contagem, linhas.Err()
+}

@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -65,6 +65,14 @@ describe('DetalheEstruturaProduto', () => {
     ],
   };
 
+  const VIGENTE_E_MAIS_RECENTE = {
+    sucesso: true,
+    dados: [
+      { id: 20, versao: 2, data_vigencia_inicio: '2026-10-01', ativo: false, itens: [{ id: 3, parte_peca_id: 1, quantidade: 6 }] },
+      { id: 10, versao: 1, data_vigencia_inicio: '2026-09-01', ativo: true, itens: [{ id: 1, parte_peca_id: 1, quantidade: 4 }] },
+    ],
+  };
+
   it('lista todas as versoes, com a vigente identificada', async () => {
     servidor.responder([
       { metodo: 'get', url: '/produtos-acabados/1', status: 200, corpo: PRODUTO },
@@ -81,18 +89,19 @@ describe('DetalheEstruturaProduto', () => {
     expect(tabela).toHaveTextContent('Anterior');
   });
 
-  it('o painel mostra a versao mais recente e troca ao escolher outra', async () => {
+  it('o painel mostra a versao vigente e troca ao clicar em outra versao', async () => {
     servidor.responder([
       { metodo: 'get', url: '/produtos-acabados/1', status: 200, corpo: PRODUTO },
-      { metodo: 'get', url: '/produtos-acabados/1/boms', status: 200, corpo: DUAS_VERSOES },
+      { metodo: 'get', url: '/produtos-acabados/1/boms', status: 200, corpo: VIGENTE_E_MAIS_RECENTE },
       { metodo: 'get', url: '/partes-pecas', status: 200, corpo: PECAS },
     ]);
     renderizar();
 
-    expect(await screen.findByRole('heading', { name: /^Versão 2/ })).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Ver itens da versão 1' }));
+    // v.2 e a mais recente, mas a vigente e a v.1: e ela que o painel mostra.
+    expect(await screen.findByRole('heading', { name: /^Versão 1/ })).toBeInTheDocument();
+    await userEvent.click(within(screen.getByRole('table', { name: 'Versões da estrutura' })).getByText('v.2'));
 
-    expect(screen.getByRole('heading', { name: /^Versão 1/ })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /^Versão 2/ })).toBeInTheDocument();
     expect(screen.getByText('Não vigente')).toBeInTheDocument();
   });
 

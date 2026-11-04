@@ -358,6 +358,19 @@ func (h *ArquivoHandler) Remover(c echo.Context) error {
 
 // miniaturas devolve a URL assinada da foto principal de cada id (vazio se o
 // handler foi montado sem o servico de arquivos, como nos testes antigos).
+// contagemMidia carrega a quantidade de fotos e documentos; falha vira zeros.
+func contagemMidia(c echo.Context, s *arquivo.Servico, entidade string, ids []int64) map[int64]arquivo.ContagemMidia {
+	if s == nil || len(ids) == 0 {
+		return map[int64]arquivo.ContagemMidia{}
+	}
+	m, err := s.ContagemMidia(c.Request().Context(), entidade, ids)
+	if err != nil {
+		slog.Warn("falha ao contar midia", "entidade", entidade, "erro", err)
+		return map[int64]arquivo.ContagemMidia{}
+	}
+	return m
+}
+
 func miniaturas(c echo.Context, s *arquivo.Servico, entidade string, ids []int64) map[int64]string {
 	if s == nil || len(ids) == 0 {
 		return map[int64]string{}

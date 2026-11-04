@@ -119,8 +119,11 @@ func (h *PecaHandler) Listar(c echo.Context) error {
 			ids[i] = itens[i].ID
 		}
 		urls := miniaturas(c, h.fotos, arquivo.EntidadePeca, ids)
+		midia := contagemMidia(c, h.fotos, arquivo.EntidadePeca, ids)
 		for i := range itens {
 			itens[i].FotoURL = urls[itens[i].ID]
+			itens[i].QtdFotos = midia[itens[i].ID].Fotos
+			itens[i].QtdDocumentos = midia[itens[i].ID].Documentos
 		}
 	}
 	if err != nil {

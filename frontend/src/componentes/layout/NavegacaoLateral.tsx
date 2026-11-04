@@ -62,6 +62,17 @@ const ESTOQUE: ItemNavegacao[] = [
   { rota: '/lotes', rotulo: marcar('Lotes'), icone: 'layers', permissao: PERMISSOES.estoqueVisualizar },
 ];
 
+// Carga de cadastros por planilha: baixar o gabarito e importar o preenchido.
+const IMPORTAR: ItemNavegacao[] = [
+  { rota: '/importar/gabarito', rotulo: marcar('Gabarito'), icone: 'file-spreadsheet', permissao: PERMISSOES.importacaoExecutar },
+  { rota: '/importar', rotulo: marcar('Importar'), icone: 'upload', permissao: PERMISSOES.importacaoExecutar },
+];
+
+// APIs de consulta consumidas pelo ERP: chaves de API e documentacao.
+const INTEGRACAO: ItemNavegacao[] = [
+  { rota: '/integracao/apis', rotulo: marcar('APIs Integração'), icone: 'key-round', permissao: PERMISSOES.integracaoGerenciar },
+];
+
 // Cada tela de configuracao aparece so para quem tem a permissao dela --
 // esconder o link evita levar a uma tela que so vai mostrar "acesso restrito".
 const CONFIGURACOES: ItemNavegacao[] = [
@@ -85,7 +96,7 @@ function classesDoLink({ isActive }: { isActive: boolean }): string {
 function Link({ item }: { item: ItemNavegacao }) {
   const Icone = icones[item.icone];
   return (
-    <NavLink to={item.rota} end={item.rota === '/'} className={classesDoLink}>
+    <NavLink to={item.rota} end={item.rota === '/' || item.rota === '/importar'} className={classesDoLink}>
       <Icone size={16} aria-hidden="true" className="shrink-0" />
       {td(item.rotulo)}
     </NavLink>
@@ -133,6 +144,8 @@ export function NavegacaoLateral() {
       <Secao titulo={t('Compras')} itens={COMPRAS} permissoes={permissoes} />
       <Secao titulo={t('Recebimento')} itens={RECEBIMENTO} permissoes={permissoes} />
       <Secao titulo={t('Estoque')} itens={ESTOQUE} permissoes={permissoes} />
+      <Secao titulo={t('Importar')} itens={IMPORTAR} permissoes={permissoes} />
+      <Secao titulo={t('Integração')} itens={INTEGRACAO} permissoes={permissoes} />
       <Secao titulo={t('Configurações')} itens={CONFIGURACOES} permissoes={permissoes} />
 
     </nav>

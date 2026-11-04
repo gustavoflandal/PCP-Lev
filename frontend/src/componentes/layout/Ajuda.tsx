@@ -154,8 +154,8 @@ const CONTEUDO_POR_ROTA: Record<string, ConteudoAjuda> = {
     titulo: marcar('Ajuda · Estrutura de produtos'),
     itens: [
       marcar('Cada produto acabado pode ter uma estrutura (BOM): a lista de partes/peças e a quantidade de cada uma para montar 1 unidade.'),
-      marcar('Uma estrutura nunca é editada nem apagada. "Nova versão" abre uma tela com os itens da versão exibida: adicione ou retire itens e, ao salvar, a nova versão terá exatamente os itens da tela e passará a ser a vigente.'),
-      marcar('O painel do produto mostra sempre a versão mais recente. Na lista "Versões" você vê todas, consulta os itens de cada uma e pode definir qualquer versão como vigente.'),
+      marcar('Uma estrutura nunca é editada nem apagada. "Nova versão" abre uma tela com os itens da versão vigente: adicione ou retire itens e, ao salvar, a nova versão terá exatamente os itens da tela e passará a ser a vigente.'),
+      marcar('O painel do produto mostra sempre a versão vigente. Na lista "Versões" você vê todas, consulta os itens de cada uma e pode definir qualquer versão como vigente.'),
       marcar('Só existe uma versão vigente por produto de cada vez, e é ela que vale em Produtos acabados e nas ordens de produção.'),
     ],
   },
@@ -339,6 +339,31 @@ const CONTEUDO_POR_ROTA: Record<string, ConteudoAjuda> = {
     itens: [
       marcar('Com a senha temporária recebida do administrador, escolha uma senha só sua (ao menos 10 caracteres, sem o seu login) para continuar.'),
       marcar('Esqueceu a senha? Peça ao administrador uma nova senha temporária.'),
+    ],
+  },
+  '/importar/gabarito': {
+    titulo: marcar('Ajuda · Gabarito de importação'),
+    itens: [
+      marcar('Baixe a planilha Excel vazia e preencha as abas a partir da linha 2. A aba Instruções explica cada coluna.'),
+      marcar('Colunas em vermelho (com *) são obrigatórias. Use as listas suspensas para Tipo, UF e Sim/Não.'),
+    ],
+  },
+  '/importar': {
+    titulo: marcar('Ajuda · Importar'),
+    itens: [
+      marcar('Envie a planilha preenchida (.xlsx). O sistema confere tudo antes de gravar.'),
+      marcar('Se houver qualquer problema, nada é importado: a tabela mostra a aba, a linha e a coluna de cada erro para você corrigir.'),
+      marcar('Registro que já existe (mesmo CNPJ ou código) é ignorado e não é alterado.'),
+    ],
+  },
+  '/integracao/apis': {
+    titulo: marcar('Ajuda · APIs Integração'),
+    itens: [
+      marcar('O ERP consulta os dados do PCP (clientes, fornecedores, produtos, peças, estoque, pedidos e estruturas) por APIs somente de leitura. Nada do que o ERP chama altera o PCP.'),
+      marcar('Cada ERP usa uma chave de API, enviada no cabeçalho X-API-Key. Crie uma por sistema em "Nova chave": ela aparece uma única vez, então copie e guarde.'),
+      marcar('Revogar uma chave bloqueia o ERP que a usa na próxima chamada. Não dá para desfazer: crie outra chave.'),
+      marcar('Clique em um endpoint para ver os parâmetros, um exemplo de chamada (curl) e de resposta.'),
+      marcar('Só quem tem a permissão desta tela (em Perfis e permissões) acessa.'),
     ],
   },
   '/configuracoes/banco': {

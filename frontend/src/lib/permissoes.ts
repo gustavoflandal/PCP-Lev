@@ -80,6 +80,8 @@ export const PERMISSOES = {
   configAuditoriaExportar: 'configuracoes.auditoria_exportar',
   configPerfis: 'configuracoes.perfis',
   configUsuarios: 'configuracoes.usuarios',
+  importacaoExecutar: 'importacao.executar',
+  integracaoGerenciar: 'integracao.gerenciar',
 } as const;
 
 export type Permissao = (typeof PERMISSOES)[keyof typeof PERMISSOES];

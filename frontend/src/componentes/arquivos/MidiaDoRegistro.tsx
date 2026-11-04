@@ -24,10 +24,12 @@ export interface MidiaDoRegistroProps {
   podeEditar: boolean;
   /** Item critico: a falta da foto principal vira alerta. */
   itemCritico?: boolean;
+  /** Qual parte mostrar: so as fotos, so os documentos ou as duas (padrao). */
+  secao?: 'fotos' | 'documentos' | 'ambas';
 }
 
 /** Fotos (principal + galeria) e documentos tecnicos de um produto ou peca. */
-export function MidiaDoRegistro({ entidade, entidadeId, codigo, podeEditar, itemCritico }: MidiaDoRegistroProps) {
+export function MidiaDoRegistro({ entidade, entidadeId, codigo, podeEditar, itemCritico, secao = 'ambas' }: MidiaDoRegistroProps) {
   const clienteQuery = useQueryClient();
   const chave = chaveAnexos(entidade, entidadeId);
   const consulta = useQuery({
@@ -76,6 +78,7 @@ export function MidiaDoRegistro({ entidade, entidadeId, codigo, podeEditar, item
       {!podeEditar && (
         <p className="text-label text-texto-secondary">{t('Somente consulta: seu perfil não altera fotos nem documentos deste cadastro.')}</p>
       )}
+      {secao !== 'documentos' && (
       <FotosDoRegistro
         entidade={entidade}
         entidadeId={entidadeId}
@@ -85,6 +88,8 @@ export function MidiaDoRegistro({ entidade, entidadeId, codigo, podeEditar, item
         itemCritico={itemCritico}
         aoMudar={aoMudar}
       />
+      )}
+      {secao !== 'fotos' && (
       <DocumentosDoRegistro
         entidade={entidade}
         entidadeId={entidadeId}
@@ -92,6 +97,7 @@ export function MidiaDoRegistro({ entidade, entidadeId, codigo, podeEditar, item
         podeEditar={podeEditar}
         aoMudar={aoMudar}
       />
+      )}
     </div>
   );
 }

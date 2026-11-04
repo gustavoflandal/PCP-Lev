@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { MidiaDoRegistro } from '@/componentes/arquivos/MidiaDoRegistro';
-import { Miniatura } from '@/componentes/arquivos/Miniatura';
+import { IndicadorDeMidia } from '@/componentes/arquivos/IndicadorDeMidia';
+import { MosaicoDeMidia } from '@/componentes/arquivos/MosaicoDeMidia';
 import { BarraDeFiltros } from '@/componentes/ui/BarraDeFiltros';
 import { BadgeSituacao } from '@/componentes/ui/Badge';
 import { Botao } from '@/componentes/ui/Botao';
@@ -28,13 +29,28 @@ export function PartesPecas() {
     inativado: t('Peça inativada'),
   });
 
-  const [emMidia, definirEmMidia] = useState<PartePeca | null>(null);
+  const [emMidia, definirEmMidia] = useState<{ peca: PartePeca; secao: 'fotos' | 'documentos' } | null>(null);
+  const [mosaico, definirMosaico] = useState<{ peca: PartePeca; tipo: 'FOTO' | 'DOCUMENTO' } | null>(null);
 
   const colunas: Coluna<PartePeca>[] = [
     {
       chave: 'foto',
       rotulo: t('Foto'),
-      renderizar: (p) => <Miniatura url={p.foto_url} alt={t('Foto da peça {codigo}', { codigo: p.codigo })} critico={p.item_critico} />,
+      renderizar: (p) => (
+        <IndicadorDeMidia tipo="FOTO" quantidade={p.qtd_fotos} codigo={p.codigo} aoAbrir={() => definirMosaico({ peca: p, tipo: 'FOTO' })} />
+      ),
+    },
+    {
+      chave: 'documento',
+      rotulo: t('Documento'),
+      renderizar: (p) => (
+        <IndicadorDeMidia
+          tipo="DOCUMENTO"
+          quantidade={p.qtd_documentos}
+          codigo={p.codigo}
+          aoAbrir={() => definirMosaico({ peca: p, tipo: 'DOCUMENTO' })}
+        />
+      ),
     },
     {
       chave: 'codigo',
@@ -108,14 +124,6 @@ export function PartesPecas() {
           vazio={t('Nenhuma parte ou peça cadastrada. Cadastre a primeira para começar.')}
           acoes={(p) => (
             <span className="flex items-center justify-end gap-2">
-              <Botao
-                variante="fantasma"
-                icone="file-text"
-                aria-label={t('Mídia e documentos de {codigo}', { codigo: p.codigo })}
-                onClick={() => definirEmMidia(p)}
-              >
-                {t('Mídia e documentos')}
-              </Botao>
               {podeEditar && (
                 <Botao
                   variante="fantasma"
@@ -163,23 +171,49 @@ export function PartesPecas() {
           errosPorCampo={crud.errosPorCampo}
           aoEnviar={crud.salvar}
           aoCancelar={crud.fecharFormulario}
+          aoGerenciarMidia={(secao) => crud.emEdicao && definirEmMidia({ peca: crud.emEdicao, secao })}
         />
+      </Modal>
+
+      <Modal
+        aberto={mosaico !== null}
+        aoFechar={() => definirMosaico(null)}
+        titulo={
+          mosaico
+            ? mosaico.tipo === 'FOTO'
+              ? t('Fotos — {codigo}', { codigo: mosaico.peca.codigo })
+              : t('Documentos — {codigo}', { codigo: mosaico.peca.codigo })
+            : ''
+        }
+        descricao={mosaico?.peca.descricao}
+        largura="larga"
+      >
+        {mosaico && (
+          <MosaicoDeMidia tipo={mosaico.tipo} entidade="parte_peca" entidadeId={mosaico.peca.id} codigo={mosaico.peca.codigo} />
+        )}
       </Modal>
 
       <Modal
         aberto={emMidia !== null}
         aoFechar={() => definirEmMidia(null)}
-        titulo={emMidia ? t('Mídia e documentos — {codigo}', { codigo: emMidia.codigo }) : t('Mídia e documentos')}
-        descricao={emMidia?.descricao}
+        titulo={
+          emMidia
+            ? emMidia.secao === 'fotos'
+              ? t('Fotos — {codigo}', { codigo: emMidia.peca.codigo })
+              : t('Documentos — {codigo}', { codigo: emMidia.peca.codigo })
+            : ''
+        }
+        descricao={emMidia?.peca.descricao}
         largura="larga"
       >
         {emMidia && (
           <MidiaDoRegistro
             entidade="parte_peca"
-            entidadeId={emMidia.id}
-            codigo={emMidia.codigo}
+            entidadeId={emMidia.peca.id}
+            codigo={emMidia.peca.codigo}
             podeEditar={podeEditar}
-            itemCritico={emMidia.item_critico}
+            itemCritico={emMidia.peca.item_critico}
+            secao={emMidia.secao}
           />
         )}
       </Modal>

@@ -68,6 +68,8 @@ export interface FormularioPecaProps {
   errosPorCampo: Record<string, string>;
   aoEnviar: (corpo: CorpoPeca) => void;
   aoCancelar: () => void;
+  /** Abre a tela de fotos ou de documentos da peca (so existe ao editar). */
+  aoGerenciarMidia?: (secao: 'fotos' | 'documentos') => void;
 }
 
 const opcoesSituacao = () => [
@@ -82,6 +84,7 @@ export function FormularioPeca({
   errosPorCampo,
   aoEnviar,
   aoCancelar,
+  aoGerenciarMidia,
 }: FormularioPecaProps) {
   const { opcoes: opcoesFornecedor } = useFornecedoresAtivos();
 
@@ -291,13 +294,27 @@ export function FormularioPeca({
         </div>
       )}
 
-      <div className="flex items-center justify-end gap-2">
-        <Botao variante="secundaria" onClick={aoCancelar} disabled={ocupado}>
-          {t('Cancelar')}
-        </Botao>
-        <Botao type="submit" icone="save" ocupado={ocupado} rotuloOcupado={t('Salvando…')}>
-          {t('Salvar')}
-        </Botao>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        {inicial && aoGerenciarMidia ? (
+          <div className="flex flex-wrap gap-2">
+            <Botao variante="secundaria" icone="image" onClick={() => aoGerenciarMidia('fotos')}>
+              {t('Incluir fotos')}
+            </Botao>
+            <Botao variante="secundaria" icone="file-text" onClick={() => aoGerenciarMidia('documentos')}>
+              {t('Incluir documentos')}
+            </Botao>
+          </div>
+        ) : (
+          <p className="text-label text-texto-secondary">{t('Salve a peça para incluir fotos e documentos.')}</p>
+        )}
+        <div className="flex items-center gap-2">
+          <Botao variante="secundaria" onClick={aoCancelar} disabled={ocupado}>
+            {t('Cancelar')}
+          </Botao>
+          <Botao type="submit" icone="save" ocupado={ocupado} rotuloOcupado={t('Salvando…')}>
+            {t('Salvar')}
+          </Botao>
+        </div>
       </div>
     </form>
   );

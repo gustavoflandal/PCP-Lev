@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { IndicadorDeMidia } from '@/componentes/arquivos/IndicadorDeMidia';
 import { MidiaDoRegistro } from '@/componentes/arquivos/MidiaDoRegistro';
-import { Miniatura } from '@/componentes/arquivos/Miniatura';
+import { MosaicoDeMidia } from '@/componentes/arquivos/MosaicoDeMidia';
 import { BarraDeFiltros } from '@/componentes/ui/BarraDeFiltros';
 import { BadgeSituacao } from '@/componentes/ui/Badge';
 import { Botao } from '@/componentes/ui/Botao';
@@ -21,6 +23,7 @@ export function ProdutosAcabados() {
   const podeEditar = usePode(PERMISSOES.produtosEditar);
   const podeInativar = usePode(PERMISSOES.produtosInativar);
 
+  const navegar = useNavigate();
   const lista = useListagem<ProdutoAcabado>('produtos-acabados', 'codigo');
   const crud = useCadastroCrud<ProdutoAcabado>('produtos-acabados', {
     criado: t('Produto cadastrado'),
@@ -28,13 +31,28 @@ export function ProdutosAcabados() {
     inativado: t('Produto inativado'),
   });
 
-  const [emMidia, definirEmMidia] = useState<ProdutoAcabado | null>(null);
+  const [emMidia, definirEmMidia] = useState<{ produto: ProdutoAcabado; secao: 'fotos' | 'documentos' } | null>(null);
+  const [mosaico, definirMosaico] = useState<{ produto: ProdutoAcabado; tipo: 'FOTO' | 'DOCUMENTO' } | null>(null);
 
   const colunas: Coluna<ProdutoAcabado>[] = [
     {
       chave: 'foto',
       rotulo: t('Foto'),
-      renderizar: (p) => <Miniatura url={p.foto_url} alt={t('Foto do produto {codigo}', { codigo: p.codigo })} critico={p.item_critico} />,
+      renderizar: (p) => (
+        <IndicadorDeMidia tipo="FOTO" quantidade={p.qtd_fotos} codigo={p.codigo} aoAbrir={() => definirMosaico({ produto: p, tipo: 'FOTO' })} />
+      ),
+    },
+    {
+      chave: 'documento',
+      rotulo: t('Documento'),
+      renderizar: (p) => (
+        <IndicadorDeMidia
+          tipo="DOCUMENTO"
+          quantidade={p.qtd_documentos}
+          codigo={p.codigo}
+          aoAbrir={() => definirMosaico({ produto: p, tipo: 'DOCUMENTO' })}
+        />
+      ),
     },
     {
       chave: 'codigo',
@@ -108,11 +126,15 @@ export function ProdutosAcabados() {
             <span className="flex items-center justify-end gap-2">
               <Botao
                 variante="fantasma"
-                icone="file-text"
-                aria-label={t('Mídia e documentos de {codigo}', { codigo: p.codigo })}
-                onClick={() => definirEmMidia(p)}
+                icone="boxes"
+                aria-label={
+                  p.estrutura_ativa
+                    ? t('Abrir a estrutura (BOM) de {codigo}, versão {n}', { codigo: p.codigo, n: p.estrutura_ativa.versao })
+                    : t('Abrir a estrutura (BOM) de {codigo}, sem versão cadastrada', { codigo: p.codigo })
+                }
+                onClick={() => navegar(`/estrutura-produtos/${p.id}`)}
               >
-                {t('Mídia e documentos')}
+                {p.estrutura_ativa ? t('BOM v.{n}', { n: p.estrutura_ativa.versao }) : t('Sem BOM')}
               </Botao>
               {podeEditar && (
                 <Botao
@@ -150,6 +172,7 @@ export function ProdutosAcabados() {
         aoFechar={crud.fecharFormulario}
         titulo={crud.emEdicao ? t('Editar produto') : t('Novo produto')}
         descricao={t('Campos com * são obrigatórios.')}
+        largura="larga"
       >
         <FormularioProduto
           // A chave remonta o formulario ao trocar de registro: sem isso os
@@ -161,23 +184,54 @@ export function ProdutosAcabados() {
           errosPorCampo={crud.errosPorCampo}
           aoEnviar={crud.salvar}
           aoCancelar={crud.fecharFormulario}
+          aoGerenciarMidia={(secao) => crud.emEdicao && definirEmMidia({ produto: crud.emEdicao, secao })}
         />
+      </Modal>
+
+      <Modal
+        aberto={mosaico !== null}
+        aoFechar={() => definirMosaico(null)}
+        titulo={
+          mosaico
+            ? mosaico.tipo === 'FOTO'
+              ? t('Fotos — {codigo}', { codigo: mosaico.produto.codigo })
+              : t('Documentos — {codigo}', { codigo: mosaico.produto.codigo })
+            : ''
+        }
+        descricao={mosaico?.produto.descricao}
+        largura="larga"
+      >
+        {mosaico && (
+          <MosaicoDeMidia
+            tipo={mosaico.tipo}
+            entidade="produto_acabado"
+            entidadeId={mosaico.produto.id}
+            codigo={mosaico.produto.codigo}
+          />
+        )}
       </Modal>
 
       <Modal
         aberto={emMidia !== null}
         aoFechar={() => definirEmMidia(null)}
-        titulo={emMidia ? t('Mídia e documentos — {codigo}', { codigo: emMidia.codigo }) : t('Mídia e documentos')}
-        descricao={emMidia?.descricao}
+        titulo={
+          emMidia
+            ? emMidia.secao === 'fotos'
+              ? t('Fotos — {codigo}', { codigo: emMidia.produto.codigo })
+              : t('Documentos — {codigo}', { codigo: emMidia.produto.codigo })
+            : ''
+        }
+        descricao={emMidia?.produto.descricao}
         largura="larga"
       >
         {emMidia && (
           <MidiaDoRegistro
             entidade="produto_acabado"
-            entidadeId={emMidia.id}
-            codigo={emMidia.codigo}
+            entidadeId={emMidia.produto.id}
+            codigo={emMidia.produto.codigo}
             podeEditar={podeEditar}
-            itemCritico={emMidia.item_critico}
+            itemCritico={emMidia.produto.item_critico}
+            secao={emMidia.secao}
           />
         )}
       </Modal>

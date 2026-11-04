@@ -50,12 +50,16 @@ type ProdutoAcabado struct {
 	PodeSerComponente bool `json:"pode_ser_componente"`
 	controle.Flags
 	// FotoURL: miniatura assinada da foto principal (preenchida pelo handler).
-	FotoURL   string    `json:"foto_url,omitempty"`
-	Ativo     bool      `json:"ativo"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-	CreatedBy *string   `json:"created_by,omitempty"`
-	UpdatedBy *string   `json:"updated_by,omitempty"`
+	FotoURL string `json:"foto_url,omitempty"`
+	// QtdFotos/QtdDocumentos: quanta midia o produto tem (preenchidos pelo
+	// handler na listagem); a tela mostra so "tem" ou "nao tem".
+	QtdFotos      int       `json:"qtd_fotos"`
+	QtdDocumentos int       `json:"qtd_documentos"`
+	Ativo         bool      `json:"ativo"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"`
+	CreatedBy     *string   `json:"created_by,omitempty"`
+	UpdatedBy     *string   `json:"updated_by,omitempty"`
 	// EstruturaAtiva e nil quando o produto ainda nao tem BOM cadastrada.
 	EstruturaAtiva *EstruturaResumo `json:"estrutura_ativa,omitempty"`
 }

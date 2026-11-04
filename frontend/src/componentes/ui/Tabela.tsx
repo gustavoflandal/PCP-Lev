@@ -29,6 +29,9 @@ export interface TabelaProps<T> {
   erro?: string | null;
   aoTentarDeNovo?: () => void;
   acoes?: (item: T) => ReactNode;
+  /** Torna a linha clicavel (ex.: escolher a versao a exibir). */
+  aoClicarLinha?: (item: T) => void;
+  linhaSelecionada?: (item: T) => boolean;
 }
 
 const LINHAS_DO_ESQUELETO = 5;
@@ -54,6 +57,8 @@ export function Tabela<T>({
   erro,
   aoTentarDeNovo,
   acoes,
+  aoClicarLinha,
+  linhaSelecionada,
 }: TabelaProps<T>) {
   const IconeOrdenacao = icones['arrow-up-down'];
   const IconeFalha = icones['alert-triangle'];
@@ -169,7 +174,16 @@ export function Tabela<T>({
 
           {estado === 'dados' &&
             itens.map((item) => (
-              <tr key={chaveDe(item)} className="min-h-linha">
+              <tr
+                key={chaveDe(item)}
+                className={cn(
+                  'min-h-linha',
+                  aoClicarLinha && 'cursor-pointer hover:bg-surface-sunken',
+                  linhaSelecionada?.(item) && 'bg-surface-sunken',
+                )}
+                aria-selected={linhaSelecionada ? linhaSelecionada(item) : undefined}
+                onClick={aoClicarLinha ? () => aoClicarLinha(item) : undefined}
+              >
                 {colunas.map((coluna) => (
                   <td
                     key={coluna.chave}
